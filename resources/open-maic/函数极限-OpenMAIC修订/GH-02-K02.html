@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诊断挑战：改点值能修好这个跳跃吗</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f39c12;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            padding: 24px;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* UI Elements */
+        h1 { font-size: 1.5rem; margin: 0 0 8px 0; color: var(--primary); }
+        p { line-height: 1.6; color: #666; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover { background: #357abd; transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-secondary { background: #95a5a6; }
+        .btn-success { background: var(--success); }
+
+        /* Graph Area */
+        .graph-container {
+            background: #f9f9f9;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            height: 200px;
+            position: relative;
+            margin: 10px 0;
+        }
+
+        canvas { width: 100%; height: 100%; }
+
+        /* Inputs */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            width: 100%;
+        }
+
+        input[type="number"]:focus { border-color: var(--primary); outline: none; }
+
+        /* Data Display */
+        .data-card {
+            background: #eef2f7;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        /* Diagnostic Options */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option:hover { border-color: var(--primary); background: #f0f7ff; }
+        .option.selected { border-color: var(--primary); background: #e3f2fd; }
+
+        /* Feedback */
+        .feedback {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .feedback.error { background: #fff5f5; color: var(--danger); border: 1px solid #ffcccc; display: block; }
+        .feedback.success { background: #f0fff4; color: var(--success); border: 1px solid #ccffcc; display: block; }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            .screen { padding: 16px; }
+            h1 { font-size: 1.2rem; }
+            .graph-container { height: 160px; }
+        }
+    </style>
+
+<link rel="stylesheet" href="字体-6dab387eaf.css">
+<script src="依赖-dc84b296ec.js"></script>
+<script src="依赖-9cb8dacfc0.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    renderMathInElement(document.body, katexOptions);
+
+    const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        mutations.forEach((mutation) => {
+            if (mutation.target &&
+                mutation.target.className &&
+                typeof mutation.target.className === 'string' &&
+                mutation.target.className.includes('katex')) {
+                return;
+            }
+            shouldRender = true;
+        });
+
+        if (shouldRender) {
+            safeRender();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    setInterval(() => {
+        const text = document.body.innerText;
+        if (text.includes('\\(') || text.includes('$$')) {
+            safeRender();
+        }
+    }, 2000);
+});
+</script>
+<script id="cq-lesson-evidence">
+// 本页练习证据；重置题目不会抹掉本次访问已使用的提示或纠错历史。
+(function () {
+  const rounds = new Map(); let current = '第一轮';
+  function entry() { if(!rounds.has(current)) rounds.set(current,{round:current,hints:0,attempts:[],completed:false}); return rounds.get(current); }
+  function category(e) { return e.hints ? '本组提示后完成' : e.attempts.some(a=>!a.correct) ? '本组纠错后完成' : '本组未用提示完成'; }
+  function render() {
+    const list=document.getElementById('cq-record-list'); if(!list) return;
+    const total=Array.from(rounds.values()).reduce((n,e)=>n+e.hints,0);
+    list.textContent='本页累计提示 '+total+' 次（各组状态按本组记录）\n'+Array.from(rounds.values()).map(e=>e.round+'：'+(e.completed?category(e):(e.hints?'练习中（已用提示）':'练习中'))+'；提交 '+e.attempts.length+' 次').join('\n');
+  }
+  window.CQ = {
+    start(label) { current=label; entry(); render(); },
+    hint() { entry().hints++; render(); },
+    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-02-K02"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-02-K02",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261102-v1",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
+    complete() { const e=entry(); e.completed=true; render(); return category(e); },
+    summary() { return Array.from(rounds.values()).map(e=>({...e,completion:e.completed?category(e):null})); }
+  };
+  entry();
+  document.addEventListener('click',e=>{ const b=e.target.closest?.('button'); if(b && (b.id==='hint-btn'||b.id==='btn-hint'||/showHint\s*\(/.test(b.getAttribute('onclick')||'')||/^(提示|查看提示|显示提示|提示一下|💡\s*提示)$/.test(b.textContent.trim()))) CQ.hint(); },true);
+  document.addEventListener('DOMContentLoaded',()=>{
+    const p=document.createElement('details'); p.id='cq-record';
+    p.style.cssText='position:fixed;left:8px;bottom:8px;z-index:100;max-width:min(360px,90vw);padding:6px 10px;border:1px solid #64748b;border-radius:8px;background:#fff;color:#172033;font:12px/1.6 system-ui';
+    p.innerHTML='<summary style="cursor:pointer">本页练习记录</summary><div id="cq-record-list" style="white-space:pre-wrap"></div><small>记录主动提示按钮；页面常驻说明不计次数。重试保留记录；未用提示不等于独立掌握。</small>';
+    document.body.appendChild(p); render();
+  });
+})();
+</script>
+<script>window.alert=function(message){let n=document.getElementById('cq-notice');if(!n){n=document.createElement('aside');n.id='cq-notice';n.setAttribute('role','status');n.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;max-width:90vw;background:#fff;color:#172f37;border:2px solid #537d78;border-radius:12px;padding:14px 18px;box-shadow:0 6px 22px #0002;display:flex;gap:12px;align-items:center';n.innerHTML='<span></span><button type="button" aria-label="关闭提示">关闭</button>';n.querySelector('button').onclick=()=>n.remove();document.body.append(n);}n.querySelector('span').textContent=message;};</script><script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K02",
+  "concept_tag": "图像上的左右极限",
+  "scene_type": "game",
+  "resource_id": "GH-02-K02:game",
+  "resource_title": "诊断挑战：改点值能修好这个跳跃吗",
+  "learning_objective": "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。",
+  "misconception": "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。",
+  "observable_evidence": "区分修改点值与修改附近规则对双侧极限的影响。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "number",
+      "select",
+      "button"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": false
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": false,
+    "reentry_after_help": "restart_scene"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script><link rel="stylesheet" href="课件布局.css"></head>
+<body>
+
+<div id="game-container">
+    <div class="progress-container"><div id="progress-bar"></div></div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <h1>诊断挑战：跳跃修复</h1>
+        <p>分段函数在 x=1 处有一个“跳跃”。你能通过修改规则让双侧极限存在吗？</p>
+        <div style="background: #fff9db; padding: 12px; border-radius: 8px; font-size: 0.9rem; border: 1px solid #ffe066;">
+            <strong>当前规则：</strong><br>
+            当 x < 1 时，y = x + 1<br>
+            当 x > 1 时，y = x + 3<br>
+            当 x = 1 时，y = 2 (可修改)
+        </div>
+        <button class="btn" onclick="startGame()">开始诊断</button>
+    </div>
+
+    <!-- Step 1: Prediction -->
+    <div id="step1" class="screen">
+        <h1>第一步：预测走向</h1>
+        <p>观察规则，预测当输入靠近 1 时，左右两侧的输出分别靠向哪个数？</p>
+        <p><strong>当前规则：</strong>x &lt; 1 时，y = x + 1；x &gt; 1 时，y = x + 3；f(1) = 2。</p>
+        <div class="input-group">
+            <label>左侧极限 (x → 1⁻):</label>
+            <input type="number" id="pred-left" placeholder="输入数字">
+            <label>右侧极限 (x → 1⁺):</label>
+            <input type="number" id="pred-right" placeholder="输入数字">
+        </div>
+        <button class="btn" onclick="submitPrediction()">提交预测</button>
+    </div>
+
+    <!-- Step 2: Experiment -->
+    <div id="step2" class="screen">
+        <h1>第二步：实验观察</h1>
+        <p>预测结果已生成。现在尝试修改 x=1 处的取值，观察两侧数据是否变化。</p>
+        <div class="data-card" id="data-display">
+            左侧: f(0.9)=1.9, f(0.99)=1.99<br>
+            右侧: f(1.1)=4.1, f(1.01)=4.01
+        </div>
+        <div class="input-group">
+            <label>修改 x=1 处的取值:</label>
+            <input type="number" id="val-x1" value="2">
+        </div>
+        <button class="btn btn-secondary" onclick="applyValue()">应用修改</button>
+        <button class="btn btn-success" style="margin-top: 8px;" onclick="goToStep3()">进入诊断</button>
+    </div>
+
+    <!-- Step 3: Diagnosis -->
+    <div id="step3" class="screen">
+        <h1>第三步：提交诊断</h1>
+        <p>只改这一点的取值，能让双侧极限存在吗？</p>
+        <div class="options-grid">
+            <div class="option" onclick="selectOption(3, 'A', event)">A. 不能，因为左右两侧靠向不同的数，而取值不参与两侧走向</div>
+            <div class="option" onclick="selectOption(3, 'B', event)">B. 能，把取值改成 2 就与左侧一致</div>
+            <div class="option" onclick="selectOption(3, 'C', event)">C. 能，把取值改成 4 就与右侧一致</div>
+        </div>
+        <div id="feedback3" class="feedback"></div>
+        <button class="btn" id="submit3" style="display:none;" onclick="goToStep4()">继续</button>
+    </div>
+
+    <!-- Step 4: Solution -->
+    <div id="step4" class="screen">
+        <h1>第四步：修复方案</h1>
+        <p>要让双侧极限存在，需要改动什么？</p>
+        <div class="options-grid">
+            <div class="option" onclick="selectOption(4, 'A', event)">A. 改动其中一支的规则，使两侧靠向同一个数</div>
+            <div class="option" onclick="selectOption(4, 'B', event)">B. 只改取值</div>
+            <div class="option" onclick="selectOption(4, 'C', event)">C. 把 1 换成别的点</div>
+        </div>
+        <div id="feedback4" class="feedback"></div>
+        <button class="btn" id="submit4" style="display:none;" onclick="startTransfer()">换数据再判断</button>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="transfer-screen" class="screen"><h2>第二轮：换数据判断能否修复</h2><p>x&lt;2 时 y=x+1；x&gt;2 时 y=2x−1；f(2)=7。</p><p>左侧：1.9→2.9，1.99→2.99；右侧：2.1→3.2，2.01→3.02。</p><label>左侧趋向 <input id="new-left" type="number" step="any"></label><label>右侧趋向 <input id="new-right" type="number" step="any"></label><label>应将点值改为 <input id="new-fix" type="number" step="any"></label><p><select id="new-reason"><option value="">选择理由</option><option value="A">左右同为3，只需使点值也为3</option><option value="B">任何不连续点都只能改规则</option></select></p><button class="btn" onclick="finishGame()">提交第二轮</button><p id="transfer-feedback"></p></div>
+    <div id="result-screen" class="screen">
+        <h1 id="result-title">挑战成功！</h1>
+        <p id="result-desc">你成功诊断了跳跃的原因并找到了修复方案。</p>
+        <div class="data-card">
+            练习进度: <span id="final-score">0</span><br>
+            完成方式: <span id="finish-type">无提示完成</span>
+        </div>
+        <button class="btn" onclick="resetGame()">重新开始</button>
+    </div>
+</div>
+
+<script type="application/json" id="widget-config">
+{
+  "type": "game",
+  "gameType": "diagnostic",
+  "scoring": {
+    "correctPoints": 10,
+    "speedBonus": 5
+  }
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Game State
+    let state = {
+        step: 0,
+        score: 0,
+        usedHint: false,
+        prediction: { left: null, right: null },
+        diagnosis: null,
+        solution: null,
+        startTime: 0
+    };
+
+    const config = JSON.parse(document.getElementById('widget-config').textContent);
+
+    // Global Functions for onclick
+    window.startGame = function() {
+        CQ.start("第一轮"); showScreen('step1');
+        state.startTime = Date.now();
+        updateProgress(20);
+    };
+
+    window.submitPrediction = function() {
+        const left = parseFloat(document.getElementById('pred-left').value);
+        const right = parseFloat(document.getElementById('pred-right').value);
+        
+        if (isNaN(left) || isNaN(right)) {
+            alert("请输入预测数值");
+            return;
+        }
+
+        state.prediction = { left, right }; CQ.attempt(left===2&&right===4,"左右趋近预测",{task:"limits",round:0,values:[left,right]});
+        showScreen('step2');
+        updateProgress(40);
+    };
+
+    window.applyValue = function() {
+        const val = document.getElementById('val-x1').value;
+        const display = document.getElementById('data-display');
+        display.innerHTML = `修改后 f(1) = ${val}<br>左侧: f(0.9)=1.9, f(0.99)=1.99<br>右侧: f(1.1)=4.1, f(1.01)=4.01<br><strong style="color:var(--danger)">两侧数据未变</strong>`;
+        
+        // Visual feedback
+        display.style.transform = "scale(1.02)";
+        setTimeout(() => display.style.transform = "scale(1)", 200);
+    };
+
+    window.goToStep3 = function() {
+        showScreen('step3');
+        updateProgress(60);
+    };
+
+    window.selectOption = function(step, choice, event) {
+        CQ.attempt(choice==="A",step===3?"跳跃原因":"修复方式",{task:"reason",round:0,values:[choice]});
+        const options = document.querySelectorAll(`#${step === 3 ? 'step3' : 'step4'} .option`);
+        options.forEach(opt => opt.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+
+        if (step === 3) {
+            state.diagnosis = choice;
+            const feedback = document.getElementById('feedback3');
+            if (choice === 'A') {
+                feedback.className = 'feedback success';
+                feedback.innerText = "正确！取值不影响两侧走向。";
+                document.getElementById('submit3').style.display = 'block';
+            } else {
+                feedback.className = 'feedback error';
+                feedback.innerText = choice === 'B' ? "取值改成 2 之后，右侧输入 1.1 的输出仍是 4.1，右侧走向没有变。" : "改成 4 之后左侧输入 0.9 的输出仍是 1.9，左侧走向没有变。";
+                document.getElementById('submit3').style.display = 'none';
+            }
+        } else {
+            state.solution = choice;
+            const feedback = document.getElementById('feedback4');
+            if (choice === 'A') {
+                feedback.className = 'feedback success';
+                feedback.innerText = "正确！必须让两侧靠向同一个数。";
+                document.getElementById('submit4').style.display = 'block';
+            } else {
+                feedback.className = 'feedback error';
+                feedback.innerText = "这无法解决跳跃问题。再想想？";
+                document.getElementById('submit4').style.display = 'none';
+            }
+        }
+    };
+
+    window.goToStep4 = function() {
+        showScreen('step4');
+        updateProgress(80);
+    };
+
+    window.startTransfer=function() { if(state.solution!=='A') return; CQ.complete(); CQ.start('第二轮：可修复的新规则'); showScreen('transfer-screen'); };
+    window.resetGame=function() { CQ.start('第一轮'); state.prediction={left:null,right:null}; state.diagnosis=null; state.solution=null; document.querySelectorAll('input').forEach(el=>el.value=''); document.getElementById('new-reason').value=''; document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected')); ['feedback3','feedback4'].forEach(id=>document.getElementById(id).className='feedback'); ['submit3','submit4'].forEach(id=>document.getElementById(id).style.display='none'); showScreen('start-screen'); };
+    window.finishGame = function() {
+        const l=parseFloat(document.getElementById('new-left').value),r=parseFloat(document.getElementById('new-right').value),f=parseFloat(document.getElementById('new-fix').value),reason=document.getElementById('new-reason').value;
+        const ok=l===3&&r===3&&f===3&&reason==='A'; CQ.attempt(ok,'第二轮修复判定',{task:'repair',round:1,values:[l,r,f,reason]});
+        if(!ok) { document.getElementById('transfer-feedback').textContent='两侧都趋向3；原点值7不匹配，改为3后可连续。请核对三项数值和理由。'; return; }
+        const completion=CQ.complete(); showScreen('result-screen'); updateProgress(100);
+        document.getElementById('final-score').innerText='两组判断完成'; document.getElementById('finish-type').innerText='本组：'+completion+'；各组记录见左下角';
+    };
+
+
+    // Helper Functions
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function updateProgress(percent) {
+        document.getElementById('progress-bar').style.width = percent + '%';
+    }
+
+    // Draw a simple graph on the step 2 screen
+    function drawGraph() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 400;
+        canvas.height = 200;
+        
+        // Draw axes
+        ctx.strokeStyle = '#ccc';
+        ctx.beginPath();
+        ctx.moveTo(50, 150); ctx.lineTo(350, 150); // X
+        ctx.moveTo(100, 180); ctx.lineTo(100, 20); // Y
+        ctx.stroke();
+
+        // Draw Left Part (y = x + 1)
+        ctx.strokeStyle = '#4a90e2';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(100, 140); ctx.lineTo(180, 100);
+        ctx.stroke();
+        // Open circle at (1, 2)
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = '#4a90e2';
+        ctx.beginPath();
+        ctx.arc(180, 100, 4, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // Draw Right Part (y = x + 3)
+        ctx.strokeStyle = '#e67e22';
+        ctx.beginPath();
+        ctx.moveTo(185, 40); ctx.lineTo(260, 0);
+        ctx.stroke();
+        // Open circle at (1, 4)
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = '#e67e22';
+        ctx.beginPath();
+        ctx.arc(185, 40, 4, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // Draw Point at (1, 2) - the modifiable one
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(180, 100, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        return canvas;
+    }
+
+    // Add graph to step 2
+    const graphCanvas = drawGraph();
+    document.getElementById('step2').insertBefore(graphCanvas, document.getElementById('data-display'));
+});
+</script>
+
+<script id="openmaic-widget-action-listener">
+window.addEventListener('message', function(event) {
+  const { type, target, state, content } = event.data;
+
+  switch (type) {
+    case 'SET_WIDGET_STATE':
+      // Apply state to controls / game params. Keys map to controls by id;
+      // route to the game via a global setter when one exists.
+      if (state) {
+        Object.entries(state).forEach(([key, value]) => {
+          const control = document.getElementById(key + '-slider') || document.getElementById(key) || document.querySelector('[data-var="' + key + '"]');
+          if (control) {
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          if (typeof window.setGameParam === 'function') window.setGameParam(key, value);
+        });
+      }
+      break;
+
+    case 'HIGHLIGHT_ELEMENT':
+      const highlightEl = document.querySelector(target);
+      if (highlightEl) {
+        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outlineOffset = '4px';
+        highlightEl.style.animation = 'pulse-highlight 2s infinite';
+        setTimeout(() => {
+          highlightEl.style.outline = '';
+          highlightEl.style.animation = '';
+        }, 3000);
+      }
+      break;
+
+    case 'ANNOTATE_ELEMENT':
+      const annotateEl = document.querySelector(target);
+      if (annotateEl && content) {
+        const rect = annotateEl.getBoundingClientRect();
+        const tooltip = document.createElement('div');
+        tooltip.className = 'teacher-annotation';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+        tooltip.textContent = content;
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 4000);
+      }
+      break;
+
+    case 'REVEAL_ELEMENT':
+      const revealEl = document.querySelector(target);
+      if (revealEl) {
+        revealEl.style.display = '';
+        revealEl.style.opacity = '1';
+      }
+      break;
+  }
+});
+
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(style);
+</script>
+<script src="课件交互.js"></script></body>
+</html>

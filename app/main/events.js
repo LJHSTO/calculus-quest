@@ -76,6 +76,7 @@ document.addEventListener("click", (event) => {
       });
       switchView("learn");
       renderAll();
+      if(sceneType)window.LearningWorkspace?.showInteractive?.();
       window.setTimeout(() => {
         const playerTop = document.querySelector(".player-top");
         if (playerTop) window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });

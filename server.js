@@ -137,7 +137,7 @@ function pilotRuntime(user) {
 function pilotProtection(user,generation) {
   return Boolean(threeArmStudy.protects(user)||researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
     ||supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId)
-      .some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase)));
+      .some(s=>parseStoredJson(s.lifecycle_json||"{}",{}).phase==="awaiting_independent_attempt"));
 }
 function pilotFacts(user,scope,unitId,generation) {
   const events=db.recentInteractionEventsForUnit(user,unitId,40).filter(r=>Number(r.learning_generation||1)===generation)
@@ -1429,7 +1429,8 @@ function safeStaticPath(urlPath) {
     && !/^resources\/open-maic\/(?:prompts|versions)(?:\/|$)/.test(normalized)
     && (
       normalized === "resources/open-maic/course-index.json"
-      || ["resources/open-maic/主动探索证据/exploration-model.js","resources/open-maic/主动探索证据/exploration-runtime.js","resources/open-maic/主动探索证据/free-exploration.js","resources/open-maic/主动探索证据/free-exploration-runtime.js"].includes(normalized)
+      || ["resources/open-maic/主动探索证据/exploration-model.js","resources/open-maic/主动探索证据/exploration-runtime.js","resources/open-maic/主动探索证据/free-exploration.js","resources/open-maic/主动探索证据/free-exploration-runtime.js","resources/open-maic/主动探索证据/课件工作区.css"].includes(normalized)
+      || /^resources\/open-maic\/函数极限-OpenMAIC修订\/(?:课件布局\.css|课件交互\.js|字体-[a-f0-9]{10}\.css|依赖-[a-f0-9]{10}\.js)$/.test(normalized)
       || publicResourceExtensions.has(extension)
     );
   const allowed = publicRootFiles.has(normalized)
@@ -3724,6 +3725,7 @@ function restoreAcceptedSupportPrompt(userId, resolved, sceneType) {
   const intervention=db.getProactiveIntervention(life.activeInterventionId);
   const decision=db.getProactiveDecisionForUser(userId,life.activeDecisionId);
   if(!intervention || !decision || decision.adapter_version!==proactiveStudyConfig.adapterVersion)return null;
+  if(decision.unit_id!==resolved.unit.id || (decision.scene_type||'slide')!==(sceneType||'slide'))return null;
   const presentation=parseStoredJson(intervention.presentation||"{}",{});
   if(!presentation.assistantPrompt || presentation.interactionMode!=="student_reply")return null;
   const record={id:intervention.id,decisionId:decision.id,action:decision.action};
@@ -4085,7 +4087,8 @@ async function generateAssistantTurn({
   quizSubmitted,
   assistantIntent = "",
   proactivePrompt = "",
-  learningMemory = null
+  learningMemory = null,
+  supportContext = null
 }) {
   const prompt = learningAssistant.buildAssistantPrompt({
     resolved,
@@ -4094,9 +4097,12 @@ async function generateAssistantTurn({
     quizSubmitted,
     assistantIntent,
     proactivePrompt,
-    learningMemory
+    learningMemory,
+    supportContext
   });
   const clarification = learningAssistant.unresolvedVisualReferenceReply({ resolved, question });
+  if(prompt.guidance.focusQuestionId)resolved={...resolved,contextRef:{...resolved.contextRef,questionId:prompt.guidance.focusQuestionId}};
+  if(prompt.acknowledgementReply)return {provider:'conversation-control',text:prompt.acknowledgementReply,policy:prompt.policy,guidance:{...prompt.guidance,showUnderstandingCheck:false,actions:[]},fallback:false};
   if (clarification) {
     return {
       provider: "grounding-guard",
@@ -4802,7 +4808,7 @@ async function handleManagedProactiveIntervention({
     },
     created_at: policyDecision.createdAt
   });
-  db.saveNow();
+  await db.flush();
 
   sendJson(res, 200, {
     ok: true,
@@ -4941,7 +4947,8 @@ async function handleApi(req, res, url) {
         sendJson(res, 400, { ok: false, message: "资源路径不正确。" });
         return;
       }
-      const manifestPath = path.join(root, "resources", resourceRoot, "manifest.json");
+      const indexPath = path.join(root, "resources", resourceRoot, "index.json");
+      const manifestPath = fs.existsSync(indexPath) ? indexPath : path.join(root, "resources", resourceRoot, "manifest.json");
       const resolved = path.resolve(manifestPath);
       const openMaicRoot = path.resolve(root, "resources", "open-maic");
       if (!resolved.startsWith(openMaicRoot + path.sep) || !fs.existsSync(resolved)) {
@@ -5268,7 +5275,7 @@ async function handleApi(req, res, url) {
         learning_generation: boundEvent.learningGeneration,
         created_at: timestamp
       });
-      db.saveNow();
+      await db.flush();
 
       sendJson(res, 200, { ok: true, eventId });
       return;
@@ -5306,7 +5313,7 @@ async function handleApi(req, res, url) {
           created_at: createdAt
         });
       });
-      db.saveNow();
+      await db.flush();
 
       sendJson(res, 200, { ok: true, eventIds });
       return;
@@ -5754,6 +5761,11 @@ async function handleApi(req, res, url) {
         }
         if(pilotProtection(user,generation))throw Object.assign(new Error('独立检查结束后再打开学习回顾'),{status:409});
         if(url.pathname==='/api/study/review'&&req.method==='GET'){
+          const results=db.getQuizResultsByUser(user),submitted=studyStages.order.filter(id=>studyStages.completed({points:[id]},results)).map(id=>id+'-formative');
+          if(proactiveAssessmentCompletion(user,'post').ready)submitted.push('V14-C1-post');
+          const current=parseStoredJson(db.getLearningSnapshotState(user,nowIso()).snapshot?.data||'{}',{}).currentUnitId||'';
+          const window=studyStages.reviewWindow(run,submitted,current);
+          if(!window.allowed)throw Object.assign(new Error(window.message),{status:409});
           sendJson(res,200,{ok:true,data:threeArmStudy.review(user,cycles)});return;
         }
         if(url.pathname==='/api/study/review'&&req.method==='POST'){
@@ -5887,7 +5899,7 @@ async function handleApi(req, res, url) {
         if(resolved.isQuiz || (resolved.unit.knowledgePointId||resolved.unit.id)!==scope || !supportGoals.CURRICULUM[scope])throw Object.assign(new Error("请在对应知识点的学习任务中使用帮助"),{status:409});
         if(!proactiveAssignmentForUser(user))throw Object.assign(new Error("请先完成本章前测"),{status:409});
         const protectedNow=()=>Boolean(activeProactiveOutcomeSession(user) || mainLearningStudy.manages(user) || studyWorkbench.protects(user)
-          || db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase)));
+          || db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(s=>parseStoredJson(s.lifecycle_json||"{}",{}).phase==="awaiting_independent_attempt"));
         if(protectedNow())throw Object.assign(new Error("独立测量期间暂停学习帮助"),{status:409});
         const record=researchControlStore.read(user),profile={...researchControls.defaults,...record?.profile},revision=record?.revision||0;
         const adapter=proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId);
@@ -7527,6 +7539,24 @@ async function handleApi(req, res, url) {
         proactiveStudyConfig.experimentId,
         scopeKey
       );
+      if(body.action==='start'){
+        const life=proactivePolicy.lifecycle.normalize(parseStoredJson(policyState?.lifecycle_json||'{}',{}));
+        const decision=db.getProactiveDecisionForUser(auth.participant.id,life.activeDecisionId);
+        const intervention=db.getProactiveIntervention(life.activeInterventionId);
+        if(!policyState||life.phase!=='accepted_pending_response'||intervention?.status!=='accepted'||!decision
+          ||decision.unit_id!==unitId||(decision.scene_type||'slide')!==(sceneType||'slide')
+          ||decision.chapter_id!==chapterId||(decision.scope_key||decision.unit_id)!==scopeKey){
+          sendJson(res,409,{ok:false,code:'proactive_check_not_ready',message:'这条帮助已经结束，请返回当前学习内容。'});return;
+        }
+        const at=nowIso(),next=proactivePolicy.lifecycle.afterStudentResponse({lifecycle:life,interventionId:life.activeInterventionId,respondedAt:at});
+        const check=proactivePolicy.adapterForChapter(chapterId)?.publicVerificationCheck?.(scopeKey,next.supportLevel);
+        if(!check){sendJson(res,409,{ok:false,message:'当前没有可用的独立检查。'});return;}
+        next.activeVerificationCheckId=check.id;
+        db.upsertProactivePolicyState(proactivePolicyStateRecord(policyState,{userId:auth.participant.id,scopeKey,updatedAt:at,lastReasonCode:'student_requested_check',lifecycle:next}));
+        db.insertEvent({id:crypto.randomUUID(),user_id:auth.participant.id,type:'interaction',payload:{eventType:'proactive_independent_check_requested',unitId,scopeKey,interventionId:life.activeInterventionId,checkId:check.id},created_at:at});
+        db.saveNow();
+        sendJson(res,200,{ok:true});return;
+      }
       const publicState = publicProactivePolicyState(policyState || {});
       const expectedCheck = publicState.verificationCheck;
       if (!policyState || !expectedCheck) {
@@ -8722,13 +8752,28 @@ async function handleApi(req, res, url) {
         quizSubmitted,
         assistantIntent,
         proactivePrompt,
-        learningMemory: learningMemoryFor(auth.participant.id,chapterId)
+        learningMemory: learningMemoryFor(auth.participant.id,chapterId),
+        supportContext: (()=>{
+          const profile=researchControlStore.read(auth.participant.id)?.profile||{},scope=resolved.unit.knowledgePointId||resolved.unit.id;
+          const cycle=supportCycles.current(auth.participant.id,scope,db.currentLearningGeneration(auth.participant.id));
+          const activeCycle=cycle&&cycle.sceneType===(sceneType||'slide')&&['offered','engaged'].includes(cycle.status)?cycle:null;
+          const life=parseStoredJson(independentCheckState?.lifecycle_json||'{}',{});
+          const acceptedDecision=life.activeDecisionId&&db.getProactiveDecisionForUser(auth.participant.id,life.activeDecisionId);
+          const acceptedHere=life.phase==='accepted_pending_response'&&acceptedDecision?.unit_id===resolved.unit.id&&(acceptedDecision.scene_type||'slide')===(sceneType||'slide');
+          return {phase:activeCycle?.status||(acceptedHere?life.phase:'free_question'),
+            scaffoldLevel:activeCycle?.plan?.knowledgeScaffoldLevel||(acceptedHere?life.supportLevel:null),
+            preferences:{maximumLevel:profile.maxSupportLevel||null,dose:profile.supportDose||null,format:profile.presentationFormat||null},
+            confirmedNeed:activeCycle?{need:activeCycle.need?.need,note:activeCycle.need?.note||''}:null,
+            availableActions:['return_to_courseware','continue_conversation']};
+        })()
       });
       const countedMock = generated.provider === 'mock' && process.env.LEARNING_ASSISTANT_COUNT_MOCK_USAGE === 'true';
-      if ((generated.fallback && !countedMock || generated.provider === "grounding-guard") && quotaReserved) {
+      if ((generated.fallback && !countedMock || ['grounding-guard','conversation-control'].includes(generated.provider)) && quotaReserved) {
         quota = releaseAssistantQuota(auth.participant.id, requestedAt);
         quotaReserved = false;
       }
+      const focusedQuestion=resolved.isQuiz&&quizSubmitted&&resolved.unit.quizQuestions?.find(q=>q.id===generated.guidance?.focusQuestionId);
+      if(focusedQuestion)resolved.contextRef={...resolved.contextRef,kind:'quiz',scope:'quiz',questionId:focusedQuestion.id};
       const answer = learningAssistant.enforceQuizSafety(generated.text, {
         isQuiz: resolved.isQuiz,
         quizSubmitted,
@@ -8841,26 +8886,7 @@ async function handleApi(req, res, url) {
               existingPolicyState.lifecycle_json || "{}",
               {}
             ));
-          const nextLifecycle = proactivePolicy.lifecycle.afterStudentResponse({
-            lifecycle: previousLifecycle,
-            interventionId: proactiveInterventionId,
-            respondedAt: answeredAt
-          });
-          if (previousLifecycle.phase === "accepted_pending_response"
-            && nextLifecycle.phase === "awaiting_independent_attempt") {
-            const adapter = proactivePolicy.adapterForChapter(lifecycleDecision.chapter_id);
-            const issuedCheck = adapter?.publicVerificationCheck?.(scopeKey, nextLifecycle.supportLevel);
-            nextLifecycle.activeVerificationCheckId = issuedCheck?.id || "";
-            db.upsertProactivePolicyState(proactivePolicyStateRecord(
-              existingPolicyState,
-              {
-                userId: auth.participant.id,
-                scopeKey,
-                updatedAt: answeredAt,
-                lastReasonCode: "student_response_submitted",
-                lifecycle: nextLifecycle
-              }
-            ));
+          if (previousLifecycle.phase === "accepted_pending_response") {
             db.updateProactiveInterventionFollowup({
               userId: auth.participant.id,
               interventionId: proactiveInterventionId,
@@ -8876,7 +8902,7 @@ async function handleApi(req, res, url) {
               updatedAt: answeredAt
             });
             db.insertEvent({
-              id: `${proactiveInterventionId}:student-response`,
+              id: `${proactiveInterventionId}:student-response:${assistantMessageId}`,
               user_id: auth.participant.id,
               type: "interaction",
               payload: {
@@ -8894,8 +8920,6 @@ async function handleApi(req, res, url) {
                   interventionId: proactiveInterventionId,
                   action: lifecycleDecision.action,
                   supportLevel: lifecycleDecision.support_level,
-                  verificationCheckId: issuedCheck?.id || "",
-                  verificationInstrumentVersion: issuedCheck?.instrumentVersion || "",
                   responseLength: question.length
                 },
                 timing: {
@@ -9975,7 +9999,8 @@ async function handleApi(req, res, url) {
   }
 }
 
-const server = http.createServer((req, res) => {
+// 网关复用空闲连接两分钟；后端提前关闭会使思考后的提交偶发 502。
+const server = http.createServer({ keepAliveTimeout: 130000 }, (req, res) => {
   // Security headers (defense-in-depth)
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");

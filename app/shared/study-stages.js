@@ -9,6 +9,12 @@
   const point=id=>String(id||'').replace(/-formative$/,'');
   function crosses(stage,id){const target=point(id);return target==='V14-C1-post'||order.indexOf(target)>order.indexOf(stage.points.at(-1));}
   function completed(stage,results){return stage.points.every(id=>new Set(results.filter(r=>r.unit_id===id+'-formative').map(r=>r.question_id)).size>=3);}
+  function reviewWindow(run,submitted=[],unitId=''){
+    const protectedTask=/-(pre|post|formative|retention|transfer)$/.test(unitId)&&!submitted.includes(unitId);
+    const stage=reviews.find(s=>s.points.every(id=>submitted.includes(id+'-formative'))&&!(run?.reviewedStages||[]).includes(s.id));
+    const allowed=Boolean(run?.configuredAt&&!protectedTask&&!run?.activeJudgment&&(stage||run?.reviewedStages?.length||submitted.includes('V14-C1-post')));
+    return {allowed,readOnly:!stage,stage:stage?.id||null,message:protectedTask?'独立作答中，提交后可查看回顾。':allowed?stage?'回顾本阶段学习':'查看已完成的学习回顾':'完成前两个知识点的检测后开放；之后可在这里查看。'};
+  }
   return Object.freeze({version:'three-stages-two-reconfigurations-v1',stages:Object.freeze(stages),reviews:Object.freeze(reviews),order:Object.freeze(order),crosses,completed,
-    reviewAfter:id=>reviews.find(s=>s.points.at(-1)===point(id))||null});
+    reviewWindow,reviewAfter:id=>reviews.find(s=>s.points.at(-1)===point(id))||null});
 });

@@ -19,7 +19,7 @@ assert.equal(M.collect(batched.map(r=>({...r,payload:{...r.payload,timing:{clien
 assert.equal(M.collect(batched.map((r,i)=>({...r,payload:{...r.payload,timing:{clientAt:new Date(now+i*100).toISOString()}}})),point,scene,now),null,'快速连续点击仍不满足比较间隔');
 const config=P.configFromEnv({PROACTIVE_POLICY_MODE:'active',PROACTIVE_EXPERIMENT_ID:'free-exploration-unit',PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_ASSIGNMENT_SALT:'test-only'});
 const params={config,assignment:{condition:'treatment'},context:{chapterId:'V14-C1',unitId:point,knowledgePointId:point,sceneType:scene,isQuiz:false},signal:{kind:'exploration_reflection'},evidence,budget:{remaining:10},now};
-const decision=P.evaluate(params);assert.equal(decision.displayAllowed,true,JSON.stringify(decision.reasonCodes));assert.equal(decision.helpNeedScore,null);assert.equal(decision.evidencePackage.inference.need_help_now,null);assert.equal(decision.timing.action,'boundary');
+const decision=P.evaluate(params);assert.equal(decision.displayAllowed,false,'正常探索比较不是困难证据，不能自动介入');
 assert.equal(P.evaluate({...params,evidence:{...evidence,explorationOpportunity:null}}).displayAllowed,false);
 assert.equal(P.evaluate({...params,evidence:{...evidence,naturalBoundary:false}}).displayAllowed,false);
 assert.equal(P.evaluate({...params,assignment:{condition:'control'}}).displayAllowed,false);
@@ -28,9 +28,9 @@ const cautious={...config,engineeringControls:{profile:{minimumEvidenceFamilies:
 assert.equal(P.evaluate({...params,config:cautious}).displayAllowed,false);
 const revisit=rowsFor(point,scene);revisit.push({...revisit[0],id:'revisit',created_at:new Date(now-100).toISOString()});
 const revisited=M.collect(revisit,point,scene,now);assert.equal(revisited.observationCount,3);assert.ok(revisited.sources.some(r=>r.id==='revisit'));
-assert.equal(P.evaluate({...params,config:cautious,evidence:{...evidence,explorationOpportunity:revisited}}).displayAllowed,true);
+assert.equal(P.evaluate({...params,config:cautious,evidence:{...evidence,explorationOpportunity:revisited}}).displayAllowed,false,'增加正常操作次数也不能替代困难证据');
 for(const kind of ['quiet_dwell','repeated_parameter'])assert.equal(P.evaluate({...params,signal:{kind},evidence:{families:['time','process','task'],familyStrength:{time:1,process:1,task:1},educationalTaskMapped:true,parameterCommitCount:20,dwellSeconds:600,naturalBoundary:true}}).displayAllowed,false,'操作多或停留久不能单独构成困难');
-assert.equal(inquiryEvidence(evidence,params.signal).basis,'exploration_comparison');assert.equal(inquiryEvidence({...evidence,naturalBoundary:false},params.signal),null);
+assert.equal(inquiryEvidence(evidence,params.signal),null);assert.equal(inquiryEvidence({...evidence,naturalBoundary:false},params.signal),null);
 assert.equal(inquiryEvidence({evidenceRefs:[],naturalBoundary:true},params.signal),null);
 const G=require('../lib/support-goals');
 for(const need of ['reflection','clarify_concept']){
@@ -40,4 +40,4 @@ for(const need of ['reflection','clarify_concept']){
  const prompt=G.promptFor({scope:point,need:confirmed,plan,exploration:{text:opportunity.text,guide:opportunity.guide}});
  assert.ok(prompt.user.includes('"need":"'+need+'"'));
 }
-console.log('18场景自由探索语义、去重、过期、非数学操作过滤、无错误主动询问、测量和对照保护通过；HelpNeed保持未估计。');
+console.log('18场景自由探索语义、去重与过期通过；正常探索、重复操作和停留不自动介入，仍保留学生主动请求整理的帮助。');

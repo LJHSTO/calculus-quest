@@ -20,24 +20,24 @@
   function media(a, events, options) {
     if (!a.audioRef) { queueMicrotask(()=>events.failed("当前视频无法播放，请查看课件中的视频控件。")); return null; }
     const audio = new Audio(); audio.preload = "auto"; audio.playbackRate = options.rate;
-    let disposed = false, started = false;
-    const start = () => { if (disposed) return; started = true; audio.play().catch(()=>{
+    let disposed = false, started = false, lastProgress = performance.now(), lastTime = -1;
+    const start = () => { if (disposed) return; started = true; options.paused = false; lastProgress = performance.now(); audio.play().catch(()=>{
       if (!disposed) events.failed("音频暂不可用，已切换为文字讲解。");
     }); };
-    const timeout = setTimeout(()=>{if (!disposed && audio.readyState === 0) events.failed();},12000);
+    const timeout = setInterval(()=>{if (!disposed && !options.paused && performance.now()-lastProgress>12000) events.failed("音频加载超时，已切换为文字讲解。可点击重播重试。");},1000);
     audio.addEventListener("loadedmetadata", () => {
-      clearTimeout(timeout); events.duration(audio.duration);
+      if(disposed)return; events.duration(audio.duration);
       audio.currentTime = Math.max(0, Math.min(options.offset, audio.duration - .05));
       if (!options.paused && !started) start();
     });
-    audio.addEventListener("timeupdate", () => events.time(audio.currentTime));
+    audio.addEventListener("timeupdate", () => { if(disposed)return; if(audio.currentTime!==lastTime){lastTime=audio.currentTime;lastProgress=performance.now();} events.time(audio.currentTime); });
     audio.addEventListener("ended", events.ended);
     audio.addEventListener("error", () => { if (!disposed) events.failed(); });
-    audio.src = resourceUrl(`resources/${knowledgeAudioRoot(getUnit())}/${a.audioRef}`);
+    audio.src = resourceUrl(`resources/${knowledgeAudioRoot(getUnit(),scope?.querySelector('[data-knowledge-audio-order]')?.dataset.knowledgeAudioOrder)}/${a.audioRef}`);
     audio.load();
     return { play: start, pause() { options.paused = true; audio.pause(); },
       setRate(value) { audio.playbackRate = value; },
-      stop() { disposed = true; clearTimeout(timeout); audio.pause(); audio.removeAttribute("src"); audio.load(); }
+      stop() { disposed = true; clearInterval(timeout); audio.pause(); audio.removeAttribute("src"); audio.load(); }
     };
   }
   function currentBinding(target) {

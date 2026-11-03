@@ -12,7 +12,7 @@ for(const module of route.chapters.find(c=>c.id==='V14-C1').modules)for(const po
   return a+'\n'+JSON.stringify(contract,null,2)+'\n'+b;
  });
  const relative=path.relative(path.dirname(file),path.join(root,'resources/open-maic/主动探索证据')).replace(/\\/g,'/');
- const block=`\n<!-- concept-exploration:start -->\n<script type="application/json" data-concept-exploration>${JSON.stringify({point:point.id,scene:candidate.type})}</script>\n<script src="${relative}/exploration-model.js"></script>\n<script src="${relative}/exploration-runtime.js"></script>\n<script src="${relative}/free-exploration.js"></script>\n<script src="${relative}/free-exploration-runtime.js"></script>\n<!-- concept-exploration:end -->\n`;
+ const block=`\n<!-- concept-exploration:start -->\n<script type="application/json" data-concept-exploration>${JSON.stringify({point:point.id,scene:candidate.type})}</script>\n<script src="${relative}/free-exploration.js"></script>\n<script src="${relative}/free-exploration-runtime.js"></script>\n<!-- concept-exploration:end -->\n`;
  if(!source.includes('</body>'))throw Error('课件缺少 body 结束标签');source=source.replace('</body>',block+'</body>');fs.writeFileSync(file,source);count++;
 }
 if(count!==18)throw Error('预期18个非game场景，实际'+count);console.log('已接入18个自由探索场景；原探索与操作保持开放。');

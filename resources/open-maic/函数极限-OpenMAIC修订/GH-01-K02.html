@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>审核挑战：这些点在图像上吗</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* UI Layers */
+        .screen {
+            padding: 24px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        .start-screen {
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary), #63b3ed);
+            color: white;
+        }
+
+        .btn-main {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin-top: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-main:hover {
+            transform: scale(1.05);
+            background: #27ae60;
+        }
+
+        /* HUD */
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--dark);
+            color: white;
+            padding: 12px 20px;
+            box-sizing: border-box;
+        }
+
+        .rule-display {
+            background: #fff;
+            border: 3px solid var(--primary);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* Game Board */
+        .point-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .point-card {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+
+        .point-card.selected {
+            border-color: var(--primary);
+            background: #eef6ff;
+        }
+
+        .point-card.correct {
+            border-color: var(--success);
+            background: #f0fff4;
+        }
+
+        .point-card.wrong {
+            border-color: var(--danger);
+            background: #fff5f5;
+        }
+
+        .coord-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        .toggle-btn {
+            display: flex;
+            gap: 5px;
+        }
+
+        .toggle-opt {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.85rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .toggle-opt.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Feedback Area */
+        #feedback {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-error { background: #fff5f5; color: var(--danger); border-left: 5px solid var(--danger); }
+        .feedback-success { background: #f0fff4; color: var(--success); border-left: 5px solid var(--success); }
+
+        /* Task 3: Reasoning */
+        .reasoning-options {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .reasoning-opt {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reasoning-opt:hover {
+            border-color: var(--primary);
+            background: #f8f9fa;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-hint {
+            background: var(--warning);
+            color: var(--dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Achievement Popup */
+        #achievement {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--dark);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: none;
+            z-index: 100;
+            animation: slideIn 0.5s forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(120%); }
+            to { transform: translateX(0); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .point-grid { grid-template-columns: 1fr; }
+            .rule-display { font-size: 1.1rem; }
+        }
+    </style>
+
+<link rel="stylesheet" href="字体-6dab387eaf.css">
+<script src="依赖-dc84b296ec.js"></script>
+<script src="依赖-9cb8dacfc0.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    renderMathInElement(document.body, katexOptions);
+
+    const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        mutations.forEach((mutation) => {
+            if (mutation.target &&
+                mutation.target.className &&
+                typeof mutation.target.className === 'string' &&
+                mutation.target.className.includes('katex')) {
+                return;
+            }
+            shouldRender = true;
+        });
+
+        if (shouldRender) {
+            safeRender();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    setInterval(() => {
+        const text = document.body.innerText;
+        if (text.includes('\\(') || text.includes('$$')) {
+            safeRender();
+        }
+    }, 2000);
+});
+</script>
+<script id="cq-lesson-evidence">
+// 本页练习证据；重置题目不会抹掉本次访问已使用的提示或纠错历史。
+(function () {
+  const rounds = new Map(); let current = '第一轮';
+  function entry() { if(!rounds.has(current)) rounds.set(current,{round:current,hints:0,attempts:[],completed:false}); return rounds.get(current); }
+  function category(e) { return e.hints ? '本组提示后完成' : e.attempts.some(a=>!a.correct) ? '本组纠错后完成' : '本组未用提示完成'; }
+  function render() {
+    const list=document.getElementById('cq-record-list'); if(!list) return;
+    const total=Array.from(rounds.values()).reduce((n,e)=>n+e.hints,0);
+    list.textContent='本页累计提示 '+total+' 次（各组状态按本组记录）\n'+Array.from(rounds.values()).map(e=>e.round+'：'+(e.completed?category(e):(e.hints?'练习中（已用提示）':'练习中'))+'；提交 '+e.attempts.length+' 次').join('\n');
+  }
+  window.CQ = {
+    start(label) { current=label; entry(); render(); },
+    hint() { entry().hints++; render(); },
+    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-01-K02"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-01-K02",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261102-v1",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
+    complete() { const e=entry(); e.completed=true; render(); return category(e); },
+    summary() { return Array.from(rounds.values()).map(e=>({...e,completion:e.completed?category(e):null})); }
+  };
+  entry();
+  document.addEventListener('click',e=>{ const b=e.target.closest?.('button'); if(b && (b.id==='hint-btn'||b.id==='btn-hint'||/showHint\s*\(/.test(b.getAttribute('onclick')||'')||/^(提示|查看提示|显示提示|提示一下|💡\s*提示)$/.test(b.textContent.trim()))) CQ.hint(); },true);
+  document.addEventListener('DOMContentLoaded',()=>{
+    const p=document.createElement('details'); p.id='cq-record';
+    p.style.cssText='position:fixed;left:8px;bottom:8px;z-index:100;max-width:min(360px,90vw);padding:6px 10px;border:1px solid #64748b;border-radius:8px;background:#fff;color:#172033;font:12px/1.6 system-ui';
+    p.innerHTML='<summary style="cursor:pointer">本页练习记录</summary><div id="cq-record-list" style="white-space:pre-wrap"></div><small>记录主动提示按钮；页面常驻说明不计次数。重试保留记录；未用提示不等于独立掌握。</small>';
+    document.body.appendChild(p); render();
+  });
+})();
+</script>
+<script>window.alert=function(message){let n=document.getElementById('cq-notice');if(!n){n=document.createElement('aside');n.id='cq-notice';n.setAttribute('role','status');n.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;max-width:90vw;background:#fff;color:#172f37;border:2px solid #537d78;border-radius:12px;padding:14px 18px;box-shadow:0 6px 22px #0002;display:flex;gap:12px;align-items:center';n.innerHTML='<span></span><button type="button" aria-label="关闭提示">关闭</button>';n.querySelector('button').onclick=()=>n.remove();document.body.append(n);}n.querySelector('span').textContent=message;};</script><script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K02",
+  "concept_tag": "坐标点与函数图像",
+  "scene_type": "game",
+  "resource_id": "GH-01-K02:game",
+  "resource_title": "审核挑战：这些点在图像上吗",
+  "learning_objective": "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。",
+  "misconception": "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。",
+  "observable_evidence": "代入当前函数规则，审核给定点是否在图像上并改正。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "number",
+      "button"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": false
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": false,
+    "reentry_after_help": "restart_scene"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不上报提示使用，无法确认本次尝试是否无辅助，因此不作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script><link rel="stylesheet" href="课件布局.css"></head>
+<body>
+
+<div id="game-container">
+    <!-- Achievement -->
+    <div id="achievement">🏆 达成成就：火眼金睛</div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active start-screen">
+        <h1>审核挑战</h1>
+        <p>这些点在图像上吗？</p>
+        <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 12px; margin: 20px 0;">
+            <p>1. 将横坐标代入规则计算输出值</p>
+            <p>2. 判断点是否属于图像</p>
+            <p>3. 修正不属于图像的点</p>
+            <p>4. 选择正确的判断依据</p>
+        </div>
+        <button class="btn-main" onclick="startGame()">开始审核</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="hud">
+            <div>得分: <span id="score">0</span></div>
+            <div id="level-indicator">第一关: f(x) = 2x - 1</div>
+        </div>
+
+        <div class="rule-display" id="current-rule">f(x) = 2x - 1</div>
+
+        <div class="point-grid" id="point-grid">
+            <!-- Points will be injected here -->
+        </div>
+
+        <div id="feedback"></div>
+
+        <div class="controls">
+            <button class="btn-secondary" onclick="resetGame()">重置本页</button>
+            <button class="btn-hint" onclick="showHint()">提示</button>
+            <button class="btn-main" style="margin-top:0; padding: 10px 30px;" onclick="submitTask()">提交审核</button>
+        </div>
+    </div>
+
+    <!-- Reasoning Screen -->
+    <div id="reasoning-screen" class="screen">
+        <h2>最后一步：判断依据</h2>
+        <p>你如何判断一个点是否在函数图像上？</p>
+        <div class="reasoning-options">
+            <div class="reasoning-opt" onclick="selectReasoning('A', event)">A. 判断依据是纵坐标是否等于规则在该横坐标处算出的输出</div>
+            <div class="reasoning-opt" onclick="selectReasoning('B', event)">B. 只要横纵坐标都是整数就属于图像</div>
+            <div class="reasoning-opt" onclick="selectReasoning('C', event)">C. 点画在坐标轴上就属于图像</div>
+        </div>
+        <button class="btn-main" onclick="finishGame()">确认选择</button>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+        <h2 id="result-title">审核完成！</h2>
+        <div style="font-size: 3rem; margin: 20px 0;">🎉</div>
+        <p id="result-text">你成功完成了所有审核任务。</p>
+        <div class="rule-display" id="final-score">两组点的代入审核已完成</div>
+        <button class="btn-main" onclick="resetGame()">再玩一次</button>
+    </div>
+</div>
+
+<script type="application/json" id="widget-config">
+{
+  "type": "game",
+  "gameType": "audit-challenge",
+  "levels": [
+    {
+      "rule": "f(x) = 2x - 1",
+      "points": [
+        {"x": 2, "y": 3, "correct": true},
+        {"x": 3, "y": 2, "correct": false},
+        {"x": 0, "y": -1, "correct": true},
+        {"x": -1, "y": -3, "correct": true}
+      ]
+    },
+    {
+      "rule": "g(x) = x + 4",
+      "points": [
+        {"x": 1, "y": 5, "correct": true},
+        {"x": -2, "y": 2, "correct": true},
+        {"x": 2, "y": 4, "correct": false},
+        {"x": -3, "y": 1, "correct": true}
+      ]
+    }
+  ]
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Game State
+    let state = {
+        score: 0,
+        currentLevel: 0,
+        points: [],
+        selectedPointIdx: 0,
+        hintUsed: false,
+        reasoningChoice: null,
+        config: JSON.parse(document.getElementById('widget-config').textContent)
+    };
+
+    // Global functions for inline onclick
+    window.startGame = function() {
+        showScreen('game-screen');
+        initLevel(0);
+    };
+
+    window.resetGame = function() {
+        showScreen("game-screen");
+        state.score = 0;
+        state.currentLevel = 0;
+        state.hintUsed = false;
+        state.reasoningChoice = null;
+        updateScore(0);
+        initLevel(0);
+    };
+
+    window.showHint = function() {
+        state.hintUsed = true;
+        const feedback = document.getElementById('feedback');
+        feedback.innerHTML = "💡 提示：把横坐标代入规则，看看算出的结果和纵坐标是否一致。";
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-success';
+    };
+
+    window.submitTask = function() {
+        let allCorrect = true;
+        let hasWrongPoint = false;
+
+        state.points.forEach((p, idx) => {
+            const calcVal = parseFloat(document.getElementById(`calc-${idx}`).value);
+            const on=document.getElementById(`on-${idx}`);
+            const hasChoice=on.classList.contains('active')||on.nextElementSibling.classList.contains('active');
+            const isOnGraph = on.classList.contains('active'); if(!hasChoice) allCorrect=false;
+            
+            // Check calculation
+            if (calcVal !== p.expectedY) {
+                allCorrect = false;
+                showFeedback(`计算错误：${p.ruleText} 代入 x=${p.x} 应该得到 ${p.expectedY}。`, 'error');
+            }
+
+            // Check membership
+            if (isOnGraph !== p.correct) {
+                allCorrect = false;
+                if (p.correct) {
+                    showFeedback(`判断错误：(${p.x}, ${p.expectedY}) 是在图像上的。`, 'error');
+                } else {
+                    showFeedback(`判断错误：(${p.x}, ${p.y}) 不在图像上，因为 ${p.ruleText} 代入 x=${p.x} 得到 ${p.expectedY}，不等于 ${p.y}。`, 'error');
+                }
+            }
+
+            if (!p.correct) hasWrongPoint = true;
+        });
+
+        CQ.attempt(allCorrect,"坐标审核",{task:"audit",round:state.currentLevel,values:state.points.flatMap((p,i)=>{const input=document.getElementById(`calc-${i}`),on=document.getElementById(`on-${i}`);return [input.value===""?null:Number(input.value),on.classList.contains("active")?true:on.nextElementSibling.classList.contains("active")?false:null];})});
+        if (allCorrect) {
+            if(state.transitioning) return; state.transitioning=true; CQ.complete();
+            updateScore(10);
+            showFeedback("审核正确！所有点已验证。", "success");
+            setTimeout(() => {
+                if (state.currentLevel === 0) {
+                    initLevel(1);
+                } else {
+                    state.transitioning=false; showScreen('reasoning-screen');
+                }
+            }, 1500);
+        }
+    };
+
+    window.selectReasoning = function(choice, event) {
+        state.reasoningChoice = choice;
+        document.querySelectorAll('.reasoning-opt').forEach(opt => {
+            opt.style.borderColor = 'var(--primary)';
+            opt.style.background = '#eef6ff';
+        });
+        event.currentTarget.style.background = 'var(--primary)';
+        event.currentTarget.style.color = 'white';
+    };
+
+    window.finishGame = function() {
+        CQ.attempt(state.reasoningChoice==='A','图像归属理由',{task:'reason',round:state.currentLevel,values:[state.reasoningChoice]});
+        if (state.reasoningChoice === 'A') {
+            updateScore(20);
+            showScreen('result-screen');
+            document.getElementById('result-text').innerText = "两轮审核与理由完成："+CQ.complete();
+        } else {
+            alert("这个选择似乎不太对，再想想？");
+        }
+    };
+
+    function initLevel(idx) {
+        state.currentLevel = idx; CQ.start(idx===0?"第一轮":"第二轮：x+4");
+        state.transitioning=false;
+        const levelData = state.config.levels[idx];
+        document.getElementById('current-rule').innerText = levelData.rule;
+        document.getElementById('level-indicator').innerText = `第 ${idx + 1} 关: ${levelData.rule}`;
+        
+        const grid = document.getElementById('point-grid');
+        grid.innerHTML = '';
+        
+        state.points = levelData.points.map((p, i) => {
+            // Calculate expected Y based on rule
+            let expectedY;
+            if (levelData.rule.includes('2x')) {
+                expectedY = 2 * p.x - 1;
+            } else {
+                expectedY = p.x + 4;
+            }
+
+            const pointObj = { ...p, expectedY, ruleText: levelData.rule };
+            
+            const card = document.createElement('div');
+            card.className = 'point-card';
+            card.id = `card-${i}`;
+            card.innerHTML = `
+                <div class="coord-text">(${p.x}, ${p.y})</div>
+                <div class="input-group">
+                    <label style="font-size: 0.8rem; color: #666;">代入计算结果:</label>
+                    <input type="number" id="calc-${i}" placeholder="?">
+                    <div class="toggle-btn">
+                        <button class="toggle-opt" id="on-${i}" onclick="togglePoint(${i}, true)">属于图像</button>
+                        <button class="toggle-opt" onclick="togglePoint(${i}, false)">不属于</button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+            return pointObj;
+        });
+
+        // Set initial selection
+        togglePoint(0, null);
+    }
+
+    window.togglePoint = function(idx, value) {
+        // Update UI
+        document.querySelectorAll('.point-card').forEach((c, i) => {
+            c.classList.toggle('selected', i === idx);
+        });
+        
+        const btnOn = document.getElementById(`on-${idx}`);
+        if (value === true) {
+            btnOn.classList.add('active');
+            btnOn.nextElementSibling.classList.remove('active');
+        } else if (value === false) {
+            btnOn.classList.remove('active');
+            btnOn.nextElementSibling.classList.add('active');
+        } else {
+            btnOn.classList.remove('active');
+            btnOn.nextElementSibling.classList.remove('active');
+        }
+    }
+
+    function showFeedback(msg, type) {
+        const feedback = document.getElementById('feedback');
+        feedback.innerText = msg;
+        feedback.style.display = 'block';
+        feedback.className = type === 'error' ? 'feedback-error' : 'feedback-success';
+        
+        // Highlight wrong cards
+        state.points.forEach((p, i) => {
+            const card = document.getElementById(`card-${i}`);
+            const calcVal = parseFloat(document.getElementById(`calc-${i}`).value);
+            const isOnGraph = document.getElementById(`on-${i}`).classList.contains('active');
+            
+            if (calcVal !== p.expectedY || isOnGraph !== p.correct) {
+                card.classList.add('wrong');
+            } else {
+                card.classList.remove('wrong');
+                card.classList.add('correct');
+            }
+        });
+    }
+
+    function updateScore(points) {
+        state.score += points;
+        document.getElementById('score').innerText = state.score;
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    // Handle number input focus
+    document.addEventListener('click', (e) => {
+        if (e.target.id.startsWith('card-')) {
+            const idx = parseInt(e.target.id.split('-')[1]);
+            togglePoint(idx, null);
+        }
+    });
+});
+</script>
+
+<script id="openmaic-widget-action-listener">
+window.addEventListener('message', function(event) {
+  const { type, target, state, content } = event.data;
+
+  switch (type) {
+    case 'SET_WIDGET_STATE':
+      // Apply state to controls / game params. Keys map to controls by id;
+      // route to the game via a global setter when one exists.
+      if (state) {
+        Object.entries(state).forEach(([key, value]) => {
+          const control = document.getElementById(key + '-slider') || document.getElementById(key) || document.querySelector('[data-var="' + key + '"]');
+          if (control) {
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          if (typeof window.setGameParam === 'function') window.setGameParam(key, value);
+        });
+      }
+      break;
+
+    case 'HIGHLIGHT_ELEMENT':
+      const highlightEl = document.querySelector(target);
+      if (highlightEl) {
+        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outlineOffset = '4px';
+        highlightEl.style.animation = 'pulse-highlight 2s infinite';
+        setTimeout(() => {
+          highlightEl.style.outline = '';
+          highlightEl.style.animation = '';
+        }, 3000);
+      }
+      break;
+
+    case 'ANNOTATE_ELEMENT':
+      const annotateEl = document.querySelector(target);
+      if (annotateEl && content) {
+        const rect = annotateEl.getBoundingClientRect();
+        const tooltip = document.createElement('div');
+        tooltip.className = 'teacher-annotation';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+        tooltip.textContent = content;
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 4000);
+      }
+      break;
+
+    case 'REVEAL_ELEMENT':
+      const revealEl = document.querySelector(target);
+      if (revealEl) {
+        revealEl.style.display = '';
+        revealEl.style.opacity = '1';
+      }
+      break;
+  }
+});
+
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(style);
+</script>
+<script src="课件交互.js"></script></body>
+</html>

@@ -3,18 +3,31 @@
   let snapshot, owner = "", frame = null, channel = "", source = null, key = "", panel = null;
   let controls = new Map(), visibility = null, exposureTimer = null, exposed = new Set(), unavailable = false, revision = 0, serializedKey = "", replyContext = "";
   const drafts = new Map();
+  let selectedQuestion = "";
+  const contextKey=next=>`${next.unitId}:${next.sceneType||'slide'}`;
+  const hasConversation=next=>replyContext===contextKey(next);
   const controlIds = new WeakMap();let nextControlId=0;
   let lastQuizSupport="";
-  let quizOwner="";
   let workspaceHost=null, focusHelp=false, workspaceHelpKey="";
+  const miniObserver=new ResizeObserver(()=>fitMini());
   function fitMini(){if(!workspaceHost?.isConnected)return;const stage=workspaceHost.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]');if(!stage)return;const scale=Math.min(1,stage.clientWidth/1280);const value=String(scale);if(workspaceHost.style.getPropertyValue('--course-mini-scale')!==value)workspaceHost.style.setProperty('--course-mini-scale',value);}
   global.addEventListener('resize',()=>requestAnimationFrame(fitMini));
-  const quizOpen=new Map(), quizReplies=new Map();
   const el = (tag, text, cls) => {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
   const replyBody=text=>{const n=el('div',null,'assistant-content');if(global.AssistantContent)global.AssistantContent.renderInto(n,text);else n.textContent=text;return n;};
   function message(type, extra={}){frame?.contentWindow?.postMessage({type,channel,...extra},"*");}
   let frameBusy=false,locateRequested=false,frameMounted=false;
-  function clear(){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;workspaceHost?.classList.remove('task-support-workspace','support-focus-help');workspaceHost=null;workspaceHelpKey="";}
+  function clear(){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;miniObserver.disconnect();workspaceHost?.querySelectorAll('iframe[inert]').forEach(n=>n.inert=false);workspaceHost?.querySelector('.course-mini-restore')?.remove();workspaceHost?.classList.remove('task-support-workspace','support-focus-help');workspaceHost=null;workspaceHelpKey="";}
+  function setFocusHelp(value){
+    focusHelp=value;workspaceHost?.classList.toggle('support-focus-help',value);
+    const stage=workspaceHost?.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]');
+    if(!stage)return;
+    stage.querySelectorAll('iframe').forEach(n=>n.inert=value);
+    let restore=stage.querySelector('.course-mini-restore');
+    if(!restore){restore=el('button','放大课件','course-mini-restore');restore.type='button';restore.title='返回课件，继续刚才的操作';restore.onclick=()=>setFocusHelp(false);stage.append(restore);}
+    restore.hidden=!value;
+    const toggle=panel?.querySelector('[data-support-focus-toggle]');if(toggle){toggle.textContent=value?'放大课件':'课件小窗';toggle.setAttribute('aria-pressed',String(value));}
+    requestAnimationFrame(fitMini);global.dispatchEvent(new Event('resize'));
+  }
   function serialize(root){
     controls=new Map();
     function tree(n){
@@ -33,58 +46,75 @@
   function deliver(){if(!frame?.isConnected||!source||snapshot?.locked||snapshot?.check)return;const tree=serialize(source),signature=JSON.stringify(tree);if(signature!==serializedKey){serializedKey=signature;revision++;}message("cq:task-show",{scope:snapshot.scopeKey,sceneType:snapshot.sceneType,revision,tree});}
   function draftForm(parent, prompt, draftKey, questionId=""){
     const form=el("form",null,"task-response-form"), label=el("label",prompt), input=el("textarea");
-    input.rows=3;input.maxLength=2000;input.placeholder="写下你的判断过程，也可以继续自己尝试。";input.value=drafts.get(draftKey)||"";input.setAttribute("aria-label",prompt);
+    input.rows=2;input.maxLength=2000;input.placeholder="写下你的理解或问题…";input.value=drafts.get(draftKey)||"";input.setAttribute("aria-label",prompt);
     input.dataset.taskDraftKey=draftKey;
     input.addEventListener("input",()=>drafts.set(draftKey,input.value));label.append(input);
     const submit=el("button","发送我的想法"), status=el("p",null,"task-response-status");submit.type="submit";submit.disabled=snapshot.busy;
     status.setAttribute('role','status');status.setAttribute('aria-live','polite');
-    if(snapshot.busy)status.textContent='正在核对你的想法，可能需要一些时间；请稍候。';
-    form.append(label,submit,status);form.addEventListener("submit",async event=>{
-      event.preventDefault();if(snapshot.busy)return;if(!input.value.trim()){status.textContent='请先写下想核对的想法或疑问。';input.focus();return;}const submittedText=input.value;drafts.set(draftKey,submittedText);submit.disabled=true;status.textContent='正在核对你的想法，可能需要一些时间；请稍候。';
-      if(!questionId)replyContext=`${snapshot.unitId}:${snapshot.sceneType}`;
-      const ok=await global.KnowledgeAssistant.askInTask(input.value,questionId);
+    if(snapshot.busy)status.textContent='知点正在回应…';
+    else if(snapshot.taskError)status.textContent=snapshot.taskError+' 你的草稿仍保留。';
+    form.append(label);
+    if(snapshot.policyState?.lifecycle?.phase==='accepted_pending_response'&&!global.SupportCycleUI?.active(snapshot.supportCycle)){
+      const check=el('button','用一题检查');check.type='button';check.className='task-check-action';check.disabled=snapshot.busy;
+      check.onclick=async()=>{check.disabled=true;try{await global.KnowledgeAssistant.startTaskCheck();}catch(error){status.textContent=error.message;check.disabled=false;}};form.append(check);
+    }
+    form.append(submit,status);form.addEventListener("submit",async event=>{
+      event.preventDefault();if(snapshot.busy)return;if(!input.value.trim()){status.textContent='请先写下想核对的想法或疑问。';input.focus();return;}const submittedText=input.value;drafts.set(draftKey,submittedText);submit.disabled=true;status.textContent='知点正在回应…';
+      const submittedContext=contextKey(snapshot);
+      replyContext=submittedContext;
+      const ok=await global.KnowledgeAssistant.askInTask(input.value,questionId||selectedQuestion||(snapshot.unitType==='quiz'?snapshot.replyQuestionId:''));
       submit.disabled=false;
       if(ok){
+        if(contextKey(snapshot)===submittedContext)selectedQuestion=global.KnowledgeAssistant.designSpaceSnapshot().replyQuestionId||selectedQuestion;
         if(drafts.get(draftKey)===submittedText){drafts.delete(draftKey);if(input.value===submittedText)input.value="";
-          for(const field of source?.querySelectorAll('textarea')||[])if(field.dataset.taskDraftKey===draftKey && field.value===submittedText)field.value="";
+          for(const field of document.querySelectorAll('textarea[data-task-draft-key]'))if(field.dataset.taskDraftKey===draftKey && field.value===submittedText)field.value="";
         }status.textContent="";
-      }else{status.textContent="暂未发送成功，你的草稿仍保留。";}deliver();
+      }else{status.textContent="暂未发送成功，你的草稿仍保留。";}deliver();global.KnowledgeAssistant.refreshSupportSurface();
+      if(ok&&!questionId)requestAnimationFrame(()=>{for(const field of document.querySelectorAll('textarea[data-task-draft-key]'))if(field.dataset.taskDraftKey===draftKey){const history=field.closest('.has-task-conversation')?.querySelector('.task-conversation-scroll');if(history)history.scrollTop=history.scrollHeight;}});
     });parent.append(form);
   }
+  function appendConversation(parent,next){
+    if(next.locked||next.check||['awaiting_confirmation','queued','postponed','awaiting_check'].includes(next.supportCycle?.status))return;
+    const context=`${next.unitId}:${next.sceneType||'slide'}`;
+    if(!next.prompt&&replyContext!==context&&!['offered','engaged'].includes(next.supportCycle?.status)&&!global.SupportCycleUI?.manualOpen(next))return;
+    // The existing server-backed conversation is shared by both teacher surfaces and survives refresh.
+    const turns=[];
+    for(const item of next.taskMessages||[]){
+      if(item.role==='user')turns.push({question:item.content,pending:next.busy});
+      else if(item.role==='assistant'&&turns.length){const turn=turns.at(-1);turn.reply=item.error?'暂未发送成功，请重试。':item.content;turn.pending=item.streaming;}
+    }
+    for(const turn of turns.slice(-8)){const response=el('div',null,'task-conversation-reply');response.append(el('p',turn.question,'task-student-message'));if(turn.reply)response.append(replyBody(turn.reply));else if(turn.pending)response.append(el('p','知点正在回应…','task-response-status'));parent.append(response);}
+    parent.classList.add('has-task-conversation');const history=el('div',null,'task-conversation-scroll');history.append(...parent.childNodes);parent.append(history);
+    if(!next.prompt&&next.unitType==='quiz'){
+      const back=el('button','回到本知识点课件','task-course-return');back.type='button';back.dataset.quizResourceLink=next.scopeKey;back.dataset.quizResourceScene='simulation';parent.append(back);
+    }
+    draftForm(parent,'把你的想法告诉知点',`${next.scopeKey}:${next.sceneType||'slide'}:conversation`);
+  }
   function quizReview(next){
-    const currentOwner=`${next.ownerKey}:${next.unitId}`;
-    if(currentOwner!==quizOwner){quizOwner=currentOwner;quizOpen.clear();quizReplies.clear();}
-    if(next.reply?.text&&next.replyQuestionId)quizReplies.set(next.replyQuestionId,next.reply);
     for(const card of document.querySelectorAll(".question-card[data-question]")){
       const existing=card.querySelector(".question-task-review");
-      if(next.locked || next.check || !next.quizSubmitted){existing?.remove();if(!card.querySelector(".task-assessment-note"))card.append(el("p","独立作答中，学习提示已关闭。提交后可在题目旁复盘。","task-assessment-note"));continue;}
+      if(next.locked || next.check || !next.quizSubmitted){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
       card.querySelector(".task-assessment-note")?.remove();if(existing)continue;
-      const questionId=card.dataset.question, details=el("details",null,"question-task-review");details.dataset.unitId=next.unitId;
-      details.open=quizOpen.get(questionId)===true;
-      details.addEventListener('toggle',()=>{if(details.isConnected&&quizOwner===currentOwner)quizOpen.set(questionId,details.open);});
-      details.append(el("summary","在这道题旁复盘"),el("p","原提交与成绩保持不变；这里记录你重新理解的过程。","task-assessment-note"));
-      draftForm(details,"写下你想核对的步骤或疑问",`${next.unitId}:${questionId}`,questionId);
-      const reply=el("div",null,"task-review-reply");reply.setAttribute("aria-live","polite");details.append(reply);card.append(details);
-      const saved=quizReplies.get(questionId);if(saved){reply.dataset.messageId=`${saved.id}:${saved.text.length}`;reply.append(el('strong','知点的回应'),replyBody(saved.text));}
-    }
-    if(next.reply?.text && next.replyQuestionId){
-      const card=[...document.querySelectorAll(".question-card")].find(n=>n.dataset.question===next.replyQuestionId), slot=card?.querySelector(".task-review-reply");
-      if(slot && slot.dataset.messageId!==`${next.reply.id}:${next.reply.text.length}`){slot.dataset.messageId=`${next.reply.id}:${next.reply.text.length}`;slot.replaceChildren(el("strong","知点的回应"),replyBody(next.reply.text));}
+      const questionId=card.dataset.question, details=el("div",null,"question-task-review");
+      const button=el('button','和知点讨论这道题');button.type='button';
+      button.onclick=()=>{selectedQuestion=questionId;replyContext=contextKey(next);key='';revision++;global.KnowledgeAssistant.refreshSupportSurface();if(next.view.placement==='sidebar')global.dispatchEvent(new CustomEvent('cq:knowledge-assistant-visibility',{detail:{open:true}}));requestAnimationFrame(()=>{if(!locate())document.querySelector('.learning-support-surface')?.scrollIntoView({block:'nearest',behavior:'instant'});document.querySelector('.task-response-form textarea,.support-chat-form textarea')?.focus({preventScroll:true});});};
+      details.append(button);card.append(details);
     }
   }
   function showPanel(){
     if(!source)return;
-    const pane=snapshot.unitType==="quiz" ? [...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===(snapshot.offer?.questionId||snapshot.replyQuestionId))||document.querySelector('.question-card[data-question]')||document.querySelector('#lesson-player') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
+    const pane=snapshot.unitType==="quiz" ? document.querySelector('[data-quiz-support-host]') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
     if(!pane)return;
     const host=pane.querySelector('.multi-scene-selected-resource.has-resource')||pane;
-    if(workspaceHost!==host){workspaceHost?.classList.remove('task-support-workspace','support-focus-help');workspaceHost=host;}
+    if(workspaceHost!==host){workspaceHost?.classList.remove('task-support-workspace','support-focus-help');miniObserver.disconnect();workspaceHost=host;const stage=host.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]');if(stage)miniObserver.observe(stage);}
     if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"工作区中的知点帮助");host.append(panel);}
     if(panel.parentElement!==host)host.append(panel);
     if(source.parentElement!==panel){
-      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点 · 智能体老师'));
+      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点'));
+      if(snapshot.unitType==='quiz'&&!snapshot.check){const cards=[...document.querySelectorAll('.question-card[data-question]')],index=cards.findIndex(n=>n.dataset.question===(selectedQuestion||snapshot.replyQuestionId));const target=el('button',index<0?'查看本次答题':'查看第 '+(index+1)+' 题');target.type='button';target.onclick=()=>cards[Math.max(0,index)]?.scrollIntoView({block:'start',behavior:'instant'});bar.append(target);}
       if(snapshot.unitType==='knowledge'&&!snapshot.check){
         const toggle=el('button',focusHelp?'放大课件':'课件小窗');toggle.type='button';toggle.dataset.supportFocusToggle='';toggle.title='在完整课件和缩放小窗之间切换';
-        toggle.onclick=()=>{focusHelp=!focusHelp;host.classList.toggle('support-focus-help',focusHelp);toggle.textContent=focusHelp?'放大课件':'课件小窗';fitMini();global.dispatchEvent(new Event('resize'));};bar.append(toggle);
+        toggle.setAttribute('aria-pressed',String(focusHelp));toggle.onclick=()=>setFocusHelp(!focusHelp);bar.append(toggle);
       }
       panel.replaceChildren(bar,source);
     }panel.hidden=false;
@@ -96,40 +126,42 @@
   function sync(next){
     next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
     const nextOwner=`${next.ownerKey}:${next.generation||0}`;
-    if(nextOwner!==owner){clear();owner=nextOwner;drafts.clear();exposed.clear();replyContext="";}
+    if(nextOwner!==owner){clear();owner=nextOwner;drafts.clear();exposed.clear();replyContext="";selectedQuestion='';}
+    if(snapshot?.unitId!==next.unitId)selectedQuestion='';
     snapshot=next;
     if(next.unitType==="quiz")quizReview(next);
-    const handles=next.signedIn&&next.active&&next.taskReady!==false&&(next.unitType==="knowledge"||(next.unitType==="quiz"&&next.quizSubmitted&&Boolean(next.offer||next.prompt||next.check||next.feedback)))&&!next.locked&&next.view.placement==="inline"&&next.view.modality==="tip";
+    const handles=next.signedIn&&next.active&&next.taskReady!==false&&(next.unitType==="knowledge"||(next.unitType==="quiz"&&next.quizSubmitted&&Boolean(next.offer||next.prompt||next.check||next.feedback||next.muted||hasConversation(next)||replyContext===contextKey(next))))&&!next.locked&&next.view.placement==="inline"&&next.view.modality==="tip";
     if(!handles){clear();lastQuizSupport="";return false;}
-    const hasHelp=next.offer||next.prompt||next.check||next.feedback||global.SupportCycleUI?.active(next.supportCycle)||global.SupportCycleUI?.manualOpen(next);
+    const hasHelp=next.offer||next.prompt||next.check||next.feedback||next.muted||global.SupportCycleUI?.active(next.supportCycle)||global.SupportCycleUI?.manualOpen(next)||hasConversation(next);
     if(next.unitType==='knowledge'&&!hasHelp){clear();return true;}
+    let locateQuiz=false;
     if(next.unitType==='quiz'){
-      const helpKey=`${next.unitId}:${next.offer?.decisionId||next.prompt?.interventionId||next.check?.id||''}`;
-      if(helpKey!==lastQuizSupport && (next.offer||next.prompt||next.check)){lastQuizSupport=helpKey;global.LearningWorkspace?.showTask?.();}
+      const helpKey=`${next.unitId}:${next.offer?.decisionId||next.check?.id||''}`;
+      if((helpKey!==lastQuizSupport||!panel?.isConnected) && (next.offer||next.check||next.prompt?.restored&&next.taskMessages?.some(m=>m.role==='user'))){lastQuizSupport=helpKey;locateQuiz=true;global.LearningWorkspace?.showTask?.();}
     }
     // Keep the actual courseware iframe in place. Moving or cloning it reloads
     // games and loses in-progress interactions. CSS supplies the small window.
     const helpKey=next.supportCycle?.id||next.offer?.id||next.prompt?.id||next.scopeKey;
     if(helpKey!==workspaceHelpKey){workspaceHelpKey=helpKey;focusHelp=false;}
     const nextFrame=null;
-    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
+    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.muted,next.busy,next.reply,next.taskError,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
+      const previousHistory=source?.querySelector('.task-conversation-scroll');
+      const historyTop=previousHistory?.scrollTop||0,replyId=next.reply?.id||'',followEnd=!previousHistory||previousHistory.dataset.followEnd==='true'||previousHistory.dataset.replyId!==replyId||previousHistory.scrollHeight-historyTop-previousHistory.clientHeight<80;
+      const focused=source?.contains(document.activeElement)?document.activeElement:null;
+      const selection=focused?.dataset.taskDraftKey?{key:focused.dataset.taskDraftKey,start:focused.selectionStart,end:focused.selectionEnd}:null;
       clearTimeout(exposureTimer);exposureTimer=null;
       key=nextKey;source=el("div",null,"task-support-content");source.append(global.KnowledgeAssistant.createSupportContent());
       if(next.check){message("cq:task-clear");source.prepend(el("p","独立检查中，提示和对话帮助已暂停。","task-assessment-note"));}
       else {
-        if(next.prompt){if(global.StudyEntry){const follow=el('details',null,'task-followup-question');follow.append(el('summary','还有不明白的？继续问老师'));draftForm(follow,'写下具体问题，例如“为什么同一个输入不能对应两个输出？”',`${next.scopeKey}:${next.prompt.id}`);source.append(follow);}else draftForm(source,'写下你对这一步的解释或疑问',`${next.scopeKey}:${next.prompt.id}`);}
-        if(global.SupportCycleUI?.manualOpen(next)&&!next.offer&&!next.prompt&&!global.SupportCycleUI?.active(next.supportCycle)){
-          const question=el("details",null,"task-manual-help");question.append(el("summary","需要一个思考线索"));
-          draftForm(question,"告诉知点你卡在哪一步",`${next.scopeKey}:manual`);source.append(question);
-          if(next.reply?.text && replyContext===`${next.unitId}:${next.sceneType}`){const response=el('details');response.open=true;response.append(el('summary','知点的回应'),replyBody(next.reply.text));source.prepend(response);}
-          if(!next.feedback && !next.reply?.text)source.prepend(el("small","可以继续独立探索；需要时在当前步骤求助。"));
-        }
-        if(!global.SupportCycleUI?.active(next.supportCycle)){const open=el('button','继续问老师');open.type='button';open.addEventListener('click',()=>global.KnowledgeAssistant.open({preserveProactiveSuggestion:true}));source.append(open);}
+        appendConversation(source,next);
       }
+      const history=source.querySelector('.task-conversation-scroll');if(history){history.dataset.replyId=replyId;history.dataset.followEnd=String(followEnd);requestAnimationFrame(()=>{if(history.isConnected){history.scrollTop=followEnd?history.scrollHeight:historyTop;delete history.dataset.followEnd;}});}
+      if(selection)requestAnimationFrame(()=>{const field=[...source.querySelectorAll('[data-task-draft-key]')].find(n=>n.dataset.taskDraftKey===selection.key);if(field?.isConnected){field.focus({preventScroll:true});field.setSelectionRange(selection.start,selection.end);}});
     }
     if(frame&&!next.check&&!unavailable){panel?.remove();panel=null;deliver();}else showPanel();
+    if(locateQuiz)requestAnimationFrame(()=>{if(snapshot.unitId===next.unitId)locate();});
     return true;
   }
   function checkExposure(){
@@ -175,11 +207,11 @@
   document.addEventListener("visibilitychange",checkExposure);window.addEventListener("scroll",checkExposure,true);window.addEventListener("resize",checkExposure);
   function locate(){
     if(frame?.isConnected&&!unavailable){locateRequested=!frameMounted;frame.scrollIntoView({block:'nearest'});message('cq:task-locate');return true;}
-    if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'nearest'});panel.focus({preventScroll:true});return true;}
+    if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'start',behavior:'instant'});panel.focus({preventScroll:true});return true;}
     return false;
   }
   function returnToTask(){
-    if(workspaceHost?.isConnected){focusHelp=false;workspaceHost.classList.remove('support-focus-help');const b=panel?.querySelector('[data-support-focus-toggle]');if(b)b.textContent='课件小窗';global.dispatchEvent(new Event('resize'));}
+    if(workspaceHost?.isConnected)setFocusHelp(false);
     if(frame?.isConnected&&!unavailable){frame.scrollIntoView({block:'nearest'});message('cq:task-return');return;}
     const pane=panel?.parentElement;
     pane?.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]')?.scrollIntoView({block:'start'});
@@ -193,5 +225,5 @@
     const cx=Math.max(f.left,Math.min(f.right-1,x+r.width/2)),cy=Math.max(f.top,Math.min(f.bottom-1,y+r.height/2));
     return r.width*r.height>0&&area/(r.width*r.height)>=.5&&document.elementFromPoint(cx,cy)===frame?visibility.pilotProbe:null;
   }
-  global.TaskSupport=Object.freeze({sync,clear,locate,visibleProbeId,get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
+  global.TaskSupport=Object.freeze({sync,clear,locate,returnToTask,visibleProbeId,appendConversation,hasConversation,leaveConversation(){replyContext="";},get selectedQuestion(){return selectedQuestion;},get conversationRevision(){return revision+(snapshot?.taskMessages?.length||0);},get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
 })(window);

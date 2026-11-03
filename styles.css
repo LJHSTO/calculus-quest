@@ -4316,9 +4316,9 @@ textarea:focus-visible {
 
 @supports selector(label:has(input:checked)) {
   .question-card fieldset label:has(input:checked) {
-    border-color: var(--teal-dark);
-    background: var(--teal-light);
-    box-shadow: inset 3px 0 0 var(--teal-dark);
+    border-color: #7968c7;
+    background: #f2effb;
+    box-shadow: inset 3px 0 0 #7968c7;
   }
 }
 

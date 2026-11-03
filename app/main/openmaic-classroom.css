@@ -47,8 +47,8 @@
 .core-learning-workspace .multi-scene-scene-option.coach-recommended .scene-option-copy { padding-top: 0; }
 .core-learning-workspace .scene-option-copy { margin: 0; line-height: 1.4; }
 .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option {
-  display: flex !important; flex-direction: column; justify-content: center; align-items: center;
-  height: 60px !important; min-height: 60px !important; gap: 2px; transform: none;
+  display: flex !important; flex-direction: row; justify-content: center; align-items: center;
+  height: 40px !important; min-height: 40px !important; gap: 8px; transform: none;
   border: 1px solid #dce2e8; background: #fff; color: #344057; box-shadow: none;
 }
 .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option.coach-recommended {
@@ -120,7 +120,7 @@
 .classroom-controls input { width: 100px; min-width: 40px; accent-color: #6757d9; }
 .classroom-controls input:disabled { opacity: .4; }
 #classroom-narration-time, .classroom-scene-position { color: #8791a1; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.classroom-lecture { display: flex; gap: 16px; align-items: start; min-height: 100px; padding: 18px 24px; background: #fff; }
+.classroom-lecture { display: flex; gap: 12px; align-items: start; min-height: 70px; padding: 10px 18px; background: #fff; }
 .classroom-speaker { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; border: 1px solid #d8d1f7; border-radius: 50%; background: #f0edff; }
 .classroom-speaker img { width: 18px; height: 18px; opacity: .65; }
 .classroom-lecture > div { min-width: 0; }

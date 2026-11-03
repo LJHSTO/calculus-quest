@@ -5,6 +5,7 @@
   const needs = {concept:"概念或步骤没弄懂",monitoring:"不知道自己是否理解",clarify_concept:"想解释其中一个概念",reflection:"想整理刚才的探索发现",value:"不清楚学这个有什么用",confidence:"担心自己学不会",cost:"现在觉得投入太多",frustration:"有些挫败或紧张",planning:"不知道接下来怎么安排",uncertain:"暂时说不清",none:"暂时不需要帮助"};
   const statuses = {queued:"等待合适时机",offered:"已提供支持",engaged:"由你继续尝试",awaiting_check:"独立检查中",postponed:"稍后再说",closed:"本轮已结束",expired:"需要已过期，请重新确认"};
   let owner="", snapshot=null, busy=false, error="", lastPoll=0, exposureMonitor=null, manualScope="";
+  let requestSequence=0, pendingAction="";
   const drafts=new Map(), sentExposure=new Set(), opened=new Map(), presentedInquiries=new Set();
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   statuses.awaiting_confirmation="系统已主动询问，等待学生确认";
@@ -15,17 +16,18 @@
   function draft(key){if(!drafts.has(key))drafts.set(key,{need:"",note:"",ratings:{},result:"",perceivedGoal:null,requestMore:false});return drafts.get(key);}
   function sync(next){
     const identity=`${next.ownerKey}:${next.generation}`;
-    if(identity!==owner){owner=identity;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;exposureMonitor?.clear({forget:true});}
-    if(snapshot?.scopeKey!==next.scopeKey||snapshot?.ownerKey!==next.ownerKey||next.locked||next.check)manualScope="";
+    if(identity!==owner){owner=identity;requestSequence++;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;exposureMonitor?.clear({forget:true});}
+    if(snapshot?.scopeKey!==next.scopeKey||snapshot?.sceneType!==next.sceneType||snapshot?.ownerKey!==next.ownerKey||next.locked||next.check)manualScope="";
     snapshot=next;
   }
   async function request(command){
-    if(busy)return;
-    busy=true;error="";global.KnowledgeAssistant.refreshSupportSurface();
+    if(busy&&command.action!=='close')return;
+    const sequence=++requestSequence;
+    busy=true;pendingAction=command.action;error="";global.KnowledgeAssistant.refreshSupportSurface();
     const startOwner=owner;
-    try {await global.KnowledgeAssistant.supportCycleRequest(command);}
-    catch(e){if(startOwner===owner)error=e.message;}
-    finally{if(startOwner===owner){busy=false;global.KnowledgeAssistant.refreshSupportSurface();}}
+    try {await global.KnowledgeAssistant.supportCycleRequest(command);if(startOwner===owner&&command.action==='close'){manualScope='';global.TaskSupport?.leaveConversation();}}
+    catch(e){if(startOwner===owner&&sequence===requestSequence)error=e.message;}
+    finally{if(startOwner===owner&&sequence===requestSequence){busy=false;pendingAction="";global.KnowledgeAssistant.refreshSupportSurface();}}
   }
   function button(label,fn){const b=el("button",label);b.type="button";b.disabled=busy;b.onclick=fn;return b;}
   function choices(container, options, selected, choose) {
@@ -77,7 +79,7 @@
     const body=el("div");body.dataset.supportBody=c.id;body.append(el("p",c.content.message),el("p",c.content.nextStep));
     // This content exists only after the learner has confirmed a need. A1 has
     // already been satisfied; D4 alone controls whether this body is folded.
-    if(next.view.format==="disclosure") {const details=el("details");details.append(el("summary","查看这条帮助"),body);section.append(details);}
+    if(c.status==="engaged"||next.view.format==="disclosure") {const details=el("details");details.append(el("summary",c.status==="engaged"?"再看这条帮助":"查看这条帮助"),body);section.append(details);}
     else if(next.view.format==="steps") {const parts=c.content.message.split(/(?<=[。！？])\s*/).filter(Boolean);let index=0;const p=el("p",parts[0]||c.content.message);p.dataset.supportBody=c.id;const more=button("继续阅读",()=>{index++;p.textContent=parts.slice(0,index+1).join("");if(index>=parts.length-1){more.hidden=true;section.append(el("p",c.content.nextStep));}});section.append(p,more);}
     else{if(next.view.format==="bubble")body.setAttribute("role","note");section.append(body);}
     section.append(el("small",c.content.audit.fallback?"课程提示":"知点 · 智能体老师"));
@@ -119,7 +121,11 @@
       else if(c?.closeReason==="need_unresolved")root.append(el("p","暂时不确定也没关系。可以补充一句你卡住的地方，或先继续探索。"));
       if(manualScope===next.scopeKey)root.append(checkin(next,true),button('收起求助入口',()=>{manualScope="";global.KnowledgeAssistant.refreshSupportSurface();}));
     }
-    const status=el("p",busy?"老师正在准备，请稍候…":error);status.setAttribute("role","status");if(!busy&&!error)status.hidden=true;root.append(status);
+    const generating=busy&&['report','advance'].includes(pendingAction);
+    const status=el("p",busy?(generating?"老师正在准备，请稍候…":pendingAction==='close'?"正在结束这轮帮助…":"正在保存，请稍候…"):error);status.setAttribute("role","status");if(!busy&&!error)status.hidden=true;root.append(status);
+    if(generating&&active(c)&&c.status!=='awaiting_check'){
+      const cancel=button('取消讲解，继续学习',()=>request({action:'close',id:c.id}));cancel.disabled=false;root.append(cancel);
+    }
     for(const details of root.querySelectorAll('details')){
       const key=`${owner}:${next.scopeKey}:${c?.id||'need'}:${details.querySelector('summary')?.textContent}`;
       if(opened.has(key))details.open=opened.get(key);

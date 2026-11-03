@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..'),route=require('../data/multi-scene-learn
 async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:1366,height:900}});page.setDefaultTimeout(15000);const results=[];
 try{for(const module of route.chapters.find(c=>c.id==='V14-C1').modules)for(const p of module.knowledgePoints)for(const r of p.resourceCandidates){
  const config=M.get(p.id,r.type);if(!config)continue;
- await page.goto((process.env.CQ_TEST_URL||'http://127.0.0.1:59225')+'/resources/'+r.root+'/'+r.file+'?cqContextBridge=1');await page.locator('.free-exploration-guide').waitFor({state:'attached'});
+ await page.goto((process.env.CQ_TEST_URL||'http://127.0.0.1:59225')+'/resources/'+r.root+'/'+r.file+'?cqContextBridge=1');await page.waitForFunction(()=>Boolean(document.body.dataset.explorationPoint));assert.equal(await page.locator('.free-exploration-guide,.concept-exploration').count(),0,'正常探索不附加支架');
  await page.evaluate(()=>{window.__freeEvents=[];window.addEventListener('message',e=>{if(e.data?.type==='maic_learning_event'&&e.data.payload.event_type==='exploration_observed')window.__freeEvents.push({payload:e.data.payload,at:Date.now()});});});
  const [channel,b]=Object.entries(config.bindings)[0];
  if(r.type==='mindMap'){

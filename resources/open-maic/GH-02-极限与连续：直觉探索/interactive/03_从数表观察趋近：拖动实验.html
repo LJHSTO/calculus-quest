@@ -35,7 +35,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
 {
   "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "concept-exploration-20261027-v1",
+  "contract_revision": "free-observation-no-injected-support-20261102-v1",
   "course_version": "multi-scene-functions-limits-20260917-r2",
   "chapter_id": "V14-C1",
   "chapter_title": "函数与极限",
@@ -52,9 +52,6 @@ let sessionStorage = window.__openMaicSessionStorage;
   "evidence_events": [
     "scene_entered",
     "scene_completed",
-    "attempt_submitted",
-    "challenge_result",
-    "task_progress",
     "exploration_observed"
   ],
   "capabilities": {
@@ -66,11 +63,11 @@ let sessionStorage = window.__openMaicSessionStorage;
       "drag",
       "canvas"
     ],
-    "reports_attempt": true,
-    "reports_challenge": true,
+    "reports_attempt": false,
+    "reports_challenge": false,
     "reports_hint": false,
     "reports_reset": false,
-    "judges_correctness": true,
+    "judges_correctness": false,
     "requires_webgl": false,
     "requires_network": false,
     "keeps_local_state": true
@@ -90,12 +87,6 @@ let sessionStorage = window.__openMaicSessionStorage;
   "completion_semantics": {
     "success_requires": "产生与本知识点目标一致的可观察交互变化",
     "failure_is_evidence": false
-  },
-  "concept_exploration": {
-    "version": "concept-exploration-20261027-v1",
-    "optional": true,
-    "grading": "server_rechecked_process",
-    "independent": false
   },
   "free_exploration": {
     "version": "free-exploration-20261027-v1",
@@ -1117,7 +1108,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 </style>
 
 <style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
-</head>
+<link data-exploration-layout rel="stylesheet" href="../../主动探索证据/课件工作区.css"></head>
 <body>
 <script type="application/json" id="widget-config">
 {
@@ -1217,6 +1208,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     </div>
 
     <div class="section-title">➡️ 趋近方向</div>
+    <p style="font-size:13px;line-height:1.5">切换方向时先移到目标另一侧的同等距离；再次点击按所选步长靠近。距目标只剩一个步长时，请减小步长继续观察。</p>
     <div class="dir-btns">
       <button class="dir-btn left" onclick="stepToward('left')">◀ 从左侧趋近</button>
       <button class="dir-btn right" onclick="stepToward('right')">▶ 从右侧趋近</button>
@@ -1677,9 +1669,10 @@ function updateUI() {
   const delta = Math.abs(state.xPosition - fn.target);
   document.getElementById('info-delta').textContent = (Number.isFinite(Number(delta)) ? Number(delta) : 0).toFixed(6);
 
-  // Delta f
-  if (state.lastFVal !== null && !isNaN(fVal)) {
-    const df = Math.abs(fVal - state.lastFVal);
+  // addRecord already advanced lastFVal; keep the recorded difference on redraw.
+  const latest = state.records[state.records.length - 1];
+  const df = latest?.x === state.xPosition ? latest.dfx : state.lastFVal === null ? null : Math.abs(fVal - state.lastFVal);
+  if (df !== null && Number.isFinite(fVal)) {
     document.getElementById('info-dfx').textContent = (Number.isFinite(Number(df)) ? Number(df) : 0).toFixed(6);
   } else {
     document.getElementById('info-dfx').textContent = '—';
@@ -1708,9 +1701,9 @@ function updateEvidence(fn) {
   if (level >= 3) {
     bar.classList.add('show');
     if (level >= 4) {
-      bar.textContent = '✅ 极近！f(x) 已稳定趋近 ' + fn.limit;
+      bar.textContent = '输入已很接近目标点。比较左右两侧的输出；这些有限次观察还不是极限的证明。';
     } else {
-      bar.textContent = '👀 观察到 f(x) 趋近稳定值';
+      bar.textContent = '比较刚才几次输出：它们是否越来越接近同一个值？';
     }
   } else {
     bar.classList.remove('show');
@@ -1805,16 +1798,16 @@ function stepToward(direction) {
   if (direction === 'left') {
     // Move from left side toward target
     if (state.xPosition >= fn.target) {
-      state.xPosition = fn.target - step;
+      state.xPosition = fn.target - Math.max(Math.abs(state.xPosition - fn.target), step);
     } else {
-      state.xPosition = Math.min(fn.target - step * 0.1, state.xPosition + step);
+      state.xPosition = Math.min(fn.target - step, state.xPosition + step);
     }
   } else {
     // Move from right side toward target
     if (state.xPosition <= fn.target) {
-      state.xPosition = fn.target + step;
+      state.xPosition = fn.target + Math.max(Math.abs(state.xPosition - fn.target), step);
     } else {
-      state.xPosition = Math.max(fn.target + step * 0.1, state.xPosition - step);
+      state.xPosition = Math.max(fn.target + step, state.xPosition - step);
     }
   }
 
@@ -2780,10 +2773,11 @@ init();
 
 
 
+
+
+
 <!-- concept-exploration:start -->
 <script type="application/json" data-concept-exploration>{"point":"GH-02-K01","scene":"simulation"}</script>
-<script src="../../主动探索证据/exploration-model.js"></script>
-<script src="../../主动探索证据/exploration-runtime.js"></script>
 <script src="../../主动探索证据/free-exploration.js"></script>
 <script src="../../主动探索证据/free-exploration-runtime.js"></script>
 <!-- concept-exploration:end -->

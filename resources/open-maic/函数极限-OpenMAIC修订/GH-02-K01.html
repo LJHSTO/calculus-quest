@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选点挑战：哪一点能区分两条规则</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f39c12;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* UI Elements */
+        h1 { color: var(--primary); margin-bottom: 10px; }
+        p { line-height: 1.6; color: #666; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        .btn:hover { transform: scale(1.02); background: #357abd; }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-secondary { background: #95a5a6; }
+        .btn-success { background: var(--success); }
+
+        /* Game Components */
+        .rule-box {
+            background: #f8f9fa;
+            border-left: 5px solid var(--primary);
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            width: 100%;
+        }
+
+        .table-container {
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        th { background: #f1f3f5; }
+
+        .candidate-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .candidate-btn {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .candidate-btn:hover { border-color: var(--primary); }
+        .candidate-btn.selected { border-color: var(--primary); background: #eef6ff; }
+
+        .prediction-toggle {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .prediction-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .prediction-btn.active {
+            border-color: var(--primary);
+            background: #eef6ff;
+        }
+
+        /* Feedback & Popups */
+        #feedback {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .hint-text {
+            display: none;
+            background: #fff9db;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 14px;
+            border: 1px solid #ffe066;
+        }
+
+        .achievement-popup {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            transform: translateX(200%);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .achievement-popup.show { transform: translateX(0); }
+
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            .candidate-grid { grid-template-columns: 1fr; }
+            .screen { padding: 20px; }
+        }
+    </style>
+
+<link rel="stylesheet" href="字体-6dab387eaf.css">
+<script src="依赖-dc84b296ec.js"></script>
+<script src="依赖-9cb8dacfc0.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    renderMathInElement(document.body, katexOptions);
+
+    const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        mutations.forEach((mutation) => {
+            if (mutation.target &&
+                mutation.target.className &&
+                typeof mutation.target.className === 'string' &&
+                mutation.target.className.includes('katex')) {
+                return;
+            }
+            shouldRender = true;
+        });
+
+        if (shouldRender) {
+            safeRender();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    setInterval(() => {
+        const text = document.body.innerText;
+        if (text.includes('\\(') || text.includes('$$')) {
+            safeRender();
+        }
+    }, 2000);
+});
+</script>
+<script id="cq-lesson-evidence">
+// 本页练习证据；重置题目不会抹掉本次访问已使用的提示或纠错历史。
+(function () {
+  const rounds = new Map(); let current = '第一轮';
+  function entry() { if(!rounds.has(current)) rounds.set(current,{round:current,hints:0,attempts:[],completed:false}); return rounds.get(current); }
+  function category(e) { return e.hints ? '本组提示后完成' : e.attempts.some(a=>!a.correct) ? '本组纠错后完成' : '本组未用提示完成'; }
+  function render() {
+    const list=document.getElementById('cq-record-list'); if(!list) return;
+    const total=Array.from(rounds.values()).reduce((n,e)=>n+e.hints,0);
+    list.textContent='本页累计提示 '+total+' 次（各组状态按本组记录）\n'+Array.from(rounds.values()).map(e=>e.round+'：'+(e.completed?category(e):(e.hints?'练习中（已用提示）':'练习中'))+'；提交 '+e.attempts.length+' 次').join('\n');
+  }
+  window.CQ = {
+    start(label) { current=label; entry(); render(); },
+    hint() { entry().hints++; render(); },
+    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-02-K01"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-02-K01",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261102-v1",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
+    complete() { const e=entry(); e.completed=true; render(); return category(e); },
+    summary() { return Array.from(rounds.values()).map(e=>({...e,completion:e.completed?category(e):null})); }
+  };
+  entry();
+  document.addEventListener('click',e=>{ const b=e.target.closest?.('button'); if(b && (b.id==='hint-btn'||b.id==='btn-hint'||/showHint\s*\(/.test(b.getAttribute('onclick')||'')||/^(提示|查看提示|显示提示|提示一下|💡\s*提示)$/.test(b.textContent.trim()))) CQ.hint(); },true);
+  document.addEventListener('DOMContentLoaded',()=>{
+    const p=document.createElement('details'); p.id='cq-record';
+    p.style.cssText='position:fixed;left:8px;bottom:8px;z-index:100;max-width:min(360px,90vw);padding:6px 10px;border:1px solid #64748b;border-radius:8px;background:#fff;color:#172033;font:12px/1.6 system-ui';
+    p.innerHTML='<summary style="cursor:pointer">本页练习记录</summary><div id="cq-record-list" style="white-space:pre-wrap"></div><small>记录主动提示按钮；页面常驻说明不计次数。重试保留记录；未用提示不等于独立掌握。</small>';
+    document.body.appendChild(p); render();
+  });
+})();
+</script>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K01",
+  "concept_tag": "从数表观察趋近",
+  "scene_type": "game",
+  "resource_id": "GH-02-K01:game",
+  "resource_title": "选点挑战：哪一点能区分两条规则",
+  "learning_objective": "请说明趋近一个点时考察什么，为什么有限项数表只能帮助猜测而不是证明极限。",
+  "misconception": "极限关心该点附近的趋势，不取决于该点本身的值；仅凭有限观测不能排除其他趋势。",
+  "observable_evidence": "预测并选择能区分两条候选规则的观测点。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": false
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": false,
+    "reentry_after_help": "restart_scene"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script><link rel="stylesheet" href="课件布局.css"></head>
+<body>
+
+<div id="game-container">
+    <div id="achievement" class="achievement-popup">🏆 达成成就！</div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <h1>选点挑战</h1>
+        <p>两条规则在已知的样本上表现完全一致，你能找到一个“关键观测点”来区分它们吗？</p>
+        <div class="rule-box">
+            <strong>任务目标：</strong><br>
+            1. 预测并选择一个能区分规则的观测点<br>
+            2. 总结有限样本与规则唯一性的关系
+        </div>
+        <button class="btn" onclick="startGame()">开始挑战</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <h2 id="level-title">第一关：寻找区分点</h2>
+        
+        <div class="rule-box">
+            <strong>规则甲：</strong> 输出 = 输入 + 3<br>
+            <strong>规则乙：</strong> 输入 < 2 时，输出 = 输入 + 3；输入 ≥ 2 时，输出 = 2 × 输入 + 1
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>输入 (x)</th>
+                        <th>规则甲输出</th>
+                        <th>规则乙输出</th>
+                    </tr>
+                </thead>
+                <tbody id="sample-table-body">
+                    <tr>
+                        <td>0</td>
+                        <td>3</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>4</td>
+                        <td>4</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>从下列候选点中选择一个进行观测：</p>
+        <div class="candidate-grid" id="candidate-grid">
+            <!-- Candidates injected by JS -->
+        </div>
+
+        <div class="prediction-toggle">
+            <button class="prediction-btn" id="pred-yes" onclick="setPrediction(true)">预计输出不同</button>
+            <button class="prediction-btn" id="pred-no" onclick="setPrediction(false)">预计输出相同</button>
+        </div>
+
+        <button class="btn" id="submit-point-btn" onclick="submitPoint()" disabled>提交观测点</button>
+
+        <div id="feedback"></div>
+        
+        <div id="hint-container" class="hint-text"></div>
+        <button class="btn btn-secondary" style="font-size: 14px; margin-top: 10px;" onclick="showHint()">查看提示</button>
+    </div>
+
+    <!-- Conclusion Screen -->
+    <div id="conclusion-screen" class="screen">
+        <h2>任务二：逻辑判断</h2>
+        <p>基于刚才的观测经验，你认为下列说法正确的是？</p>
+        <div style="width: 100%; text-align: left;">
+            <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="checkConclusion('A')">A. 再多的有限样本也不能证明规则唯一，只能排除或暴露不同</button>
+            <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="checkConclusion('B')">B. 只要样本足够多就能证明唯一</button>
+            <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="checkConclusion('C')">C. 两条规则在已给样本上相同，所以它们就是同一条规则</button>
+        </div>
+        <div id="conclusion-feedback" style="margin-top: 20px; display: none;"></div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+        <h1 id="result-title">挑战成功！</h1>
+        <p id="result-desc"></p>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>输入</th><th>规则甲</th><th>规则乙</th></tr></thead>
+                <tbody id="final-table"></tbody>
+            </table>
+        </div>
+        <button class="btn" onclick="resetGame()">重新开始</button>
+    </div>
+</div>
+
+<script type="application/json" id="widget-config">
+{
+  "type": "game",
+  "gameType": "logic-puzzle",
+  "levels": [
+    {
+      "id": 1,
+      "ruleA": "x + 3",
+      "ruleB": "x < 2 ? x + 3 : 2x + 1",
+      "initialSamples": [0, 1],
+      "candidates": [2, 3, -1],
+      "correctPoint": 3
+    },
+    {
+      "id": 2,
+      "ruleA": "x + 2",
+      "ruleB": "x < 0 ? x + 2 : 3x + 2",
+      "initialSamples": [-1, 0],
+      "candidates": [-2, 1, 2],
+      "correctPoint": 1
+    }
+  ]
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Game State
+    let state = {
+        currentLevel: 0,
+        selectedPoint: null,
+        prediction: null,
+        samples: [],
+        usedHint: false,
+        config: JSON.parse(document.getElementById('widget-config').textContent)
+    };
+
+    // Global functions for inline onclick
+    window.startGame = function() {
+        showScreen('game-screen');
+        initLevel();
+    };
+
+    window.setPrediction = function(val) {
+        state.prediction = val;
+        document.getElementById('pred-yes').classList.toggle('active', val === true);
+        document.getElementById('pred-no').classList.toggle('active', val === false);
+        document.getElementById('submit-point-btn').disabled = (state.selectedPoint === null || state.prediction === null);
+    };
+
+    window.submitPoint = function() {
+        const level = state.config.levels[state.currentLevel];
+        const x = state.selectedPoint; if(x===null || state.prediction===null || state.transitioning) return;
+        
+        // Calculate actual outputs
+        let outA, outB;
+        if (state.currentLevel === 0) {
+            outA = x + 3;
+            outB = x < 2 ? x + 3 : 2 * x + 1;
+        } else {
+            outA = x + 2;
+            outB = x < 0 ? x + 2 : 3 * x + 2;
+        }
+
+        const predictionCorrect=state.prediction===(outA!==outB); CQ.attempt(predictionCorrect,"所选观测点能否区分",{task:"prediction",round:state.currentLevel,values:[x,state.prediction]});
+        // Add to samples
+        state.samples.push({ x, a: outA, b: outB });
+        renderTable();
+
+        // Feedback
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'block';
+        
+        if (outA !== outB) {
+            state.transitioning=true;
+            feedback.innerHTML = `<strong style="color:var(--success)">成功区分！</strong><br>两条规则在这里给出 ${outA} 与 ${outB}，说明它们不是同一条规则。`;
+            feedback.innerHTML+=(predictionCorrect?"<br>预测与证据一致。":"<br>你的预测需要修正：两个输出不相等，能够区分。");
+            feedback.style.background = '#e8f8f0';
+            setTimeout(() => {
+                showScreen('conclusion-screen');
+            }, 2000);
+        } else {
+            feedback.innerHTML = `<strong style="color:var(--danger)">这个点两条规则给出同一个输出 (${outA})，仍不能区分它们，请另选一个观测点。</strong>`;
+            feedback.style.background = '#fdf2f2';
+            // Reset selection
+            state.selectedPoint = null;
+            state.prediction = null;
+            document.querySelectorAll('.candidate-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('pred-yes').classList.remove('active');
+            document.getElementById('pred-no').classList.remove('active');
+            document.getElementById('submit-point-btn').disabled = true;
+        }
+    };
+
+    window.showHint = function() {
+        const hint = document.getElementById('hint-container');
+        if (!state.usedHint) {
+            hint.style.display = 'block';
+            hint.innerHTML = "💡 提示：先把候选输入分别代入两条规则，再比较算出的输出。分段公式换了计算方法，不代表输出一定不同；边界点也要实际算一遍。";
+            state.usedHint = true;
+        }
+    };
+
+    window.checkConclusion = function(choice) {
+        const feedback = document.getElementById('conclusion-feedback');
+        feedback.style.display = 'block';
+        
+        CQ.attempt(choice==='A',"有限样本结论",{task:"reason",round:state.currentLevel,values:[choice]});
+        if (choice === 'A') {
+            if(state.conclusionLocked) return; state.conclusionLocked=true; CQ.complete();
+            feedback.innerHTML = `<strong style="color:var(--success)">正确！</strong><br>再多的有限样本也不能证明规则唯一，只能排除或暴露不同。`;
+            setTimeout(() => {
+                if (state.currentLevel < state.config.levels.length - 1) {
+                    state.currentLevel++;
+                    initLevel();
+                    showScreen('game-screen');
+                } else {
+                    showResult();
+                }
+            }, 2500);
+        } else {
+            feedback.innerHTML = `<strong style="color:var(--danger)">再想想：</strong><br>${choice === 'B' ? '有限个点写得完，总可以另造一条在这些点相同、在其他点不同的规则。' : '在已给两点相同只说明暂时无法区分，样本外的点已经显示不同。'}`;
+        }
+    };
+
+    window.resetGame = function() {
+        state.currentLevel = 0;
+        state.usedHint = false;
+        document.getElementById('hint-container').style.display = 'none';
+        showScreen('start-screen');
+    };
+
+    // Internal Helpers
+    function initLevel() {
+        document.querySelector('#game-screen .rule-box').innerHTML=state.currentLevel===0?'<strong>规则甲：</strong> 输出 = 输入 + 3<br><strong>规则乙：</strong> 输入 &lt; 2 时输出 = 输入 + 3；输入 ≥ 2 时输出 = 2 × 输入 + 1':'<strong>规则甲：</strong> 输出 = 输入 + 2<br><strong>规则乙：</strong> 输入 &lt; 0 时输出 = 输入 + 2；输入 ≥ 0 时输出 = 3 × 输入 + 2';
+        CQ.start(state.currentLevel===0?"第一轮":"第二轮：新规则"); state.transitioning=false; state.conclusionLocked=false;
+        const level = state.config.levels[state.currentLevel];
+        state.samples = level.initialSamples.map(x => {
+            let outA, outB;
+            if (state.currentLevel === 0) {
+                outA = x + 3;
+                outB = x < 2 ? x + 3 : 2 * x + 1;
+            } else {
+                outA = x + 2;
+                outB = x < 0 ? x + 2 : 3 * x + 2;
+            }
+            return { x, a: outA, b: outB };
+        });
+        
+        state.selectedPoint = null;
+        state.prediction = null;
+        
+        document.getElementById('level-title').innerText = `第 ${state.currentLevel + 1} 关：寻找区分点`;
+        document.getElementById('feedback').style.display = 'none';
+        document.getElementById('submit-point-btn').disabled = true;
+        document.getElementById('pred-yes').classList.remove('active');
+        document.getElementById('pred-no').classList.remove('active');
+
+        // Render Candidates
+        const grid = document.getElementById('candidate-grid');
+        grid.innerHTML = '';
+        level.candidates.forEach(x => {
+            const btn = document.createElement('button');
+            btn.className = 'candidate-btn';
+            btn.innerText = x;
+            btn.onclick = () => {
+                document.querySelectorAll('.candidate-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                state.selectedPoint = x;
+                document.getElementById('submit-point-btn').disabled = (state.prediction === null);
+            };
+            grid.appendChild(btn);
+        });
+
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('sample-table-body');
+        tbody.innerHTML = '';
+        state.samples.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${s.x}</td><td>${s.a}</td><td>${s.b}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function showResult() {
+        showScreen('result-screen');
+        const finalTable = document.getElementById('final-table');
+        finalTable.innerHTML = '';
+        state.samples.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${s.x}</td><td>${s.a}</td><td>${s.b}</td>`;
+            finalTable.appendChild(tr);
+        });
+
+        document.getElementById('result-desc').innerText='两轮完成。本组：'+CQ.complete()+'。每轮提示与纠错记录见左下角。有限样本相同，不能推出一般规则唯一。';
+
+        showAchievement("逻辑大师");
+    }
+
+    function showAchievement(name) {
+        const ach = document.getElementById('achievement');
+        ach.innerText = `🏆 达成成就：${name}`;
+        ach.classList.add('show');
+        setTimeout(() => ach.classList.remove('show'), 3000);
+    }
+});
+</script>
+
+<script id="openmaic-widget-action-listener">
+window.addEventListener('message', function(event) {
+  const { type, target, state, content } = event.data;
+
+  switch (type) {
+    case 'SET_WIDGET_STATE':
+      // Apply state to controls / game params. Keys map to controls by id;
+      // route to the game via a global setter when one exists.
+      if (state) {
+        Object.entries(state).forEach(([key, value]) => {
+          const control = document.getElementById(key + '-slider') || document.getElementById(key) || document.querySelector('[data-var="' + key + '"]');
+          if (control) {
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          if (typeof window.setGameParam === 'function') window.setGameParam(key, value);
+        });
+      }
+      break;
+
+    case 'HIGHLIGHT_ELEMENT':
+      const highlightEl = document.querySelector(target);
+      if (highlightEl) {
+        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outlineOffset = '4px';
+        highlightEl.style.animation = 'pulse-highlight 2s infinite';
+        setTimeout(() => {
+          highlightEl.style.outline = '';
+          highlightEl.style.animation = '';
+        }, 3000);
+      }
+      break;
+
+    case 'ANNOTATE_ELEMENT':
+      const annotateEl = document.querySelector(target);
+      if (annotateEl && content) {
+        const rect = annotateEl.getBoundingClientRect();
+        const tooltip = document.createElement('div');
+        tooltip.className = 'teacher-annotation';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+        tooltip.textContent = content;
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 4000);
+      }
+      break;
+
+    case 'REVEAL_ELEMENT':
+      const revealEl = document.querySelector(target);
+      if (revealEl) {
+        revealEl.style.display = '';
+        revealEl.style.opacity = '1';
+      }
+      break;
+  }
+});
+
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(style);
+</script>
+<script src="课件交互.js"></script></body>
+</html>

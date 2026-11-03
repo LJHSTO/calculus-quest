@@ -1,0 +1,53 @@
+/* Keep original OpenMAIC renderers; reserve real space for controls instead of covering the canvas. */
+body[data-exploration-scene="visualization3d"]{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+body[data-exploration-scene="visualization3d"] #canvas-container{position:relative!important;inset:auto!important;flex:1 1 0!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;order:0}
+body[data-exploration-scene="visualization3d"] #canvas-container canvas{display:block!important;width:100%!important;height:100%!important;max-height:none!important}
+body[data-exploration-scene="visualization3d"] #controls{position:relative!important;inset:auto!important;transform:none!important;flex:0 0 auto!important;order:2;width:100%!important;max-width:none!important;height:auto!important;max-height:42vh!important;margin:0!important;padding:8px 14px!important;border-radius:0!important;box-sizing:border-box;overflow:auto!important;gap:8px 16px!important;color:#e2e8f0!important}
+body[data-exploration-scene="visualization3d"] #controls .control-group{margin:0!important;min-width:100px}
+body[data-exploration-scene="visualization3d"] #controls button,body[data-exploration-scene="visualization3d"] #controls select{min-height:40px!important;font-size:13px!important}
+body[data-exploration-scene="visualization3d"] #controls label{color:#dce5f6!important;font-size:13px!important}
+body[data-exploration-scene="visualization3d"] .free-exploration-guide{color:#dce5f6!important;padding:4px 8px!important;flex-basis:100%!important}
+body[data-exploration-scene="visualization3d"] #info,body[data-exploration-scene="visualization3d"] #info-panel{max-width:300px!important;padding:12px!important;font-size:12px!important}
+body[data-exploration-scene="visualization3d"] #info h2,body[data-exploration-scene="visualization3d"] #info-panel h2{font-size:16px!important;margin:0 0 6px!important}
+body[data-exploration-scene="visualization3d"] #info p,body[data-exploration-scene="visualization3d"] #info-panel p{font-size:12px!important;line-height:1.6!important;margin:4px 0!important}
+body[data-exploration-point="GH-02-K03"] [id="2d-fallback"]{position:absolute!important;left:12px!important;bottom:190px!important;width:320px!important;height:120px!important;max-height:none!important}
+body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #app-container{display:flex!important;flex-direction:row!important;height:100dvh!important;width:100%!important;min-height:0!important}
+body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #canvas-container{position:relative!important;flex:1 1 0!important;min-width:0!important;width:auto!important;height:100%!important;max-height:none!important;order:0!important}
+body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #controls{position:relative!important;inset:auto!important;flex:0 0 310px!important;order:1!important;width:310px!important;height:100%!important;max-height:none!important;min-height:0!important;padding:12px!important;overflow:auto!important}
+body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #controls h2{font-size:16px!important;margin:6px 0!important}
+body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #controls .control-group{margin:8px 0!important}
+body[data-exploration-point="GH-01-K01"][data-exploration-scene="simulation"] #controls-panel{padding:10px!important;gap:8px!important}
+body[data-exploration-point="GH-01-K01"][data-exploration-scene="simulation"] #controls-panel>h2,body[data-exploration-point="GH-01-K01"] .machine-title{display:none!important}
+body[data-exploration-point="GH-01-K01"] .machine-display{padding:8px!important;margin:0!important}
+body[data-exploration-point="GH-01-K01"] .machine-flow{gap:6px!important}
+body[data-exploration-point="GH-01-K01"] .machine-box{padding:8px 4px!important;min-width:0!important;font-size:14px!important}
+body[data-exploration-point="GH-01-K01"][data-exploration-scene="simulation"] .control-group{margin:0!important;padding:0!important}
+body[data-exploration-point="GH-01-K01"] .control-group label{margin-bottom:4px!important;font-size:13px!important}
+body[data-exploration-point="GH-01-K01"] .calc-steps{padding:8px!important;min-height:0!important;font-size:14px!important}
+body[data-exploration-point="GH-01-K01"] .presets-section{display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;margin:0!important;padding:0!important}
+body[data-exploration-point="GH-01-K01"] .presets-section h3{grid-column:1/-1;margin:0!important;font-size:13px!important}
+body[data-exploration-point="GH-01-K01"] .preset-btn{margin:0!important;padding:6px 8px!important;min-height:40px!important;width:100%!important}
+body[data-exploration-point="GH-01-K01"] .preset-name{font-size:14px!important}
+body[data-exploration-point="GH-01-K01"] .preset-desc{display:none!important}
+.course-extra-controls{font:13px/1.5 "Microsoft YaHei",sans-serif;width:100%;flex:0 0 auto}.course-extra-controls>summary{cursor:pointer;min-height:32px}.course-extra-controls:not([open])>*:not(summary){display:none!important}
+body[data-exploration-scene="mindMap"] #sidebar{min-height:0!important;overflow-y:auto!important;max-height:100dvh!important;box-sizing:border-box}
+body[data-exploration-scene="mindMap"] #sidebar>.free-exploration-guide,body[data-exploration-scene="mindMap"] #sidebar>.concept-exploration{flex-shrink:0}
+body[data-exploration-scene="mindMap"] #sidebar>.concept-exploration{margin:8px 12px!important;width:calc(100% - 24px)}
+body[data-exploration-scene="mindMap"] button{min-height:40px!important}
+body[data-exploration-point="GH-02-K02"][data-exploration-scene="mindMap"] #sidebar-toggle{position:absolute!important;left:auto!important;right:12px!important;top:12px!important;transform:none!important}
+body[data-exploration-point="GH-01-K01"][data-exploration-scene="mindMap"] #toggle-sidebar{position:absolute!important;left:12px!important;right:auto!important;top:12px!important;transform:none!important}
+body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] .preset-btn{padding:8px!important;margin-bottom:5px!important;min-height:40px!important}
+/* Keep navigation outside the text scrollport, including short laptop windows. */
+body[data-exploration-point="GH-01-K01"][data-exploration-scene="mindMap"] #details-panel{flex:1 1 0!important;min-height:0!important;overflow-y:auto!important}
+@media(max-height:640px){
+ body[data-exploration-scene] .free-exploration-guide{padding:4px 10px!important}
+ body[data-exploration-scene] .concept-exploration{margin:4px 0!important;padding:4px 10px!important}
+ body[data-exploration-point="GH-01-K01"][data-exploration-scene="simulation"] .presets-section{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] .preset-btn{display:inline-flex!important;vertical-align:top!important;width:calc(50% - 3px)!important;font-size:12px!important;line-height:1.4!important}
+ body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] .preset-desc{display:none!important}
+ body[data-exploration-point="GH-01-K03"][data-exploration-scene="simulation"] .preset-btn{display:inline-block!important;vertical-align:top!important;width:calc(50% - 3px)!important;min-height:48px!important;white-space:normal!important;line-height:1.4!important}
+ body[data-exploration-point="GH-01-K01"][data-exploration-scene="mindMap"] #sidebar-header{display:none!important}
+ body[data-exploration-point="GH-01-K01"][data-exploration-scene="mindMap"] #controls{padding:8px 12px!important}
+ body[data-exploration-point="GH-01-K01"][data-exploration-scene="mindMap"] .detail-card .icon{display:none!important}
+ body[data-exploration-point="GH-02-K01"][data-exploration-scene="simulation"] .section-title{margin:6px 0 4px!important}
+}

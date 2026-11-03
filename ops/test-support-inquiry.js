@@ -43,6 +43,15 @@ async function main(){
  assert.equal(store.invite('disabled',scope,1,{...args,profile:{...profile,supportInquiryEnabled:false}}),null);
  for(const kp of Object.keys(goals.CURRICULUM))assert.ok(store.invite(kp,kp,1,args),'六个知识点都有主动询问入口');
  assert.equal(store.report('manual',scope,1,{need:'frustration',confirmed:true},profile,0).initiation,'student_confirmed_need','保留学生主动求助');
+ const quiet={...args,profile:{...profile,cooldownSeconds:180}};
+ const firstQuiet=store.invite('quiet',scope,1,quiet);assert.ok(firstQuiet,'3分钟是重复间隔，不阻止首次有依据的帮助');
+ store.act('quiet',firstQuiet.id,1,{action:'close'},{adapter});time+=179000;
+ const newQuiet={...quiet,evidence:{...evidence,evidenceRefs:[{id:'quiet-new-answer',sourceType:'quiz_result',capturedAt:new Date(time).toISOString()}]}};
+ assert.equal(store.invite('quiet',scope,1,newQuiet),null,'同知识点未满180秒不可再次询问');
+ time+=1000;assert.ok(store.invite('quiet',scope,1,newQuiet),'满180秒且有新证据时才可再次询问');
+ const legacy=store.invite('legacy',scope,1,args);legacy.inquiry.purpose='reflection_opportunity';legacy.inquiry.basis='exploration_comparison';
+ database.run('UPDATE learner_support_cycles SET payload_json=? WHERE id=?',[JSON.stringify(legacy),legacy.id]);
+ assert.equal(store.current('legacy',scope,1).closeReason,'automatic_reflection_disabled','升级后撤回尚未接受的旧探索邀请，保留历史记录');
  const restored=new SQL.Database(database.export()),again=createStore({db:{...db,getDbSync:()=>restored},experimentId:'synthetic-inquiry',clock:()=>time});
  assert.equal(again.current('bob',scope,1).closeReason,'student_declined');assert.equal(again.current('alice',scope,1).inquiry.sourceIds[0],'answer-2');
  for(const name of ['inquiry_offered','inquiry_exposed','inquiry_confirmed','inquiry_postponed','inquiry_retracted','inquiry_expired','closed'])assert.ok(events.some(e=>e.payload.eventType==='support_cycle_'+name),name);

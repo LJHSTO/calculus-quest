@@ -120,12 +120,12 @@
   noticeStatus.className = 'workspace-support-status';
   noticeStatus.setAttribute('role','status');
   noticeStatus.setAttribute('aria-live','polite');
-  $('#classroom-playback').append(noticeStatus,supportNotice);
+  $('.classroom-footer').append(noticeStatus,supportNotice);
   let pendingSnapshot = null;
   let announcedHelp="";
   let fullscreenSupportNotice=null;
   function updateSupportLocator() {
-    const visible=[...document.querySelectorAll('.support-inquiry,.support-goal-message,.knowledge-proactive-inline-offer,.knowledge-proactive-verification')].some(node=>{
+    const visible=[...document.querySelectorAll('.task-support-panel,.learning-support-surface,.support-inquiry,.knowledge-proactive-inline-offer,.knowledge-proactive-verification')].some(node=>{
       if(node.closest('[hidden],[inert],[aria-hidden="true"],details:not([open])'))return false;
       if(node.checkVisibility&&!node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))return false;
       const full=document.fullscreenElement;
@@ -148,7 +148,6 @@
     const inquiry=eligible&&cycle?.status==='awaiting_confirmation'&&!global.SupportCycleUI?.deferInquiry(cycle);
     const support=eligible&&!checking&&(next.offer||next.prompt||['offered','engaged'].includes(cycle?.status));
     const label=checking?'继续独立检查':inquiry?'智能体老师想帮你':support?'查看老师的帮助':'';
-    supportNotice.hidden=!label;
     if(supportNotice.textContent!==label){supportNotice.textContent=label;noticeStatus.textContent=label;}
     const full=document.fullscreenElement||document.querySelector('.is-local-fullscreen-target');
     if(full&&full!==document.documentElement&&!full.contains(supportNotice)&&label){
@@ -161,7 +160,9 @@
       announcedHelp=helpId;
       if(next.view.placement==='sidebar'&&!compactWorkspace()){setToolsCollapsed(false,false,false);selectTab('chat');}
     }
-    requestAnimationFrame(updateSupportLocator);
+    // Do not briefly insert the footer notice before measuring the visible help.
+    // That relayout can cover the pressed send button before pointerup.
+    updateSupportLocator();
     updateToolsIndicator();
   }
   supportNotice.addEventListener('click',async()=>{
@@ -330,6 +331,8 @@
     playback.hidden = !surface || unit?.type !== "knowledge";
     if (playback.hidden) return;
     const sources = Array.from(surface.querySelectorAll(".coach-line[data-playback-speech], .coach-line[data-audio-src]"));
+    playback.hidden = sources.length === 0;
+    $(".classroom-lecture-label").textContent = sources.length ? "讲解 · 合成语音" : "互动操作";
     const authored = global.LessonPlayback?.snapshot(surface);
     const toolbar = surface.querySelector(".coach-toolbar[data-narration-unit]");
     const queue = typeof activeNarration !== "undefined" && activeNarration?.unitId === toolbar?.dataset.narrationUnit
@@ -354,7 +357,7 @@
     $("#classroom-narration-time").textContent = formatDuration(elapsed);
     const text = sources[queue?.index || 0]?.textContent?.trim();
     $("#classroom-lecture-text").textContent = (authored?.warning ? `${authored.warning} ` : "")
-      + (authored?.caption || text || (sources.length ? "讲解正在加载" : "当前场景暂无语音讲解"));
+      + (authored?.caption || text || (sources.length ? "讲解正在加载" : "操作当前互动，观察画面和数值的变化。"));
     const chapter = getChapter();
     const index = (chapter?.units || []).findIndex((entry) => entry.id === unit.id);
     $("#classroom-scene-position").textContent = `${index + 1} / ${chapter?.units?.length || 0}`;

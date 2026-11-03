@@ -776,7 +776,7 @@ async function requestAlternativeHelp(
   );
 }
 
-async function answerProactivePrompt(
+async function answerAndStartCheck(
   baseUrl,
   token,
   unit,
@@ -799,6 +799,18 @@ async function answerProactivePrompt(
     .filter(Boolean)
     .map((line) => JSON.parse(line));
   assert.ok(events.some((event) => event.type === "done"));
+  const before = await requestJson(baseUrl, "GET", "/api/learning/proactive/state?chapterId=V14-C3", undefined, token);
+  const state = before.payload.data.policyStates.find(row => row.scopeKey === unit.id);
+  assert.equal(state.lifecycle.phase, "accepted_pending_response", "交流本身不能追加独立检查");
+  const start = {action:"start",chapterId:"V14-C3",unitId:knowledgeUnit?unit.id:`${unit.id}-formative`,scopeKey:unit.id,sceneType:knowledgeUnit?unit.resourceCandidates[0].type:""};
+  const wrongScope = await requestJson(baseUrl,"POST","/api/learning/proactive/check",{...start,scopeKey:"another-scope"},token);
+  assert.equal(wrongScope.response.status,409,"不能跨知识点开始检查");
+  const wrongUnit = await requestJson(baseUrl,"POST","/api/learning/proactive/check",{...start,unitId:"another-unit"},token);
+  assert.equal(wrongUnit.response.status,409,"不能跨课件开始检查");
+  const requested = await requestJson(baseUrl,"POST","/api/learning/proactive/check",start,token);
+  assert.equal(requested.response.status,200,JSON.stringify(requested.payload));
+  const repeated = await requestJson(baseUrl,"POST","/api/learning/proactive/check",start,token);
+  assert.equal(repeated.response.status,409,"重复点击不能重新签发检查");
   return events;
 }
 
@@ -1004,7 +1016,7 @@ async function runUndeliveredEscalationRegression({
       l1Offer.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       unit,
@@ -1571,7 +1583,7 @@ async function runExplicitParticipationRegression({
       lifecycleOffer.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       interventionParticipant.token,
       lifecycleUnit,
@@ -2667,7 +2679,7 @@ async function main() {
       declinedProbeOffer.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       declinedProbeUnit,
@@ -2788,7 +2800,7 @@ async function main() {
       "服务重启后恢复原已接受帮助，不重新签发新的业务介入");
     assert.equal(acceptedPromptAfterRestart.payload.pendingSupportPrompt?.content,selfExplanation.payload.decision.assistantPrompt);
 
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
@@ -2929,7 +2941,7 @@ async function main() {
       "accepted_pending_response"
     );
     assert.equal(conceptAccepted.payload.data.policyState.currentLevel, "L2");
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
@@ -2983,7 +2995,7 @@ async function main() {
       subgoal.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
@@ -3025,7 +3037,7 @@ async function main() {
       nextStep.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
@@ -3070,7 +3082,7 @@ async function main() {
       partialExample.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
@@ -3144,7 +3156,7 @@ async function main() {
       coursewareSelfExplanation.payload.decisionId,
       "accepted"
     );
-    await answerProactivePrompt(
+    await answerAndStartCheck(
       runtime.baseUrl,
       treatment.token,
       coursewareUnit,

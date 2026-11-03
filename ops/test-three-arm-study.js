@@ -31,7 +31,7 @@ async function main(){
    }else{const saved=await api('/api/learning/learner-preferences',{answers:ready.record.answers,expectedRevision:1},arm);assert.equal(saved.status,200,JSON.stringify(saved));}
    assert.equal((await api('/api/learning/learner-preferences',null,arm)).data.preparation.stage,'ready');
    assert.equal((await api('/api/learning/research-controls',{profile:{}},arm)).status,403,'不能绕开分组修改策略');
-   const review=await api('/api/study/review',null,arm);assert.equal(review.status,200);assert.equal(Array.isArray(review.data.linked),arm==='B');
+   const review=await api('/api/study/review',null,arm);assert.equal(review.status,409,'未完成阶段时回顾关闭');
   }
   assert.equal(new Set(Object.values(ids)).size,3);assert.deepEqual(baseline.A,baseline.B);assert.deepEqual(baseline.B,baseline.C);check('三份轮次、同一默认配置、A锁定、B/C同权限、仅B有关联反馈');
   const a=(await api('/api/learning/snapshot',null,'A'));
@@ -42,7 +42,7 @@ async function main(){
   const answer={chapterId:'V14-C1',unitId:point.id+'-formative',phase:'formative',answers:point.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))};
   assert.equal((await api('/api/learning/quiz/submit',{...answer,answers:answer.answers.slice(0,1)},'B')).status,400,'不能仅答第一道就完成检测');
   const complete=await api('/api/learning/quiz/submit',answer,'B');assert.equal(complete.status,200,JSON.stringify(complete));
-  assert.equal((await api('/api/study/review',null,'B')).data.results.length,3);assert.equal((await api('/api/study/review',null,'C')).data.results.length,0);check('三道共同检测整批提交与不同组成绩隔离');
+  assert.equal((await api('/api/study/review',null,'B')).status,409);assert.equal((await api('/api/study/review',null,'C')).status,409);check('三道共同检测整批提交；只完成一个知识点仍不能提前回顾');
   const before=(await api('/api/learning/learner-preferences',null,'C')).data.record;
   const changed=structuredClone(before.answers);changed.D4={value:'sidebar',reason:'try',note:''};
   assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:before.revision},'C')).status,403,'C在普通学习中不可修改');

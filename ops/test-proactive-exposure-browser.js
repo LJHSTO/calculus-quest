@@ -50,7 +50,7 @@ async function verifyRealCandidate(page, { mode = "qualified" } = {}) {
   const receipts = () => requests.filter(row => row.url.includes(`/${offer.decisionId}/`)
     && row.body.resolution === "shown").map(row => row.body);
   const visible = () => page.evaluate(id => window.__exposureEvents.filter(row =>
-    row.eventType === "proactive_surface_visible" && row.data.decisionId === id), offer.decisionId);
+    row.eventType === "proactive_surface_visible" && row.data.decisionId === id && row.data.exposureKind==='offer'), offer.decisionId);
   const record = (name, input, expected, actual) => {
     realCases.push({ name, dimensions: ["D3", "D4", "D5", "D6"], input, expected, actual, result: "通过" });
     fs.writeFileSync(path.join(output, "真实学习流程曝光验收.json"), JSON.stringify({

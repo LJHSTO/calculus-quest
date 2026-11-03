@@ -3,13 +3,26 @@
  function start(){
   const tag=document.querySelector('[data-concept-exploration]'),M=window.FreeExploration;if(!tag||!M)return;
   const {point,scene}=JSON.parse(tag.textContent),config=M.get(point,scene);if(!config)return;
-  const host=document.querySelector('#controls-panel,#controlsPanel,.controls-panel,#controls,.controls')||document.querySelector('#sidebar,.sidebar');if(!host)return;
-  const guide=document.createElement('details');guide.className='free-exploration-guide';
-  const title=document.createElement('summary');title.textContent='观察线索';const text=document.createElement('p');text.textContent=config.guide;guide.append(title,text);host.prepend(guide);
-  if(scene==='visualization3d'&&point==='GH-02-K01')title.textContent='拓展：x 越来越大，与趋近有限点不同';
-  if(scene==='visualization3d'&&point==='GH-02-K03')title.textContent='空间示意：仍须检查连续的三个条件';
-  if(point==='GH-01-K03')title.textContent='观察线索：按 x 从小到大判断增减';
-  const style=document.createElement('style');style.textContent='.free-exploration-guide{box-sizing:border-box;flex:1 0 100%;width:100%;max-width:100%;padding:8px 12px;border-bottom:1px solid #9890be44;font:14px/1.6 "Microsoft YaHei",sans-serif;text-align:left}.free-exploration-guide summary{cursor:pointer;font-weight:600;min-height:28px}.free-exploration-guide p{margin:8px 0;color:inherit}.free-exploration-guide summary:focus-visible{outline:2px solid #8f7fea}';document.head.append(style);
+  const sidebar=document.querySelector('#sidebar,.sidebar');
+  const host=(scene==='mindMap'?sidebar:null)||document.querySelector('#controls-panel,#controlsPanel,.controls-panel,#controls,.controls')||sidebar;if(!host)return;
+  if(scene==='mindMap'&&point==='GH-02-K01')sidebar.classList.remove('collapsed');
+  if(scene==='mindMap'&&point==='GH-01-K01'){const toggle=document.querySelector('#toggle-sidebar');if(toggle)document.querySelector('#diagram-area')?.append(toggle);}
+  document.body.dataset.explorationPoint=point;document.body.dataset.explorationScene=scene;
+  const layout=document.querySelector('link[data-exploration-layout]');if(layout)document.head.append(layout);
+  // Refit the original renderer after panel layout changes, without replacing its state.
+  const canvasHost=document.querySelector('#canvas-container');
+  if(scene==='visualization3d'&&canvasHost){const legend=document.querySelector('#legend');if(legend)canvasHost.append(legend);}
+  if(canvasHost){let size='';new ResizeObserver(([entry])=>{const next=Math.round(entry.contentRect.width)+':'+Math.round(entry.contentRect.height);if(next!==size){size=next;requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));}}).observe(canvasHost);}
+  if(point==='GH-01-K01'&&scene==='simulation'){
+   const extra=document.createElement('details');extra.className='course-extra-controls';const label=document.createElement('summary');label.textContent='演示速度与观察记录';extra.append(label);
+   for(const item of [document.querySelector('#speed-slider')?.closest('.control-group'),document.querySelector('.trace-table')])if(item)extra.append(item);
+   host.append(extra);
+  }
+  if(point==='GH-02-K01'&&scene==='simulation'){
+   const extra=document.createElement('details');extra.className='course-extra-controls';const label=document.createElement('summary');label.textContent='数据记录与趋势预测';extra.append(label);
+   for(const item of [document.querySelector('#table-container'),document.querySelector('#prediction-panel')])if(item){const heading=item.previousElementSibling;if(heading?.classList.contains('section-title'))extra.append(heading);extra.append(item);}
+   host.insertBefore(extra,host.querySelector('.concept-exploration'));
+  }
   const previous=new Map();
   function record(channel,value){const data={task_version:M.version,knowledge_point_id:point,scene_type:scene,evidence_scope:'free_exploration_observation',independent:false,parameters:{channel,value}};
    if(channel==='input'&&config.bindings.rule){const current=document.querySelector(config.bindings.rule.selector+'.active');data.parameters.context=current?.dataset.func??current?.getAttribute('onclick')?.match(/\((?:'([^']+)'|(\d+))/)?.slice(1).find(x=>x!==undefined);}

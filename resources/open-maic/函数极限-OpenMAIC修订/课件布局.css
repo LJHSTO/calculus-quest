@@ -1,0 +1,68 @@
+*{box-sizing:border-box}
+body{display:block!important;margin:0!important;padding:8px!important;height:auto!important;min-height:100dvh!important;background:#f6f8fc!important;color:#24334b;font-family:'Microsoft YaHei','PingFang SC',sans-serif}
+#cq-course-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #dbe1ed;padding:8px 12px;font-size:14px}
+#cq-course-actions strong{flex:1;min-width:180px}
+#cq-course-actions button{font:inherit;min-height:36px;padding:6px 12px;border:1px solid #b7aadd;border-radius:7px;background:#f4f0ff;color:#513c95;cursor:pointer}
+#cq-course-actions button{flex:0 0 auto}
+#cq-visible-feedback{position:sticky;top:58px;z-index:29;margin:0;padding:10px 14px;border-left:4px solid #7863cd;background:#f2eeff;color:#29344b;font:15px/1.6 'Microsoft YaHei',sans-serif;max-height:144px;overflow:auto}
+#cq-visible-feedback[hidden]{display:none}
+#game-container{width:100%!important;max-width:1100px!important;margin:0 auto!important;border-radius:10px!important;box-shadow:none!important;min-height:0!important;height:auto!important;overflow:visible!important}
+.screen{padding:16px!important;min-height:0!important;max-height:none!important}
+.screen.active{gap:8px}
+.achievement-popup:not(.show){visibility:hidden;pointer-events:none}
+.header,.points-display,.rules-display,.steps,.input-grid,.output-inputs{margin-bottom:8px!important}
+.steps{display:none!important}
+.points-display{padding:8px!important}
+.output-inputs{margin-top:8px!important}
+.btn-main{padding:9px 18px!important;font-size:16px!important;min-height:40px;border-radius:8px!important}
+button,input,select{font-family:inherit;max-width:100%}
+input[type=number]{min-width:0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7457c4;outline-offset:2px}
+.input-grid button{min-height:36px;padding:7px!important}
+.controls{margin-top:8px!important}
+.point-card{padding:10px!important}
+.screen h2{margin:6px 0 10px;font-size:22px}
+.screen p{margin:8px 0;line-height:1.6}
+.screen .btn{margin-top:8px!important;padding:10px 20px!important;min-height:40px}
+.hud{padding:8px 12px!important}
+.rule-display{margin:4px 0!important;padding:8px!important;font-size:20px!important}
+.point-grid{gap:8px!important;margin-bottom:4px!important}
+.point-card .coord-text{margin-bottom:4px!important}
+.point-card .input-group{gap:4px!important}
+.point-card input{padding:6px!important}
+.point-card .toggle-opt{padding:7px!important}
+.controls{padding:10px!important}
+#game-container:has(#gameCanvas)>.header{display:none}
+.game-main{padding:12px!important;gap:8px!important}
+.canvas-wrapper{aspect-ratio:auto!important;height:clamp(200px,42vh,360px)!important}
+.game-main .level-badge{margin:0;padding:0}
+.game-main .action-bar{margin:0;gap:6px;flex-wrap:wrap}
+.game-main .action-bar button{padding:9px;font-size:14px}
+.game-main #explanation .option-btn{padding:8px!important;font-size:14px}
+#cq-record{position:static!important;max-width:1100px!important;margin:8px auto!important}
+@media(min-width:800px){
+ .point-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ .game-main{display:grid!important;grid-template-columns:minmax(0,1.4fr) minmax(270px,1fr);align-items:start}
+ .game-main #level-info,.game-main #target-text{grid-column:1/-1}
+ .game-main .canvas-wrapper{grid-column:1;grid-row:3/6}
+ .game-main #input-controls{grid-column:2;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr));margin:0!important}
+ .game-main .action-bar{grid-column:2;grid-row:4}
+ .game-main #feedback{grid-column:1/-1}
+ .game-main #explanation{grid-column:2;grid-row:3/6}
+ body:has(#out-a) #game-screen.active{display:grid;grid-template-columns:minmax(220px,1fr) minmax(290px,1fr);align-items:start;text-align:left}
+ body:has(#out-a) #game-screen>.header{grid-column:1/-1}
+ body:has(#out-a) #game-screen>.points-display{grid-column:1;grid-row:2}
+ body:has(#out-a) #game-screen>.rules-display{grid-column:1;grid-row:3}
+ body:has(#out-a) #input-section{grid-column:2;grid-row:2/5}
+ body:has(#out-a) #conclusion-section{grid-column:2;grid-row:2/5}
+ body:has(#out-a) #game-screen>:is(.controls,#feedback,#hint-box){grid-column:1/-1}
+}
+@media(min-width:760px){
+ body:has(#candidate-grid) #game-screen.active{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;align-items:start}
+ body:has(#candidate-grid) #level-title{grid-column:1/-1}
+ body:has(#candidate-grid) .rule-box{grid-column:1;grid-row:2/4;margin:0;padding:12px}
+ body:has(#candidate-grid) .table-container{grid-column:1;grid-row:4/7;margin:0}
+ body:has(#candidate-grid) #game-screen>p,body:has(#candidate-grid) .candidate-grid,body:has(#candidate-grid) .prediction-toggle,body:has(#candidate-grid) #submit-point-btn{grid-column:2;margin:0}
+ body:has(#candidate-grid) #feedback,body:has(#candidate-grid) #hint-container{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

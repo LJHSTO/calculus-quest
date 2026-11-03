@@ -121,12 +121,11 @@
   }
   function mountHost(next) {
     const tabs = document.querySelector(".workspace-canvas-toolbar");
-    if (!tabs) return null;
-    if (!toolbar?.isConnected) makeToolbar(tabs);
     let host;
     if (next.view.placement === "inline") {
       const pane = document.querySelector('.multi-scene-slide-panel:not([hidden])')
-        || document.querySelector('.multi-scene-scene-panel:not([hidden])');
+        || document.querySelector('.multi-scene-scene-panel:not([hidden])')
+        || (next.unitType==='quiz'&&document.querySelector('[data-quiz-support-host]'));
       if (pane) {
         host = pane.querySelector("[data-proactive-inline-host]");
         if (!host) {host = node("div", "proactive-inline-host"); host.dataset.proactiveInlineHost = ""; pane.append(host);}
@@ -136,6 +135,7 @@
       // conversation is closed. Do not mount it inside that hidden panel.
       host = document.querySelector(".workspace-chat-pane");
     }
+    if(host&&!toolbar?.isConnected)makeToolbar(tabs||host);
     return host;
   }
   function practiceExample(interactive) {
@@ -170,24 +170,6 @@
     section.append(node("p", "", data.question), node("small", "", "你主动打开的补充练习，不计入独立检查成绩。"));
     return section;
   }
-  function conversationForm() {
-    const form = node("form", "support-chat-form");
-    const label = node("label", "", "把你的想法告诉知点");
-    const input = node("textarea"); input.rows = 2; input.maxLength = 2000; input.placeholder = "写下你的理解或问题"; input.required = true;
-    label.append(input);
-    const button = node("button", "is-primary", "发送"); button.type = "submit";
-    const status = node("p", "support-form-status"); status.setAttribute("role", "status");
-    form.append(label, button, status);
-    form.addEventListener("submit", async event => {
-      event.preventDefault(); if (busy || !input.value.trim()) return;
-      busy = true; button.disabled = true; status.textContent = "知点正在整理思路…";
-      record("interacted", { interaction: "chat_send" });
-      try {await global.KnowledgeAssistant.supportAction("ask", input.value); input.value = "";}
-      catch {status.textContent = "消息未发送，请稍后重试。";}
-      finally {busy = false; button.disabled = false; renderKey = ""; sync(global.KnowledgeAssistant.designSpaceSnapshot());}
-    });
-    return form;
-  }
   function sync(next) {
     next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
     global.SupportCycleUI?.sync(next);
@@ -209,13 +191,13 @@
       if(toolbar){toolbar.hidden=Boolean(next.locked || next.check);syncToolbarSettings(next);}
       return;
     }
-    const eligible = next.signedIn && next.active && next.unitType === "knowledge" && !next.locked && next.taskReady !== false;
+    const eligible = next.signedIn && next.active && (next.unitType === "knowledge" || next.unitType === "quiz"&&next.quizSubmitted) && !next.locked && next.taskReady !== false;
     if (!eligible) {stopExposure(); if(shell) shell.hidden = true; if(toolbar) toolbar.hidden = true; return;}
     const host = mountHost(next);
     if (!host) {stopExposure(); if(shell) shell.hidden = true; return;}
     toolbar.hidden = false;
     syncToolbarSettings(next);
-    if(!next.offer&&!next.prompt&&!next.check&&!next.feedback&&!global.SupportCycleUI?.active(next.supportCycle)&&!global.SupportCycleUI?.manualOpen(next)&&next.view.modality==='tip'){if(shell)shell.hidden=true;return;}
+    if(!next.offer&&!next.prompt&&!next.check&&!next.feedback&&!next.muted&&!global.SupportCycleUI?.active(next.supportCycle)&&!global.SupportCycleUI?.manualOpen(next)&&!global.TaskSupport?.hasConversation(next)){if(shell)shell.hidden=true;return;}
     const owns = next.researchControls?.enabled || next.view.placement === "inline" || next.view.modality !== "tip"
       || (next.view.format||"plain")!=="plain" || ["A1","A4"].includes(next.offer?.authority?.level);
     if (!owns) {stopExposure(); if(shell) shell.hidden = true; return;}
@@ -227,7 +209,7 @@
     const moved = shell.parentNode !== host;
     if (moved) host.prepend(shell);
     shell.hidden = false; shell.dataset.placement = next.view.placement; shell.dataset.modality = next.view.modality;
-    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
+    const key = JSON.stringify([next.scopeKey,next.sceneType,next.reply,next.taskError,global.TaskSupport?.conversationRevision, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if (key === renderKey && !moved) {observeOffer(next); return;}
     if (busy) return;
     renderKey = key;
@@ -236,6 +218,8 @@
     if (previousDraft) drafts.set(shell.dataset.scopeKey || next.scopeKey, previousDraft.value);
     const draft = drafts.get(next.scopeKey) || "";
     const sameScope = shell.dataset.scopeKey === next.scopeKey;
+    const previousHistory=shell.querySelector('.task-conversation-scroll');
+    const historyTop=previousHistory?.scrollTop||0,replyId=next.reply?.id||'',followEnd=!previousHistory||previousHistory.dataset.replyId!==replyId||previousHistory.scrollHeight-historyTop-previousHistory.clientHeight<80;
     const activeField = shell.contains(document.activeElement) && document.activeElement.matches('textarea,input:not([type=radio]):not([type=checkbox])') ? document.activeElement : null;
     const fieldState = sameScope && activeField ? { tag: activeField.tagName, label: activeField.getAttribute('aria-label'), name: activeField.name,
       index: [...shell.querySelectorAll(activeField.tagName)].indexOf(activeField), start: activeField.selectionStart, end: activeField.selectionEnd,
@@ -246,29 +230,24 @@
     const header = node("header", "support-surface-header");
     const cycleActive=global.SupportCycleUI?.active(next.supportCycle);
     shell.dataset.cycle=String(Boolean(cycleActive));
-    header.append(node("strong", "", "知点 · 智能体老师"));
-    if(!cycleActive)header.append(node("span", "", labels[next.view.modality]));
+    header.append(node("strong", "", "知点"));
+    shell.classList.remove('is-collapsed');
     const close = node("button", "support-surface-collapse", "收起"); close.type = "button";
-    close.title = "收起补充展示，当前帮助保留在助教栏；不会替你拒绝帮助";
-    close.addEventListener("click", () => {record("dismissed", { reason: "surface_collapsed" }); global.KnowledgeAssistant.setSupportView({ placement: "sidebar", modality: "tip" });});
+    close.title = "暂时收起这条帮助，可以重新展开";
+    close.setAttribute('aria-expanded','true');
+    close.addEventListener("click", () => {const collapsed=shell.classList.toggle('is-collapsed');close.textContent=collapsed?'展开帮助':'收起';close.setAttribute('aria-expanded',String(!collapsed));record(collapsed?'dismissed':'opened', { reason: "surface_collapsed" });});
     if(!cycleActive)header.append(close); shell.append(header);
-    if (next.muted) {
-      const notice = node("div", "support-quiet-state", "本知识点的主动提醒已关闭。你仍可主动提问。");
-      const restore = node("button", "", "恢复本知识点提醒"); restore.type = "button"; restore.disabled = next.busy;
-      restore.addEventListener("click", () => global.KnowledgeAssistant.supportAction("restore")); notice.append(restore); shell.append(notice);
-    }
     const content = node("div", "support-surface-content");
     content.append(global.KnowledgeAssistant.createSupportContent()); shell.append(content);
-    if (!next.offer && !next.prompt && !next.check && !next.feedback && !global.SupportCycleUI?.active(next.supportCycle) && next.view.modality === "tip") {
+    global.TaskSupport?.appendConversation(content,next);
+    const history=content.querySelector('.task-conversation-scroll');if(history){history.dataset.replyId=replyId;history.scrollTop=followEnd?history.scrollHeight:historyTop;}
+    if (!next.offer && !next.prompt && !next.check && !next.feedback && !global.TaskSupport?.hasConversation(next) && !global.SupportCycleUI?.active(next.supportCycle) && next.view.modality === "tip") {
       shell.append(node("p", "support-quiet-state", "你可以继续独立探索。出现值得关注的学习证据时，知点才会提出建议。"));
     }
     // Supplements are explicitly learner-requested, never claimed to be the
     // same D3 manipulation as the policy-issued, unchanged support above.
     if (!next.check && !global.PilotStudyUI?.active(next) && ["example", "interactive"].includes(next.view.modality)) {
       const practice = practiceExample(next.view.modality === "interactive"); if(practice) shell.append(practice);
-    }
-    if (next.view.modality === "chat" && !next.check && !global.PilotStudyUI?.active(next)) {
-      const form = conversationForm(); form.querySelector("textarea").value = draft; shell.append(form);
     }
     if (next.check) shell.append(node("p", "support-independent-note", "先独立完成这道检查，也可以跳过。检查期间收起补充练习。"));
     record("rendered", { content: next.check ? "independent_check" : next.offer ? "policy_offer" : "learner_opened", supportLevel: next.offer?.supportLevel || next.policyState?.currentLevel || "L0" });

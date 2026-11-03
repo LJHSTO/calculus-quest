@@ -314,7 +314,7 @@ async function main() {
     assert.ok(firstConversationId);
     assert.equal(knowledgeAnswer.rows[0].conversationId, firstConversationId);
     assert.equal(knowledgeAnswer.rows[0].quota.remaining, 2);
-    assert.match(knowledgeAnswer.answer, /现在试一下/);
+    assert.ok(knowledgeAnswer.answer.includes(candidate.teachingContext.fact), '备用回应应对应当前互动课件的真实内容');
     assert.equal(knowledgeAnswer.rows[0].contextRef.resourceFingerprint.length, 20);
     assert.equal(knowledgeAnswer.rows.at(-1).guidance.showUnderstandingCheck, true);
     assert.equal(knowledgeAnswer.rows.at(-1).guidance.provenance.show, true);

@@ -59,18 +59,25 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       && response.request().method() === "POST");
     const inside=page.locator('.task-support-panel');
     const composer = embeddedMode ? inside.locator('textarea').last() : process.env.TEST_PROACTIVE_SURFACES === "1"
-      ? page.locator(".support-chat-form textarea") : page.locator("#knowledge-question-input");
+      ? page.locator(".task-response-form textarea") : page.locator("#knowledge-question-input");
     await composer.fill(replies[knowledgePointId]);
     if(embeddedMode)await inside.getByRole('button',{name:'发送我的想法',exact:true}).click();
-    else if (process.env.TEST_PROACTIVE_SURFACES === "1") await page.locator(".support-chat-form button[type=submit]").click();
+    else if (process.env.TEST_PROACTIVE_SURFACES === "1") await page.locator(".task-response-form button[type=submit]").click();
     else await composer.press("Enter");
     assert.equal((await answerResponse).status(), 200);
+    await page.waitForFunction(() => !KnowledgeAssistant.designSpaceSnapshot().busy);
+    assert.equal(Boolean(await page.evaluate(() => KnowledgeAssistant.designSpaceSnapshot().check)),false,'回应不能自动追加独立检查');
+    await page.getByRole('button',{name:'用一题检查',exact:true}).click();
     await page.waitForFunction(() => Boolean(KnowledgeAssistant.designSpaceSnapshot().check));
     const checkNotice = page.locator('#workspace-support-notice');
-    await checkNotice.waitFor({ state: 'visible' });
-    assert.equal(await checkNotice.innerText(), '继续独立检查', '支架后检查须有明显接续入口');
-    await checkNotice.click();
     const checkNode = page.locator(".knowledge-proactive-verification");
+    if(!(await checkNode.isVisible()) && await checkNotice.isVisible()){
+      assert.equal(await checkNotice.innerText(), '继续独立检查', '支架后检查须有明显接续入口');
+      await checkNotice.click({timeout:1000}).catch(async error=>{
+        // 自动定位可能先展开检查卡并收起入口；只有卡片仍不可见才算失败。
+        if(!(await checkNode.isVisible()))throw error;
+      });
+    }
     await checkNode.waitFor({ state: "visible" });
     if(embeddedMode){
       assert.equal(await inside.locator('.knowledge-proactive-inline-offer').count(),0,"独立检查时移除帮助提示，保留独立作答卡");
@@ -435,7 +442,7 @@ async function main() {
       await page.screenshot({path:path.join(temp,"六维提示实际呈现.png"),fullPage:true});
     }
     if (functionsLimits) {
-      const output = path.join(root, "output", "playwright", "函数极限介入显示审计");
+      const output = path.join(root, "output", "playwright", "函数极限介入显示审计", knowledgePointId, process.env.TEST_PROACTIVE_FINAL_OUTCOME || 'correct');
       fs.mkdirSync(output, { recursive: true });
       for (const width of [1366, 1920]) {
         await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
@@ -494,7 +501,7 @@ async function main() {
     );
     // 次级操作（换一种帮助 / 关闭此知识点提醒）必须始终留着，学生任何时候都有退路。
     assert.equal(
-      await (embeddedMode?initialOffer.getByRole('button',{name:'关闭此知识点提醒',exact:true}):page.locator("[data-knowledge-proactive-mute]")).isVisible(),
+      await (embeddedMode?initialOffer.getByRole('button',{name:'关闭本知识点主动提醒',exact:true}):page.locator("[data-knowledge-proactive-mute]")).isVisible(),
       true,
       "问理由不能变成把学生困住的死路"
     );
@@ -587,12 +594,7 @@ async function main() {
       await page.locator("[data-observatory-close]").click();
       console.log("D4八组合通过：同一真实提示内容、等级及生命周期保持不变。");
     }
-    if(embeddedMode){
-      await page.evaluate(id=>{const path=ensureAgenticPath();if(!path.unlocked.includes(id))path.unlocked.push(id);path.pendingPlan=null;currentUnitId=id;renderAll();KnowledgeAssistant.setSupportView({placement:'inline',modality:'tip'});KnowledgeAssistant.close();KnowledgeAssistant.sync();},knowledgePointId);
-      await page.locator('[data-workspace-canvas="interactive"]').click();
-      await page.locator('.workspace-canvas-toolbar [data-knowledge-scene="simulation"]').click();
-      await page.locator('.iframe-loader').waitFor({state:'hidden'});
-    }
+    // The offer belongs to this submitted quiz; exercise all levels in its real context.
     await verifySupportLifecycle(page, root, knowledgePointId);
     if(mvpMode){
       const memory=await page.evaluate(()=>KnowledgeAssistant.agentRuntimeRequest());
@@ -623,7 +625,7 @@ async function main() {
       "这一轮每条接受都写了理由；空说明说明 UI 把输入吞掉了"
     );
     if (process.env.TEST_PROACTIVE_SURFACES === "1") {
-      const draft=page.locator(".support-chat-form textarea");
+      const draft=page.locator(".task-response-form textarea");
       await draft.fill("未发送的隔离草稿");
       await page.locator(".support-display-settings summary").click();
       await page.locator('[data-support-value="example"]').click();
@@ -633,7 +635,7 @@ async function main() {
       await page.locator("#auth-menu-toggle").click();
       await page.locator("#auth-logout").click();
       await page.locator("#auth-gate").waitFor({state:"visible"});
-      assert.equal(await page.locator(".support-chat-form textarea").count(),0,"退出后清理本地草稿与帮助内容");
+      assert.equal(await page.locator(".task-response-form textarea").count(),0,"退出后清理本地草稿与帮助内容");
       assert.equal(await page.locator(".learning-support-surface:visible").count(),0);
       fs.writeFileSync(path.join(root, "output", "六维网站验收", "八种帮助呈现", "验收结果.json"), JSON.stringify({
         generatedAt: new Date().toISOString(), passed: true, knowledgePointId,

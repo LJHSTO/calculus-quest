@@ -7,6 +7,11 @@ assert.ok(fs.existsSync(modulePath), "主动伴学策略模块尚未实现");
 
 const { createProactiveCoach } = require(modulePath);
 
+{
+  const coach=createProactiveCoach();coach.consume({eventType:'unit_enter',unitId:'GH-01-K01',unitType:'knowledge',sceneType:'simulation',data:{}},0);
+  for(let i=0;i<12;i++)assert.equal(coach.consume({eventType:'courseware_exploration_observed',unitId:'GH-01-K01',unitType:'knowledge',sceneType:'simulation',data:{scene_type:'simulation',evidence_scope:'free_exploration_observation',independent:false,parameters:{channel:'input',value:i}}},4000*(i+1)),null,'正常探索不能生成主动帮助候选');
+}
+
 function unitEvent(unitId = "KP1", overrides = {}) {
   return {
     eventType: "unit_enter",

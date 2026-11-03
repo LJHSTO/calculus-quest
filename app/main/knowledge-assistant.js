@@ -24,6 +24,7 @@
   ]);
   let isOpen = false;
   let isAsking = false;
+  let taskRequestError = null;
   let loadingHistory = false;
   let activeContext = null;
   let recentInteraction = null;
@@ -112,7 +113,7 @@
   let designSpaceSyncPending = false;
 
   function supportSurfaceOwnsContent() {
-    return Boolean(global.ProactiveSurface && courseMeta().unitType === "knowledge"
+    return Boolean(global.ProactiveSurface && (courseMeta().unitType === "knowledge"||courseMeta().isQuiz&&courseMeta().quizSubmitted)
       && (proactiveStudy.researchControls?.enabled || supportView.placement === "inline" || supportView.modality !== "tip"
         || (supportView.format || "plain")!=="plain" || ["A1","A4"].includes(proactiveDecision?.authority?.level)));
   }
@@ -134,6 +135,8 @@
       taskReady: meta.taskReady,
       quizSubmitted: meta.quizSubmitted,
       generation: exposureGeneration,
+      taskMessages: messages.map(({id,role,content,error,streaming})=>({id,role,content,error:Boolean(error),streaming:Boolean(streaming)})),
+      taskError: taskRequestError?.unitId===meta.unitId&&taskRequestError.sceneType===(meta.sceneType||'slide')?taskRequestError.message:'',
       reply: messages.filter(message=>message.role==="assistant"&&!message.error).slice(-1).map(message=>({id:message.id,text:message.content||"",streaming:message.streaming===true}))[0]||null,
       replyQuestionId: messages.filter(message=>message.role==="assistant"&&!message.error).at(-1)?.contextRef?.questionId || activeContext?.questionId || "",
       signedIn: isSignedInNow(), active: learningViewActive(), locked,
@@ -380,7 +383,7 @@ const proactiveJustificationDrafts = new Map();
       <form class="knowledge-composer" data-knowledge-form>
         <label for="knowledge-question-input">输入你的问题</label>
         <div>
-          <textarea id="knowledge-question-input" data-knowledge-input rows="1" maxlength="1200" placeholder="例如：为什么 h 变小时，割线更接近切线？"></textarea>
+          <textarea id="knowledge-question-input" data-knowledge-input rows="1" maxlength="1200" placeholder="写下当前这一步不明白的地方…"></textarea>
           <button type="submit" data-knowledge-send aria-label="发送问题">↑</button>
         </div>
         <div class="knowledge-composer-meta">
@@ -2636,9 +2639,15 @@ const proactiveJustificationDrafts = new Map();
     const candidateId = suggestion?.decisionId || suggestion?.id;
     if (!ownerKey || !candidateId || !element) return;
     proactiveExposureMonitor?.watch(element, {
-      key: `${ownerKey}|${suggestion.unitId}|${candidateId}`,
+      key: `${ownerKey}|${suggestion.unitId}|${candidateId}|offer`,
       valid: () => currentProactiveExposure(suggestion, ownerKey),
-      metadata: { suggestion, ownerKey, ...supportView, ...presentation }
+      metadata: { suggestion, ownerKey, ...supportView, ...presentation, exposureKind: "offer" }
+    });
+    const body=element.querySelector('.knowledge-proactive-inline-offer-detail') || (element===els.proactive?els.proactiveBody:null);
+    if(body&&suggestion.action!=='review_mistake')proactiveExposureMonitor?.watch(body,{
+      key:`${ownerKey}|${suggestion.unitId}|${candidateId}|content`,
+      valid:()=>currentProactiveExposure(suggestion,ownerKey),
+      metadata:{suggestion,ownerKey,...supportView,...presentation,exposureKind:"support_content"}
     });
   }
 
@@ -2655,7 +2664,7 @@ const proactiveJustificationDrafts = new Map();
         decisionId: suggestion.decisionId || "", scopeKey: proactiveScopeKey(),
         fraction: receipt.fraction, visibleDurationMs: receipt.visibleDurationMs,
         minimumFraction: receipt.minimumFraction, minimumDurationMs: receipt.minimumDurationMs,
-        exposureSource, qualifiedVisible: true
+        exposureSource, qualifiedVisible: true, exposureKind:receipt.exposureKind||"offer"
       });
     } else {
       track("knowledge_proactive_suggestion_interacted", {
@@ -3985,6 +3994,7 @@ const proactiveJustificationDrafts = new Map();
       && String(prompt.content || "").trim()
       && String(prompt.interventionId || "").trim()
       && (!prompt.unitId || prompt.unitId === meta.unitId)
+      && (prompt.sceneType || 'slide') === (meta.sceneType || 'slide')
     );
   }
 
@@ -4059,10 +4069,10 @@ const proactiveJustificationDrafts = new Map();
     article.dataset.proactivePromptId = prompt?.id || "";
     const heading = document.createElement("div");
     const label = document.createElement("strong");
-    label.textContent = "老师带你看这一步";
+    label.textContent = "一起看这一步";
     const badge = document.createElement("small");
     badge.textContent = "学习帮助";
-    heading.append(label, badge);
+    heading.append(label);
     const body = document.createElement("p");
     setQuestionMathContent(body, prompt?.content || "");
     article.append(heading, body);
@@ -4104,7 +4114,11 @@ const proactiveJustificationDrafts = new Map();
     if (options.dismissible) {
       const footer = document.createElement("footer");
       const hint = document.createElement("span");
-      hint.textContent = "可以回到课件试一试，也可以继续提问。";
+      hint.textContent = "回到课件尝试，或在下方继续交流。";
+      const returnButton=document.createElement('button');returnButton.type='button';returnButton.textContent='回到本知识点课件';
+      const meta=courseMeta();
+      if(meta.isQuiz){returnButton.dataset.quizResourceLink=proactiveScopeKey(meta);returnButton.dataset.quizResourceScene=proactiveSceneForScope(proactiveScopeKey(meta),'simulation');}
+      else returnButton.addEventListener('click',()=>global.TaskSupport?.returnToTask());
       const dismiss = document.createElement("button");
       dismiss.type = "button";
       dismiss.textContent = "改为自由提问";
@@ -4123,14 +4137,15 @@ const proactiveJustificationDrafts = new Map();
         pendingProactivePrompt = null;
         pendingGeneratedDraft = "";
         setStatus("可以直接提出你想问的问题。", "");
-        render();
+        global.TaskSupport?.leaveConversation();
+        setOpen(true);
         window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
         track("knowledge_proactive_reply_skipped", {
           action: prompt?.action || "ask_clarification",
           unitId: prompt?.unitId || courseMeta().unitId
         });
       });
-      footer.append(hint, dismiss);
+      footer.append(returnButton, dismiss);
       article.appendChild(footer);
     }
     return article;
@@ -4164,7 +4179,7 @@ const proactiveJustificationDrafts = new Map();
     }[suggestion.supportLevel] || "知点建议";
     const badge = document.createElement("small");
     badge.textContent = suggestion.supportLevel || "可选";
-    heading.append(label, badge);
+    heading.append(label);
     const title = document.createElement("p");
     setQuestionMathContent(title, suggestion.title || "这里可能需要一个更小的切入点");
     const detail = document.createElement("div");
@@ -4189,7 +4204,7 @@ const proactiveJustificationDrafts = new Map();
       const wrapper=document.createElement("div"), toggle=document.createElement("button");
       toggle.type="button";
       detail.hidden=!(suggestion.authority?.autoExpanded && suggestion.authority?.receiptId);
-      const update=()=>{toggle.textContent=detail.hidden?"展开这条线索":"收起这条线索";toggle.setAttribute("aria-expanded",String(!detail.hidden));};
+      const update=()=>{toggle.textContent=detail.hidden?"查看简短提示":"收起简短提示";toggle.setAttribute("aria-expanded",String(!detail.hidden));};
       toggle.addEventListener("click",()=>{detail.hidden=!detail.hidden;update();
         track("proactive_content_toggled",{decisionId:suggestion.decisionId,expanded:!detail.hidden,format});});
       update();wrapper.append(toggle,detail);content=wrapper;
@@ -4198,7 +4213,7 @@ const proactiveJustificationDrafts = new Map();
     const accept = document.createElement("button");
     accept.type = "button";
     accept.className = "is-primary";
-    accept.textContent = suggestion.actionLabel || "接受线索";
+    accept.textContent = suggestion.action==='switch_representation'?(suggestion.actionLabel||'打开推荐课件'):"接受提示并继续交流";
     // 内联卡也要走同一套「先说理由」流程：如果走对话流的学生不必说理由，
     // 两条路径的 Hint Justification Rate 就不可比，等于给自己开了个后门。
     const justify = proactiveJustificationForm(suggestion);
@@ -4217,12 +4232,13 @@ const proactiveJustificationDrafts = new Map();
     });
     const dismiss = document.createElement("button");
     dismiss.type = "button";
-    dismiss.textContent = "稍后";
+    dismiss.textContent = "这次先不看";
     dismiss.addEventListener("click", () => {
       snoozeProactiveSuggestion();
     });
     actions.append(accept, dismiss);
-    article.append(heading, title, content, justify, actions);
+    const actionHelp=document.createElement('small');actionHelp.className='support-action-explanation';actionHelp.textContent='接受后可继续提问或回课件尝试；这次先不看会收起本条，之后只在新的学习需要出现时再提醒。';
+    article.append(heading, content, justify, actions);
     if(suggestion.authority?.autoExpanded && suggestion.authority.receiptId) {
       const undo=document.createElement("button");undo.type="button";undo.textContent="撤销自动展开";
       undo.addEventListener("click",async()=>{
@@ -4252,7 +4268,8 @@ const proactiveJustificationDrafts = new Map();
       if (learnerOptions.canMuteScope === true) {
         const mute = document.createElement("button");
         mute.type = "button";
-        mute.textContent = "关闭此知识点提醒";
+        mute.textContent = "关闭本知识点主动提醒";
+        mute.title = "仅关闭本知识点的主动提醒；仍可自己提问，也可在助教栏恢复。";
         mute.disabled = proactiveChoiceSaving;
         mute.addEventListener("click", () => {
           if (!markProactiveSuggestionShown(suggestion, { interaction: "mute_scope" })) return;
@@ -4342,7 +4359,7 @@ const proactiveJustificationDrafts = new Map();
             ? "还差一个关键关系"
             : "已结束本轮检查",
         text: result.status === "correct"
-          ? "这次支架后检查通过，知点停止加码；它只结束当前帮助回合，不代表已经掌握。"
+          ? "这道题的判断正确。可以继续学习；还有疑问时再来和我讨论。"
           : result.status === "incorrect"
             ? nextSupportAuthorized
               ? `这次支架后作答仍有卡点。只有你确认后，知点才会提供${nextSupportCopy}。`
@@ -4970,7 +4987,7 @@ const proactiveJustificationDrafts = new Map();
           ? "继续问这一题……"
           : pendingProactivePrompt
             ? "写下你的回答……"
-          : "例如：为什么 h 变小时，割线更接近切线？";
+          : "写下当前这一步不明白的地方…";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
     if (els.input.disabled) els.unitDetail.textContent = els.input.placeholder;
     els.pick.disabled = !meta.supported
@@ -5274,11 +5291,7 @@ const proactiveJustificationDrafts = new Map();
         if (!conversations.some((item) => item.id === activeConversationId)) {
           activeConversationId = conversations[0]?.id || "";
         }
-        if (activeConversationId) {
-          await loadHistory(meta, activeConversationId);
-        } else {
-          messages = [];
-        }
+        await loadHistory(meta, activeConversationId);
       }
     } catch (error) {
       if (requestId !== conversationListRequestId) return;
@@ -5548,6 +5561,7 @@ const proactiveJustificationDrafts = new Map();
     pendingGeneratedDraft = "";
     activeRequest = new AbortController();
     isAsking = true;
+    taskRequestError = null;
     // A delayed history refresh must not erase a new in-task response.
     conversationListRequestId += 1;
     historyRequestId += 1;
@@ -5662,6 +5676,7 @@ const proactiveJustificationDrafts = new Map();
         resizeComposer();
       }
       setStatus(error.message || "知点暂时没有接通，请稍后再试。", "error");
+      taskRequestError = {unitId:meta.unitId,sceneType:meta.sceneType||'slide',message:error.message||'知点暂时没有接通，请稍后再试。'};
       render();
     } finally {
       isAsking = false;
@@ -5675,7 +5690,7 @@ const proactiveJustificationDrafts = new Map();
       }
       renderUnit();
       renderMessages();
-      els.input.focus({ preventScroll: true });
+      if(!global.TaskSupport?.hasConversation(designSpaceSnapshot()))els.input.focus({ preventScroll: true });
     }
   }
 
@@ -5695,6 +5710,7 @@ const proactiveJustificationDrafts = new Map();
     const unitChanged = nextUnitKey !== currentUnitKey;
     const participantChanged = nextParticipantId !== currentParticipantId;
     const sceneChanged = meta.sceneType !== currentSceneType;
+    if(unitChanged||participantChanged||sceneChanged)taskRequestError=null;
     const quizStateChanged = meta.quizSubmitted !== currentQuizSubmitted;
     const supportChanged = meta.supported !== currentSupported;
     const outcomeOwnerChanged = proactiveOutcomeOwnerKey
@@ -5747,9 +5763,6 @@ const proactiveJustificationDrafts = new Map();
     }
 
     if (unitChanged || participantChanged || supportChanged) {
-      const retainedPrompt = !participantChanged && meta.unitType === "knowledge"
-        && !quizAssistantLocked(meta) && pendingProactivePrompt?.scopeKey === proactiveScopeKey(meta)
-        ? { ...pendingProactivePrompt, unitId: meta.unitId } : null;
       activeRequest?.abort();
       activeRequest = null;
       proactiveDecisionRequest?.abort();
@@ -5767,7 +5780,7 @@ const proactiveJustificationDrafts = new Map();
       activeContext = null;
       recentInteraction = null;
       pendingAssistantIntent = "";
-      pendingProactivePrompt = retainedPrompt;
+      pendingProactivePrompt = null;
       pendingGeneratedDraft = "";
       openMessageSourceId = "";
       els.input.value = "";
@@ -5790,7 +5803,7 @@ const proactiveJustificationDrafts = new Map();
       proactiveDecisionRequest = null;
       proactiveDecision = null;
       proactiveCandidateId = "";
-      if(!(pendingProactivePrompt?.scopeKey===proactiveScopeKey(meta) && proactiveScopeState(meta)?.lifecycle?.phase==="accepted_pending_response")) pendingProactivePrompt = null;
+      pendingProactivePrompt = null;
       if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
         els.input.value = "";
         pendingAssistantIntent = "";
@@ -6127,6 +6140,10 @@ const proactiveJustificationDrafts = new Map();
       const fragment = document.createDocumentFragment();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
       if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));return fragment;}
+      if(snapshot.muted){
+        const notice=document.createElement('div');notice.className='support-quiet-state';notice.append('本知识点的主动提醒已关闭，仍可自己提问。');
+        const restore=document.createElement('button');restore.type='button';restore.textContent='恢复本知识点提醒';restore.disabled=snapshot.busy;restore.onclick=()=>updateProactiveScopePreference('standard');notice.append(restore);fragment.append(notice);
+      }
       if(snapshot.unitType==="knowledge" && snapshot.researchControls?.enabled) {
         const content=global.SupportCycleUI?.render(snapshot);if(content)fragment.append(content);
         if(global.SupportCycleUI?.active(snapshot.supportCycle))return fragment;
@@ -6144,10 +6161,18 @@ const proactiveJustificationDrafts = new Map();
       observeProactiveOffer(element, offer);
     },
     unobserveSupportOffer(element) {
+      proactiveExposureMonitor?.unwatch(element?.querySelector('.knowledge-proactive-inline-offer-detail'));
       proactiveExposureMonitor?.unwatch(element);
     },
     confirmTaskExposure(offer) {
       return markProactiveSuggestionShown(offer,{exposureSource:"qualified_visible",placement:"inside_courseware",modality:"tip",fraction:.5,visibleDurationMs:1000,minimumFraction:.5,minimumDurationMs:1000});
+    },
+    async startTaskCheck(){
+      const meta=courseMeta(),s=designSpaceSnapshot();
+      if(!s.signedIn||s.locked||s.busy||s.policyState?.lifecycle?.phase!=='accepted_pending_response')return false;
+      const response=await fetch('api/learning/proactive/check',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.authToken}`},body:JSON.stringify({action:'start',chapterId:meta.chapterId,unitId:meta.unitId,scopeKey:proactiveScopeKey(meta),sceneType:meta.sceneType||'slide'})});
+      const payload=await response.json();if(!response.ok)throw new Error(payload.message||'检查暂未打开，请重试。');
+      pendingProactivePrompt=null;await loadProactiveStudy(meta,{force:true});render();return true;
     },
     async askInTask(question, questionId="") {
       const s=designSpaceSnapshot(),meta=courseMeta();

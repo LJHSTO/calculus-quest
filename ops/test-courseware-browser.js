@@ -265,7 +265,7 @@ async function frameHealth(frame, label, options = {}) {
     );
   }
   assert.equal(health.bridgeReady, true, `${label}: context bridge was not injected`);
-  if (health.canvases.length && options.type === "visualization3d") {
+  if (health.canvases.length && options.type === "visualization3d" && options.checkPixels !== false) {
     const canvas = frame.locator("canvas:visible").first();
     const image = (await canvas.screenshot()).toString("base64");
     const colors = await frame.locator("body").evaluate(async (_body, base64) => {
@@ -730,6 +730,15 @@ async function assertFormalSlide(page, label) {
 }
 
 async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
+  await page.evaluate(()=>{window.mediaChecks=[];const NativeAudio=window.Audio;window.Audio=class extends NativeAudio{constructor(...args){super(...args);window.mediaChecks.push(this);}};});
+  async function checkAudio(label){
+    await page.locator('[data-classroom-action=play]').click();
+    await page.waitForFunction(()=>{const a=window.mediaChecks.at(-1);return a&&!a.paused&&a.currentTime>.1;},{},{timeout:15000});
+    const result=await page.evaluate(()=>{const a=window.mediaChecks.at(-1);return {src:a.currentSrc,time:a.currentTime,caption:document.querySelector('#classroom-lecture-text').textContent};});
+    assert.ok(result.caption.trim(),label+' 播放时必须有字幕');
+    await page.locator('[data-classroom-action=play]').click();
+    runEvidence.cases.push({label:label+' 真实音频播放',passed:true,...result});
+  }
   let slides = 0;
   let resources = 0;
   let realInteractionChecks = 0;
@@ -750,6 +759,12 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
     });
     await page.locator('[data-workspace-canvas="slide"]').click();
     await assertFormalSlide(page, `正式站 ${entry.knowledgePoint.id}`);
+    if (entry.chapter.id === 'V14-C1') {
+      const visualDir = path.join(root, 'output/学生体验修复-20261102/课件逐页视觉');
+      fs.mkdirSync(visualDir, { recursive: true });
+      await page.screenshot({ path: path.join(visualDir, entry.knowledgePoint.id + '-slide.png') });
+    }
+    await checkAudio(entry.knowledgePoint.id+'讲解');
     slides += 1;
 
     for (const candidate of entry.resources) {
@@ -762,6 +777,7 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
         await frameHealth(frame, label, {
           type: candidate.type
         });
+        await checkAudio(label);
         // Transport probes must not count as evidence from real lesson controls.
         await page.evaluate(() => { window.__coursewareBrowserSignals = []; });
         const pointerEvidenceStart = await page.evaluate(() => window.__coursewarePointerDiagnostics?.length || 0);
@@ -940,6 +956,52 @@ async function assertFullscreen(page, button, target, label, workspace = false) 
     }),
     `${label}: knowledge assistant did not return to the learning shell`
   );
+}
+
+async function soakFormalPlayer(page, entries) {
+  const minutes = Number(process.env.COURSEWARE_BROWSER_SOAK_MINUTES || 0);
+  if (!minutes) return;
+  assert.ok(minutes > 0 && minutes <= 60);
+  const cdp = await page.context().newCDPSession(page);
+  const samples = [], started = Date.now(); let cycles = 0, switches = 0;
+  do {
+    for (const entry of entries) {
+      await page.evaluate(({ chapter, unit }) => { currentChapterId = chapter; currentUnitId = unit; renderAll(); }, { chapter: entry.chapter.id, unit: entry.knowledgePoint.id });
+      for (const candidate of entry.resources) {
+        const { frame } = await selectFormalResource(page, entry, candidate);
+        // This Playwright build retains iframe handles during child-frame screenshots/clicks.
+        await frameHealth(frame, entry.knowledgePoint.id + ' 长时切换', { type: candidate.type, checkPixels: false });
+        if (candidate.type === 'visualization3d' && entry.knowledgePoint.id === 'GH-02-K03') {
+          const outer = await page.locator('iframe[data-courseware-frame]').boundingBox();
+          const target = await frame.locator('#toggle-gap').evaluate(button => {
+            const r = button.getBoundingClientRect(); return { x: (r.x + r.width / 2) / innerWidth, y: (r.y + r.height / 2) / innerHeight };
+          });
+          for (let i = 0; i < 10; i++) await page.mouse.click(outer.x + target.x * outer.width, outer.y + target.y * outer.height);
+        }
+        await page.waitForTimeout(500);
+        assert.ok(page.frames().length <= 3, '仅保留讲解渲染器和当前互动课件，不能累积旧 iframe');
+        assert.equal(await page.locator('iframe[data-courseware-frame]').count(), 1);
+        switches++;
+      }
+    }
+    await page.locator('[data-classroom-action=fullscreen]').click();
+    await page.waitForFunction(() => Boolean(document.fullscreenElement));
+    assert.ok(await page.locator('#classroom-lecture-text').isVisible());
+    await page.locator('[data-classroom-action=fullscreen]').click();
+    await page.waitForFunction(() => !document.fullscreenElement);
+    await cdp.send('HeapProfiler.collectGarbage');
+    const usage = await cdp.send('Runtime.getHeapUsage');
+    const dom = await cdp.send('Memory.getDOMCounters');
+    samples.push({ atMs: Date.now() - started, heapBytes: usage.usedSize, ...dom });
+    cycles++;
+    console.log(JSON.stringify({ browserSoakMinutes: Math.round((Date.now() - started) / 60000), cycles, switches, heapMB: Math.round(usage.usedSize / 1048576), ...dom }));
+  } while (Date.now() - started < minutes * 60000);
+  assert.ok(samples.at(-1).heapBytes < samples[Math.min(1, samples.length - 1)].heapBytes * 2 + 30 * 1048576, '回收后堆内存不能随切换持续明显增长');
+  const warm = samples[Math.min(1, samples.length - 1)], last = samples.at(-1);
+  assert.ok(last.nodes < warm.nodes * 1.25 + 1000, '回收后页面节点不能随切换持续累积');
+  assert.ok(last.jsEventListeners <= warm.jsEventListeners + 30, '切换后监听器数量必须稳定');
+  runEvidence.browserSoak = { passed: true, durationMs: Date.now() - started, cycles, switches, samples, automationFrameHandlesAvoided: true };
+  await cdp.detach();
 }
 
 async function assertGh04Drag(page, surface) {
@@ -1162,7 +1224,8 @@ async function main() {
     const fullscreen = [];
     if (targetSurface !== "flow") {
       await prepareFormalPlayer(formalPage, registration.participant, registration.token);
-      formalResult = await auditFormalPlayer(formalPage, entries, baseUrl, adminToken);
+      formalResult = process.env.COURSEWARE_BROWSER_SOAK_ONLY === '1' ? null : await auditFormalPlayer(formalPage, entries, baseUrl, adminToken);
+      await soakFormalPlayer(formalPage, entries);
       assert.deepEqual(formalIssues, [], `Formal player browser issues:\n${JSON.stringify(formalIssues, null, 2)}`);
       console.log(JSON.stringify({ checkpoint: 'formal', ...formalResult, browserIssues: 0 }));
       if (process.env.COURSEWARE_BROWSER_SLOW_STATE === "1") {

@@ -602,7 +602,9 @@ function renderCoach(scene, chapterId, unitId) {
   `;
 }
 
-function knowledgeAudioRoot(unit) {
+function knowledgeAudioRoot(unit,sceneOrder=null) {
+  const candidate=sceneOrder&&(unit?.resourceCandidates||unit?.scene?.content?.knowledgePoint?.resourceCandidates||[]).find(r=>Number(r.sceneOrder)===Number(sceneOrder));
+  if(candidate?.audioRoot)return candidate.audioRoot;
   const root = unit?.scene?.content?.module?.source?.resourceRoot
     || (unit?.resourceCandidates || unit?.scene?.content?.knowledgePoint?.resourceCandidates || [])[0]?.root
     || "";
@@ -677,7 +679,7 @@ function renderKnowledgeAudioPack(unit, options = {}) {
       ${renderCoach(
         {
           ...(unit.scene || {}),
-          audioRoot: knowledgeAudioRoot(unit),
+          audioRoot: knowledgeAudioRoot(unit,sceneOrder),
           audioTitle: title,
           actions
         },
@@ -721,7 +723,7 @@ function focusKnowledgeSceneChoicePanel() {
 
 function renderResourceShell(unit, title, body, className = "") {
   const isKnowledgeResource = className.split(/\s+/).includes("multi-scene-knowledge-resource");
-  const resourceToolbar = isKnowledgeResource
+  const resourceToolbar = isKnowledgeResource || unit.type === 'quiz'
     ? ""
     : `<div class="resource-toolbar">
         <div>
@@ -751,6 +753,7 @@ function renderQuizReturnNotice(unit = {}) {
   `;
 }
 
+let mountedKnowledgeUnit=null,mountedKnowledgeKey='';
 function renderKnowledgeUnit(unit) {
   const content = unit.scene.content || {};
   const module = content.module || {};
@@ -761,6 +764,10 @@ function renderKnowledgeUnit(unit) {
   const selectedTypeId = selectedKnowledgeSceneType(unit);
   const selectedType = types.find((type) => type.id === selectedTypeId) || {};
   const candidate = selectedTypeId ? knowledgeResourceCandidate(unit, selectedTypeId) : null;
+  const renderKey=JSON.stringify([state.participant?.participantId,typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:0,unit.id,selectedTypeId,candidate?.root,candidate?.file,state.returnToQuiz]);
+  // Background progress refreshes must not recreate a student's live game.
+  if(mountedKnowledgeUnit===unit&&mountedKnowledgeKey===renderKey&&els.lessonPlayer.querySelector('.multi-scene-knowledge-player'))return;
+  mountedKnowledgeUnit=unit;mountedKnowledgeKey=renderKey;
   const slideAudioTitle = "讲解页语音包";
   const sceneAudioTitle = selectedTypeId ? `${sceneChoiceCategoryLabel(selectedType)}语音包` : "";
   analyticsTrack("knowledge_render", {
@@ -1130,19 +1137,19 @@ function renderQuiz(unit) {
         <div class="quiz-encouragement-banner" id="quiz-top-banner-${unit.id}">
           前测已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">先看学习建议；需要复盘或等待复核的题再看参考要点。</p>`;
+        `;
     } else if (unit.assessmentPhase === "post") {
       quizTopBanner = `
         <div class="quiz-encouragement-banner post" id="quiz-top-banner-${unit.id}">
           后测已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">先看学习建议；需要复盘或等待复核的题再看参考要点。</p>`;
+        `;
     } else {
       quizTopBanner = `
         <div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unit.id}">
           形成性测验已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">先看学习建议；需要复盘或等待复核的题再看参考要点。</p>`;
+        `;
     }
   }
 
@@ -1158,7 +1165,7 @@ function renderQuiz(unit) {
     const pathNavigation = typeof renderQuizPathNavigation === "function"
       ? renderQuizPathNavigation(unit)
       : "";
-    submittedTotalHtml = `<div class="quiz-section-total">${quizOutcomeHtml(summary)}</div>${pathNavigation}`;
+    submittedTotalHtml = pathNavigation;
   }
 
   els.lessonPlayer.innerHTML = `
@@ -1166,9 +1173,10 @@ function renderQuiz(unit) {
       unit,
       unit.label,
       `
-        ${renderAssessmentBanner(unit)}
+        ${submitted ? '' : renderAssessmentBanner(unit)}
         <div class="quiz-card" data-context-id="quiz:${escapeHtml(unit.id)}:page" data-context-kind="quiz" data-context-scope="quiz" data-context-confidence="medium" data-context-label="${escapeHtml(unit.label)}">
           ${quizTopBanner}
+          <div data-quiz-support-host></div>
           ${reviewingArchive ? '<p class="quiz-version-notice">这是此前已提交的旧版测验，保留原题和原成绩；新版题目不会覆盖这份记录。</p>' : ""}
           ${visibleQuestions
             .map((question, index) => {
@@ -1192,7 +1200,7 @@ function renderQuiz(unit) {
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
             <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : adaptiveState?.needsDiagnostic ? '提交诊断题' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
-            <p>${submitted ? '该测验已提交，答案、解析与评分状态可在题目下方回看。' : adaptiveState?.needsDiagnostic ? '核心题答错了，再完成一道诊断多选题，系统会据此定位具体误解。' : completionAllowed ? unit.assessmentPhase === "formative" ? '先完成核心题；答对即可通过，答错时会立即出现诊断题。' : '请独立完成整份测验。不确定的题目可以选择“我不会”，完成后统一提交。' : '该测验当前仅供预览；接受学习建议后才能提交并记录本节。'}</p>
+            <p>${submitted ? '可在题目下方查看解析，或选择一道题和知点讨论。' : adaptiveState?.needsDiagnostic ? '再完成一道诊断题，看看哪一步需要回顾。' : completionAllowed ? adaptiveState ? '先完成核心题；答错时会出现一道诊断题。' : '请独立完成本次测验。不确定时可以选择“我不会”，完成后统一提交。' : '接受学习建议后，即可提交本节测验。'}</p>
             <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>
@@ -1234,7 +1242,6 @@ function renderAssessmentBanner(unit) {
   if (!unit.assessmentPhase) return "";
   return `
     <div class="assessment-banner ${unit.assessmentPhase}">
-      <span class="type-pill">${phaseText(unit.assessmentPhase)}</span>
       <p>${phaseGoal(unit.assessmentPhase)}</p>
     </div>
   `;

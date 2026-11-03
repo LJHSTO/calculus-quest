@@ -270,7 +270,7 @@
               "width": 860,
               "height": 44,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; text-align: center; color: #F3F6F8;\">核心定义：函数不是你算出的数，而是你加工的方式</p>",
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #F3F6F8;\">函数：定义域内的每个输入，都有唯一的对应输出</p>",
               "defaultColor": "#F3F6F8",
               "defaultFontName": "Microsoft YaHei"
             },
@@ -310,7 +310,7 @@
               "width": 260,
               "height": 64,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">可以是任何值，</p><p style=\"font-size: 14px; text-align: center; color: #555555;\">如 2、-5、a</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">取自函数的定义域，</p><p style=\"font-size: 14px; text-align: center; color: #555555;\">如规则允许的 2、-5</p>",
               "defaultColor": "#555555",
               "defaultFontName": "Microsoft YaHei"
             },
@@ -490,7 +490,7 @@
               "width": 860,
               "height": 94,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #2C3E50;\">⚠️ 常见误解</p><p style=\"font-size: 14px; color: #333333;\">• 误解1：认为函数是一个固定的数值（如“y=2”）。→ 正解：函数是变量间的对应规则，输出随输入变化。</p><p style=\"font-size: 14px; color: #333333;\">• 误解2：认为函数只是一个名字。→ 正解：f(x)表示按规则得到的结果，函数本身是那套规则。</p>",
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #2C3E50;\">⚠️ 常见误解</p><p style=\"font-size: 14px; color: #333333;\">• 函数与输出值不同：f 是对应规则，f(x) 是给定输入的输出。常函数 f(x)=2 也是函数。</p><p style=\"font-size: 14px; color: #333333;\">• 输出不必随输入改变；关键是定义域中每个输入恰有一个输出。</p>",
               "defaultColor": "#333333",
               "defaultFontName": "Microsoft YaHei"
             }
@@ -512,8 +512,14 @@
         },
         {
           "id": "action_vLpAmtYH",
-          "text": "本场景聚焦“输入、输出和函数规则”。我们正式进入第一个知识点。请看屏幕上这句核心定义：函数不是你算出的数，而是你加工的方式。这句话非常关键，它和我们平时对数学的印象可能不太一样。",
-          "type": "speech"
+          "text": "这一页区分输入、函数规则和输出。函数把定义域内的每个输入对应到唯一的输出。请沿着页面上的箭头，观察这三个部分之间的关系。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-a69f9294e93c677f.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "80570ac5b2b0c7a03e397caeb5cd2caa5941e9c892e5f13e8d7df5e6924ed2aa",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_B-IokuIH",
@@ -524,7 +530,12 @@
           "id": "action_pmWRp3rD",
           "text": "为了帮助大家理解，我们把这个过程分成三步来看。第一步，我们先看左边这个‘x’，它是我们的‘输入’。",
           "type": "speech",
-          "audioRef": "audio/tts_s2_action_pmWRp3rD.mp3"
+          "audioRef": "audio/原音色讲解-75f33829dff75ea8.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "de64ea995b33aa33beef8c5229ab48d34a2de023593ec6b9880c5474a6ae9531",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_XZCeXrTr",
@@ -535,18 +546,28 @@
           "id": "action_CB98sf9I",
           "text": "输入必须取自这条函数规则允许的定义域。在当前线性规则中，可以输入2、-5等实数，也可以用字母表示定义域中的未知输入。",
           "type": "speech",
-          "narrationRevision": "teaching-review-20261019"
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "audioRef": "audio/原音色讲解-1f8f1df755a30bc8.mp3",
+          "narrationTextSha256": "f4869038398650130af67d26c9d5055005f4ac835e2a9a950087478b40e3e50f",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_auGSTZjU",
           "type": "spotlight",
-          "elementId": "shape_6sNboiZc"
+          "elementId": "text_kKU1_RtJ"
         },
         {
           "id": "action_1p80qMb8",
-          "text": "第二步，是中间这个最核心的‘加工过程’，也就是函数的‘规则’。比如，我们今天举的例子，规则是‘乘以2，再加1’。你看，这个规则本身才是真正的函数，它是一个动态的指令。",
+          "text": "第二步是加工规则。这里的例子是乘以二，再加一。规则和它允许的输入范围一起，确定了输入与输出的对应关系。",
           "type": "speech",
-          "audioRef": "audio/tts_s2_action_1p80qMb8.mp3"
+          "audioRef": "audio/原音色讲解-0b8bac08ece5a38b.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ed74c5fda4ffd1fba5b783f994f0adcd3bc013947e57a8e5a2217f1a6743a563",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_nCRnFmPn",
@@ -557,7 +578,12 @@
           "id": "action_zWQpQMiQ",
           "text": "第三步，原材料根据规则加工后，就变成了最后的‘输出’，也就是这里的f(x)。比如，当输入x等于2时，代入规则算出结果是5；当x等于-5时，最后得到-9。所以，f(x)代表的是经过规则加工后得到的产物。",
           "type": "speech",
-          "audioRef": "audio/tts_s2_action_zWQpQMiQ.mp3"
+          "audioRef": "audio/原音色讲解-7e7177cfd33bc3c5.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "92962cffc7740aae1d03434a97947e1c70eba3f2c208b95ad54c8ce82eb14307",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_onsJti7M",
@@ -568,7 +594,12 @@
           "id": "action_jtXUvF_L",
           "text": "函数 f 是对应规则，f(x) 是给定输入时的输出。常函数 f(x)=2 仍然是函数，因为每个合法输入恰好对应一个输出。不同输入可以得到相同的输出。",
           "type": "speech",
-          "narrationRevision": "teaching-review-20261019"
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "audioRef": "audio/原音色讲解-d3d0b3f1011fa45a.mp3",
+          "narrationTextSha256": "d6b79baa51135bc524ae94a7c8db40e581cd0fdce91b7a17d3920d7ea9bd2436",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -647,8 +678,14 @@
       "actions": [
         {
           "id": "action_8D5KclWC",
-          "text": "本场景通过交互探索“输入、输出和函数规则：拖动实验”。函数不是一个固定的数，而是一套把输入变成输出的规则。现在，让我们亲手来试试这个神奇的规则机器。请同学们看屏幕上的这个交互装置，它就像一台数字加工厂，你把x送进去，它经过中间的规则，就会吐出一个独一无二的f(x)。",
-          "type": "speech"
+          "text": "这一页可以改变输入并选择函数规则。先保持规则不变，拖动输入滑块，观察图上的点、输出数值和计算过程怎样一起变化。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-3f9cebe486740896.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "53357948073e5fbe285f2bc663fd5cee31f4a2ac141b4e446d851e07e01a0343",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_L6o0lTwk",
@@ -666,9 +703,14 @@
         },
         {
           "id": "action_Mcw1QEh5",
-          "text": "我先把它调到f(x)=2x这个规则。现在请大家注意看，我慢慢拖动 x 的滑块。当我把 x 拖到 2 的时候，机器里正在计算 2 乘以 2，输出口就立刻弹出了结果 4。",
+          "text": "选择线性规则，也就是输出等于输入的二倍。请把输入调到二，观察输出是否等于四。",
           "type": "speech",
-          "audioRef": "audio/tts_s3_action_Mcw1QEh5.mp3"
+          "audioRef": "audio/原音色讲解-edd34fe8fa973000.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fd1448eb61863d3ccfc7c79014e2ab3441507b04b3bf5b41de2f39a656aba452",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_G_t95qOE",
@@ -680,9 +722,14 @@
         },
         {
           "id": "action_zYg0UsV3",
-          "text": "现在我把 x 拖到 -3，你看到了什么？机器毫不犹豫地算出了 -6。你再怎么变 x，这个规则都稳稳地只给你一个答案。这就是函数最重要的特征：一个输入，只对应唯一的一个输出。现在，请大家自己也动手拖一拖滑块，换个规则比如 f(x)=x² 试试，观察一下是不是每个 x 也都有唯一的归宿？动手试试看吧。",
+          "text": "再把输入调到负三，观察输出是否等于负六。随后换成平方规则，比较不同输入的输出。每个允许的输入只有一个输出，但不同输入可以得到同一个输出。",
           "type": "speech",
-          "audioRef": "audio/tts_s3_action_zYg0UsV3.mp3"
+          "audioRef": "audio/原音色讲解-a60bde4551424ca4.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "0c84f8a0e1aa69cc286e135969d2c2f23b4e2ccc03165b1dd5f610f7d2dab5e6",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -767,7 +814,13 @@
         {
           "id": "action_HeWb2rZX",
           "text": "本场景通过交互探索“输入、输出和函数规则：关系图”。现在让我们换一个更清晰的视角，把它画成一张关系图。请大家看屏幕上出现的这个图表。",
-          "type": "speech"
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-dcaf75dd7da3111f.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "b9a809b7b022142cea36e4b776d862de84caedc37e082859d90bf18c0d586821",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_85yvzqek",
@@ -777,9 +830,14 @@
         },
         {
           "id": "action_6MkJaRyp",
-          "text": "最左边这个盒子就是我们熟悉的“输入”，也就是原材料 x。就像做饭时准备的面粉和鸡蛋。",
+          "text": "点击输入节点，查看横向流程的起点。输入是交给函数处理的数，必须属于这条规则允许的范围。",
           "type": "speech",
-          "audioRef": "audio/tts_s4_action_6MkJaRyp.mp3"
+          "audioRef": "audio/原音色讲解-befc35949691fb20.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "90f44a56138fa9cfc80cceb63b1c58c1f64ba6d508d6b08e1d2ce796c52d5ee7",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_IPzr8oPf",
@@ -789,9 +847,14 @@
         },
         {
           "id": "action_sl15ui_0",
-          "text": "中间这个像齿轮一样的，正是核心的“加工机器” f。它代表了我们之前练习的那些规则，比如加3或者乘以2。大家注意看从输入指向它的箭头，它意味着我们将 x 代入了机器。",
+          "text": "点击处理机节点，查看函数规则。箭头表示把输入代入规则，而不是把输入和规则当成同一个对象。",
           "type": "speech",
-          "audioRef": "audio/tts_s4_action_sl15ui_0.mp3"
+          "audioRef": "audio/原音色讲解-8b36f24390d57e9a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "a2c2ff132aaa850e89dc5d9413239cd8cc9d7d0f3e4062ea35f57938877003bd",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_6VqxZibw",
@@ -801,9 +864,14 @@
         },
         {
           "id": "action_1zWqNhCs",
-          "text": "原材料经过机器加工，从右边的箭头输出，就变成了我们的“成品” f(x)。一个输入进去，经过规则处理，一个唯一的输出就出来了。你能在这张图上清晰地找到这个唯一性的逻辑链条吗？",
+          "text": "继续展开输出节点。给定一个允许的输入，沿着规则只能得到一个确定的输出。请把输入、规则、输出依次对应起来。",
           "type": "speech",
-          "audioRef": "audio/tts_s4_action_1zWqNhCs.mp3"
+          "audioRef": "audio/原音色讲解-95f9b8ecd26c8059.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "11cadb0c7e79b34a63c0077bd63ca0604ad673fb8469198450a4af579696d236",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_xitsXpjL",
@@ -813,9 +881,14 @@
         },
         {
           "id": "action_9yx2CPWv",
-          "text": "最后，看到下面这个“动手试试”的节点了吗？它从机器的规则直接举例。比如机器 f 的规则是“加3”，那么输入1，输出就是4。现在请你点击中间的机器节点，看看它内部的转换逻辑，再对照下面的例子验证一下。",
+          "text": "再打开具体例子。如果规则是加三，输入一就得到输出四。用这个例子检查整条对应关系。",
           "type": "speech",
-          "audioRef": "audio/tts_s4_action_9yx2CPWv.mp3"
+          "audioRef": "audio/原音色讲解-929f8c9f4324e41d.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "0987e5f29f0d77b491e6db2911f98c6517fff9f21b7a14368bf565bf6f9e9ebf",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_A80bEH3x",
@@ -1099,7 +1172,13 @@
         {
           "id": "action_LV8JR9wO",
           "text": "本场景通过交互探索“输入、输出和函数规则：空间视角”。让我们换个角度看世界，把这种关系放到三维空间里，看得更立体！",
-          "type": "speech"
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-433a5f9f3cb84232.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "e3cf43431cd0bd420b37774055579027f9fde1b65e93aa6a3e40fc17bc4a7894",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_CRz9_sHP",
@@ -1120,7 +1199,12 @@
           "id": "action_P6Hgp4ww",
           "text": "看，这根蓝色的轴是我们的输入，也就是x。每一根从这里连出去的线，都带着一个输入值。",
           "type": "speech",
-          "audioRef": "audio/tts_s6_action_P6Hgp4ww.mp3"
+          "audioRef": "audio/原音色讲解-a4ae12819d0d4f03.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "07d1501e21ab0bdc6ded8e213a9cd11943552e185a5eb5219324520af03a08d5",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_kO-y6J6w",
@@ -1130,9 +1214,14 @@
         },
         {
           "id": "action_L6tHSgkM",
-          "text": "现在，请试着拖拽旋转一下视角。你看到了什么？是不是所有的线好像都连接到了某个平面上？这就是我们要寻找的几何规律。",
+          "text": "拖动视角观察输入轴、映射线和输出端点。同一个输入沿着映射线连接到一个确定的输出。空间视角只是帮助观察，函数关系仍由所选规则决定。",
           "type": "speech",
-          "audioRef": "audio/tts_s6_action_L6tHSgkM.mp3"
+          "audioRef": "audio/原音色讲解-5bd4e6a3db68630b.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "5207a2cef405286e0c89335b588768abb62dbb04516abac005546f3a572cdeb9",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_otg4943G",
@@ -1142,8 +1231,14 @@
         },
         {
           "id": "action_gX_m8_qN",
-          "text": "本场景中，我们提高密度，让更多的输入值参与映射。你会发现，当这些线足够多时，它们就拼出了一个完整的函数图像！",
-          "type": "speech"
+          "text": "提高采样密度，可以展示更多输入对应的输出。这些采样只包含一部分点；完整的函数图像包含定义域内每个输入与输出配成的点。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-548fdd70764bd1af.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "f99ab0f0db2786e0925efd537cadf748ebf19267d38fcee54d25f293196b2328",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_cSLoe5pe",
@@ -1156,9 +1251,14 @@
         },
         {
           "id": "action_Y12MS-Mw",
-          "text": "看，当我们把规则变成“平方”时，所有映射线的终点就连成了一条优美的曲线。这就是二次函数在空间中的图像。试着再旋转一下，从不同角度欣赏它吧。现在，你可以自由探索其他函数类型了。",
+          "text": "把规则改成平方，观察输出端点形成的曲线。再选择其他规则，比较映射线的终点如何变化。有限个采样点只是函数图像的近似展示。",
           "type": "speech",
-          "audioRef": "audio/tts_s6_action_Y12MS-Mw.mp3"
+          "audioRef": "audio/原音色讲解-003afcf3db6319dc.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "998db687c3b13d6f45a4eea623967a367d147655829ef27996574d0d0caef3df",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -1498,7 +1598,7 @@
             },
             {
               "id": "text_klCrI8LM",
-              "top": 180,
+              "top": 145,
               "left": 286,
               "type": "text",
               "width": 30,
@@ -2060,7 +2160,7 @@
               "width": 400,
               "height": 76,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #333333;\"><span style=\"color: #1B3A5C; font-weight: bold;\">• 唯一性：</span>每个点 (a, b) 对应唯一的输入 a 与输出 b</p>",
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><span style=\"color: #1B3A5C; font-weight: bold;\">• 唯一性：</span>定义域内，每个输入 a 只能对应一个输出 f(a)</p>",
               "defaultColor": "#333333",
               "defaultFontName": "Microsoft YaHei"
             },
@@ -2095,48 +2195,48 @@
             {
               "id": "text_eTExBn5w",
               "top": 408,
-              "left": 88,
+              "left": 78,
               "type": "text",
-              "width": 24,
+              "width": 44,
               "height": 43,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-4</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; white-space: nowrap; color: #666666;\">-4</p>",
               "defaultColor": "#666666",
               "defaultFontName": "Microsoft YaHei"
             },
             {
               "id": "text_P0RO6FyL",
               "top": 408,
-              "left": 138,
+              "left": 128,
               "type": "text",
-              "width": 24,
+              "width": 44,
               "height": 43,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-3</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; white-space: nowrap; color: #666666;\">-3</p>",
               "defaultColor": "#666666",
               "defaultFontName": "Microsoft YaHei"
             },
             {
               "id": "text_qp_s4oYp",
               "top": 408,
-              "left": 188,
+              "left": 178,
               "type": "text",
-              "width": 24,
+              "width": 44,
               "height": 43,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-2</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; white-space: nowrap; color: #666666;\">-2</p>",
               "defaultColor": "#666666",
               "defaultFontName": "Microsoft YaHei"
             },
             {
               "id": "text_TB-yezPS",
               "top": 408,
-              "left": 238,
+              "left": 228,
               "type": "text",
-              "width": 24,
+              "width": 44,
               "height": 43,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-1</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; white-space: nowrap; color: #666666;\">-1</p>",
               "defaultColor": "#666666",
               "defaultFontName": "Microsoft YaHei"
             },
@@ -2191,7 +2291,7 @@
             {
               "id": "text_jrAqcLHG",
               "top": 186,
-              "left": 240,
+              "left": 264,
               "type": "text",
               "width": 24,
               "height": 43,
@@ -2278,8 +2378,14 @@
         },
         {
           "id": "action_H87u8H86",
-          "text": "本场景聚焦“坐标点与函数图像”。可以观察到函数规则如何将输入编织成一条美丽的曲线。现在，让我们回到平面上，具体看看这条曲线上的每一个点，到底意味着什么。我们今天要探讨的核心就是：坐标点与函数图像。",
-          "type": "speech"
+          "text": "这一页学习坐标点与函数图像。请看左边的四个点：横坐标表示输入，纵坐标表示对应的输出。我们将逐一读出这些有序对，并检查点与函数规则的关系。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-eee477f45d189629.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "981508fab02a1efc2fc22117402881ab8f0d822ae9fccd4e907c85d6511bd4d4",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_g2ZKCNLu",
@@ -2290,7 +2396,12 @@
           "id": "action_i30V6NZA",
           "text": "首先，我们来建立一个关键理解。函数图像不是一幅随意画出的装饰画，它上面的每一个点，都代表着一种精确的对应关系。",
           "type": "speech",
-          "audioRef": "audio/tts_s7_action_i30V6NZA.mp3"
+          "audioRef": "audio/原音色讲解-19bdabb39847bfe0.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "1d1b14d042b464d46b605b2d2f93fea16940db092504673d0f6cb3dd70d0eb9d",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_q9gMwO6s",
@@ -2299,9 +2410,14 @@
         },
         {
           "id": "action_jxQK-Eqn",
-          "text": "我们的目标是，精准定位横轴上的输入 x 和纵轴上的输出 f(x) 的交叉点。想象一下，从 x 轴上的一个点出发，向上寻找它对应的输出值，这个交汇处，就形成了一个坐标点。",
+          "text": "输出的正负决定点在水平轴的哪一侧：正数在上方，负数在下方，零就在轴上。先读横坐标，按函数规则算出输出，再确定点的位置。",
           "type": "speech",
-          "audioRef": "audio/tts_s7_action_jxQK-Eqn.mp3"
+          "audioRef": "audio/原音色讲解-cae3655754218084.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "42a711530ea85de9993b1519cfb42cee15d2a03f1e671e30c9a7df6b9eb13ed1",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_tyfTLUSe",
@@ -2310,9 +2426,14 @@
         },
         {
           "id": "action_OZTi_ICj",
-          "text": "比如这里的点 A，它的坐标是 (1, 1)。这就清晰地告诉我们，当输入是 1 时，函数规则给出的输出也是 1。",
+          "text": "例如点 A 的横坐标是一，纵坐标也是一。它表示：输入等于一，对应的输出也等于一。",
           "type": "speech",
-          "audioRef": "audio/tts_s7_action_OZTi_ICj.mp3"
+          "audioRef": "audio/原音色讲解-ae288607732a4781.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "8110bc5d52bd465013facd5a986a8f0fe703027a4afe24c90b12f864d17f0d57",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_xk_zNl85",
@@ -2323,7 +2444,12 @@
           "id": "action_uV-x0GE8",
           "text": "再看点 B，坐标是 (2, 4)。它表示输入 2，对应输出 4。所有这些点，都是 (输入, 输出) 的真实映射，而不是随意的图形。",
           "type": "speech",
-          "audioRef": "audio/tts_s7_action_uV-x0GE8.mp3"
+          "audioRef": "audio/原音色讲解-d308ef6ee2d7a441.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "102434293073f9073458fa2ab7ae95189c1d0e6930df4015574ee8878d5dcf75",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_VZsMR3pl",
@@ -2332,9 +2458,14 @@
         },
         {
           "id": "action_Kq1e_xej",
-          "text": "请大家牢牢记住这句话：图像是函数关系在平面上的真实映射。每一个点(a, b)都唯一对应着一个输入 a 和它的输出 b，这就像函数的指纹，独一无二。理解了这一点，函数图像就不再神秘，而是一本我们可以读懂的坐标故事书。",
+          "text": "图像上的每个点，都由一个输入和它的输出配成。判断一个点是否属于函数图像，要检查纵坐标是否等于这个横坐标对应的函数值。",
           "type": "speech",
-          "audioRef": "audio/tts_s7_action_Kq1e_xej.mp3"
+          "audioRef": "audio/原音色讲解-7abcc52d9ee0ef78.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "a435b0690d3142fa1f9b821e2642777d18b60b8c0ba51a822c3f331af29e6a8a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -2353,8 +2484,14 @@
       "actions": [
         {
           "id": "action_ls_sQ4R0",
-          "text": "本场景通过交互探索“坐标点与函数图像：拖动实验”。函数图像就像一本坐标故事书，每个点都在讲述一个输入x和输出f(x)的故事。现在，我们亲手来描摹这个故事。",
-          "type": "speech"
+          "text": "这一页请你动手确定图像点的位置。每个点的横坐标表示输入，纵坐标表示这个输入对应的输出。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-42be49298f7e72b7.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "c39fa083ec8ee4616d9aeb56a177886564366a71cddef91c59d9ec31b0e0253a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_zrkq7lk5",
@@ -2364,9 +2501,14 @@
         },
         {
           "id": "action_VFLlabEB",
-          "text": "你看，右侧会提示一个具体的x值。你的任务就是思考这个x对应的f(x)是多少，然后把那个闪闪发光的点拖到准确的(x, f(x))位置。",
+          "text": "点击启动后，画面会给出一组橙色点。每个点旁边标着它的横坐标。横向位置已经确定，你需要把点拖到符合函数规则的高度。",
           "type": "speech",
-          "audioRef": "audio/tts_s8_action_VFLlabEB.mp3"
+          "audioRef": "audio/原音色讲解-f8528337c8b0aad8.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fed1f759b09fbc8fcc6a40b6b738bf2bc3792c9cb2a2ecc011260bdc02152555",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_oIRoNjIv",
@@ -2379,9 +2521,14 @@
         },
         {
           "id": "action_hF33x2WD",
-          "text": "比如，现在提示的x值是2，而我们的函数规则是f(x)=2x+1。那我们应该把这个点拖到哪里呢？大胆去试一试。",
+          "text": "以输出等于输入的二倍再加一为例：当横坐标等于二，纵坐标应当是多少？先计算，再拖动对应的橙色点进行检验。",
           "type": "speech",
-          "audioRef": "audio/tts_s8_action_hF33x2WD.mp3"
+          "audioRef": "audio/原音色讲解-619bded7f3d51ed1.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "cb70c63ebd5afa6bd712fa4f2395900c42c7217ec0a1329f20f2210ceeaf48a6",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_Mq3AmPIj",
@@ -2393,7 +2540,12 @@
           "id": "action_-ge4LICH",
           "text": "每完成一个点，你就亲手描绘了图像的一小部分。当你完成几个点后，抬起头看看，是不是开始感受到“点动成线”是怎样发生的了？",
           "type": "speech",
-          "audioRef": "audio/tts_s8_action_-ge4LICH.mp3"
+          "audioRef": "audio/原音色讲解-d4abe669e107f65d.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "b2edb23fff1bc9f2c01c45836d43d59b1963b2789d0d359f876f42fef87fdc31",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -2478,8 +2630,14 @@
       "actions": [
         {
           "id": "action_KjfsGboU",
-          "text": "本场景通过交互探索“坐标点与函数图像：关系图”。可以观察到它们是如何出现在图像上的。现在，大家给我们带来了一张关系图，帮我们把这些步骤背后的逻辑看得更清楚。",
-          "type": "speech"
+          "text": "这张关系图展示了输入、输出和图像点之间的联系。请点击节点，查看横坐标与纵坐标怎样配成一个点。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-5e3654e4d02c08e6.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ce68458e2719e59918b6044d67b6b3049b4ab57e02cc761cc580387df5c40fe7",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_IdXPU4Vu",
@@ -2491,7 +2649,12 @@
           "id": "action_3PhEcqs-",
           "text": "我们先看最左边这个节点，它代表输入值 x。x 就是横坐标，它决定了点在水平方向上的位置。你可以想象成，x 告诉我们在一条东西向的路上，从起点出发走了多远。",
           "type": "speech",
-          "audioRef": "audio/tts_s9_action_3PhEcqs-.mp3"
+          "audioRef": "audio/原音色讲解-e1910937caba5392.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "43d49046ded9ce18c66ff6f09ee860751da75a796a0a88eb1cdc75b443ce8413",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_APy8a16v",
@@ -2501,9 +2664,14 @@
         },
         {
           "id": "action_1autJRJU",
-          "text": "再看右边，这是 f(x) 数值节点，也就是纵坐标。它告诉我们点在竖直方向上的高度，就像一栋楼里的楼层数。x 和 f(x) 都有了，怎么变成一个点呢？",
+          "text": "右边的节点表示输出数值，也就是点的纵坐标。它决定点的上下位置。请比较横坐标与纵坐标各自的作用。",
           "type": "speech",
-          "audioRef": "audio/tts_s9_action_1autJRJU.mp3"
+          "audioRef": "audio/原音色讲解-04c3b41041135657.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "7277d6c8288a098811f806335460ca40ab29fcf17e02dc9e491449122ff76fff",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_IyTMxtiJ",
@@ -2513,9 +2681,14 @@
         },
         {
           "id": "action_LZsnpt6w",
-          "text": "中间这个“合并算子”就是关键。它把代表横向位置的 x 和代表纵向高度的 f(x) 配成一对，变成一个坐标 (x, f(x))。这就像我们把街道和楼层组合起来，就能找到大楼里的一个房间。",
+          "text": "中间的合并节点把输入和输出组成一个有序对：先写横坐标，再写纵坐标。这个有序对确定了图像上的一个点。",
           "type": "speech",
-          "audioRef": "audio/tts_s9_action_LZsnpt6w.mp3"
+          "audioRef": "audio/原音色讲解-322530b4a9bc8c4f.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "6d78a30adff45d3b30ea6f9c0eecb19d3664e7b6ac48698160b4fc5fad519dd0",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_KcoMAY-V",
@@ -2525,9 +2698,14 @@
         },
         {
           "id": "action_5hbAhtXQ",
-          "text": "最后，我们就在坐标系里得到了一个确定的点！如果你想象我们刚刚在拖动实验里创建的那些点，每一个都是这样，由它的 x 值和 f(x) 值配对生成的。无数个这样的点连起来，就构成了我们看到的函数图像。你可以试着点击图上任意一个节点，看看它对应的部分是怎么被点亮的。",
+          "text": "横坐标和纵坐标配成一个有序对，就确定了平面上的一个点。函数图像由定义域内所有这类点组成。点击节点或逐步展开，检查从输入到图像点的过程。",
           "type": "speech",
-          "audioRef": "audio/tts_s9_action_5hbAhtXQ.mp3"
+          "audioRef": "audio/原音色讲解-76369534e1d5fefe.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ba23f22a777b1a6e2bd2a038ba9ffd6862860f92f66fa8638f8dc60bf3ca65f7",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -2766,8 +2944,14 @@
       "actions": [
         {
           "id": "action_wCn5TLH6",
-          "text": "本场景通过交互探索“坐标点与函数图像：空间视角”。大家还特别强调了每个点都必须遵守函数规则。现在我们把视角拉起来，从空中看看这个规则到底长什么样。",
-          "type": "speech"
+          "text": "这一页用立柱的高度展示函数输出。先选择函数，再点击地面网格，比较不同输入对应的立柱高度。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-c6f790c2c425a687.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "3ff5bfe659ed400c2174e57a799f77da57b804a4936befa70a88e7e300939e98",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_S0ZfSuhR",
@@ -2781,7 +2965,12 @@
           "id": "action_c7Bh2ann",
           "text": "看，地面上这条红色的线是 x 轴，而垂直向上的蓝色方向，就是 f(x) 的值，也就是函数的输出。",
           "type": "speech",
-          "audioRef": "audio/tts_s11_action_c7Bh2ann.mp3"
+          "audioRef": "audio/原音色讲解-2cfe60f5462379ec.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ed21aa4ffa57d5ffeda3d93a4b14cac9bb5ef0aca137cfd0c6b403d0415a31aa",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_hWETh3yO",
@@ -2791,8 +2980,14 @@
         },
         {
           "id": "action_VoQfkymK",
-          "text": "就像我们刚才在纸上画的点，每一个 x 的位置，都有一根柱子立起来。柱子的高度，就是那个 x 对应的输出。你之前问为什么一个 x 只能有一个输出，你看——如果立起两根不一样高的柱子，它们就会打架，在空间里根本没法同时存在。",
-          "type": "speech"
+          "text": "每个横坐标对应的柱高表示这个输入的输出。函数要求每个允许的输入只有一个输出。若同一输入对应两个不同柱高，这种对应关系就不符合函数的定义。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-f7535ed5b83140d1.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fba1967ea62dc5da5bbb1dadb51d8719ebd5df2fd063a46ea2440a6c22aaa845",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_HjXDKPxc",
@@ -2802,9 +2997,14 @@
         },
         {
           "id": "action_RLsAPItZ",
-          "text": "现在，轮到你来当建筑师了。试着用鼠标旋转一下视角，从侧面看一看，这些立柱的顶端是不是连成了一条我们熟悉的曲线？然后，试着点击地面上的不同位置，亲手立几根柱子，感受一下输出值是怎么被\"拔高\"的。",
+          "text": "旋转视角，比较立柱顶端的位置。再点击不同的输入位置，观察对应的输出高度；输出为负数时，立柱会伸向基准面的下方。",
           "type": "speech",
-          "audioRef": "audio/tts_s11_action_RLsAPItZ.mp3"
+          "audioRef": "audio/原音色讲解-5b5ec2570a905591.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "c540ba8ef2fe5e097877b6ea7227fe129b07d6b3b06769f7fe344fa87b5f009a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_y6PK_O1a",
@@ -3026,184 +3226,250 @@
           },
           "elements": [
             {
-              "id": "text_dJERVS2Y",
-              "top": 50,
-              "left": 60,
+              "id": "trend-title",
               "type": "text",
+              "left": 60,
+              "top": 35,
               "width": 880,
-              "height": 70,
+              "height": 55,
               "rotate": 0,
-              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">图像的上升、下降与变化方向</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
+              "content": "<p style=\"font-size:30px;line-height:1.45;color:#1e40af;margin:0\"><b>图像的上升、下降与变化方向</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1e40af"
             },
             {
-              "id": "shape_ckB0SXeO",
-              "top": 125,
-              "fill": "#e2e8f0",
+              "id": "trend-observe",
+              "type": "text",
               "left": 60,
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "type": "shape",
+              "top": 100,
               "width": 880,
-              "height": 2,
+              "height": 42,
               "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "fixedRatio": false
+              "content": "<p style=\"font-size:21px;line-height:1.45;color:#334155;margin:0\">按输入从小到大的顺序，观察输出如何变化。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
             },
             {
-              "id": "shape_MbqVq5jo",
-              "top": 150,
-              "fill": "#f0f9ff",
+              "id": "trend-label-0",
+              "type": "text",
               "left": 60,
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "top": 166,
+              "width": 270,
+              "height": 40,
+              "rotate": 0,
+              "content": "<p style=\"font-size:23px;line-height:1.45;color:#3475c5;margin:0\"><b>上升</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#3475c5"
+            },
+            {
+              "id": "trend-axis-0",
+              "type": "line",
+              "left": 75,
+              "top": 374,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                240,
+                0
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
+            },
+            {
+              "id": "trend-curve-0",
               "type": "shape",
-              "width": 420,
-              "height": 140,
+              "left": 85,
+              "top": 235,
+              "width": 210,
+              "height": 105,
               "rotate": 0,
               "viewBox": [
                 1,
                 1
               ],
+              "path": "M 0 1 Q 0.5 1 1 0",
+              "fill": "transparent",
+              "outline": {
+                "color": "#3475c5",
+                "width": 3,
+                "style": "solid"
+              },
               "fixedRatio": false
             },
             {
-              "id": "text_DL9_Xc6y",
-              "top": 164,
-              "left": 80,
+              "id": "trend-rule-0",
               "type": "text",
-              "width": 380,
-              "height": 112,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #0284c7;\">🎯 核心目标</p><p style=\"font-size: 18px; color: #334155;\">用语言准确描述函数的变化趋势：</p><p style=\"font-size: 18px; color: #334155;\">上升、下降或保持水平。</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
-            },
-            {
-              "id": "shape_X2a6iHZF",
-              "top": 150,
-              "fill": "#fff7ed",
-              "left": 520,
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "type": "shape",
-              "width": 420,
-              "height": 140,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "fixedRatio": false
-            },
-            {
-              "id": "text_89w9NbeN",
-              "top": 164,
-              "left": 540,
-              "type": "text",
-              "width": 380,
-              "height": 112,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #ea580c;\">🔄 修复误解</p><p style=\"font-size: 18px; color: #334155;\">不再只盯着单个数字计算，</p><p style=\"font-size: 18px; color: #334155;\">而是学会看整体趋势。</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
-            },
-            {
-              "id": "text_Fv8wkGG6",
-              "top": 310,
               "left": 60,
-              "type": "text",
-              "width": 880,
-              "height": 52,
+              "top": 395,
+              "width": 270,
+              "height": 38,
               "rotate": 0,
-              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #1e293b;\">📌 问题：当 x 向右走，f(x) 往哪走？</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
+              "content": "<p style=\"font-size:20px;line-height:1.45;color:#3475c5;margin:0\">y = x²，x > 0</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#3475c5"
             },
             {
-              "id": "shape_FthyFd6F",
-              "top": 370,
-              "fill": "#f0fdf4",
-              "left": 60,
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "id": "trend-label-1",
+              "type": "text",
+              "left": 370,
+              "top": 166,
+              "width": 270,
+              "height": 40,
+              "rotate": 0,
+              "content": "<p style=\"font-size:23px;line-height:1.45;color:#b86c2a;margin:0\"><b>下降</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#b86c2a"
+            },
+            {
+              "id": "trend-axis-1",
+              "type": "line",
+              "left": 385,
+              "top": 374,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                240,
+                0
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
+            },
+            {
+              "id": "trend-curve-1",
               "type": "shape",
-              "width": 280,
-              "height": 140,
+              "left": 395,
+              "top": 235,
+              "width": 210,
+              "height": 105,
               "rotate": 0,
               "viewBox": [
                 1,
                 1
               ],
+              "path": "M 0 0 L 1 1",
+              "fill": "transparent",
+              "outline": {
+                "color": "#b86c2a",
+                "width": 3,
+                "style": "solid"
+              },
               "fixedRatio": false
             },
             {
-              "id": "text_TWIKMQwI",
-              "top": 381,
-              "left": 80,
+              "id": "trend-rule-1",
               "type": "text",
-              "width": 240,
-              "height": 118,
+              "left": 370,
+              "top": 395,
+              "width": 270,
+              "height": 38,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #16a34a; text-align: center;\">📈 上升</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">x 增大时，</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">f(x) 也随之增大。</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">(如：y = x)</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
+              "content": "<p style=\"font-size:20px;line-height:1.45;color:#b86c2a;margin:0\">y = −x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#b86c2a"
             },
             {
-              "id": "shape_L6PG42NP",
-              "top": 370,
-              "fill": "#fef2f2",
-              "left": 360,
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "type": "shape",
-              "width": 280,
-              "height": 140,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "fixedRatio": false
-            },
-            {
-              "id": "text_tvhaa8ou",
-              "top": 381,
-              "left": 380,
+              "id": "trend-label-2",
               "type": "text",
-              "width": 240,
-              "height": 118,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #dc2626; text-align: center;\">📉 下降</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">x 增大时，</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">f(x) 反而减小。</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">(如：y = -x)</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
-            },
-            {
-              "id": "shape_jTku2iu_",
-              "top": 370,
-              "fill": "#f8fafc",
-              "left": 660,
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "type": "shape",
-              "width": 280,
-              "height": 140,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "fixedRatio": false
-            },
-            {
-              "id": "text_rRj_TJUO",
-              "top": 381,
               "left": 680,
-              "type": "text",
-              "width": 240,
-              "height": 118,
+              "top": 166,
+              "width": 270,
+              "height": 40,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #475569; text-align: center;\">⟷ 水平</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">x 增大时，</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">f(x) 保持不变。</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">(如：y = 5)</p>",
-              "defaultColor": "#333333",
-              "defaultFontName": "Microsoft YaHei"
+              "content": "<p style=\"font-size:23px;line-height:1.45;color:#54846c;margin:0\"><b>保持水平</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#54846c"
+            },
+            {
+              "id": "trend-axis-2",
+              "type": "line",
+              "left": 695,
+              "top": 374,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                240,
+                0
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
+            },
+            {
+              "id": "trend-curve-2",
+              "type": "shape",
+              "left": 705,
+              "top": 235,
+              "width": 210,
+              "height": 105,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0.5 L 1 0.5",
+              "fill": "transparent",
+              "outline": {
+                "color": "#54846c",
+                "width": 3,
+                "style": "solid"
+              },
+              "fixedRatio": false
+            },
+            {
+              "id": "trend-rule-2",
+              "type": "text",
+              "left": 680,
+              "top": 395,
+              "width": 270,
+              "height": 38,
+              "rotate": 0,
+              "content": "<p style=\"font-size:20px;line-height:1.45;color:#54846c;margin:0\">y = 5</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#54846c"
+            },
+            {
+              "id": "trend-sign",
+              "type": "text",
+              "left": 60,
+              "top": 454,
+              "width": 880,
+              "height": 36,
+              "rotate": 0,
+              "content": "<p style=\"font-size:19px;line-height:1.45;color:#334155;margin:0\">输出的正负 ≠ 变化方向：负数也可以逐渐增大。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "trend-evidence",
+              "type": "text",
+              "left": 60,
+              "top": 495,
+              "width": 880,
+              "height": 36,
+              "rotate": 0,
+              "content": "<p style=\"font-size:18px;line-height:1.45;color:#334155;margin:0\">判断整个区间，需要结合完整图像或规则，不能只看几个点。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
             }
           ],
           "background": {
@@ -3219,78 +3485,114 @@
         {
           "id": "action_52WoO4YN",
           "type": "spotlight",
-          "elementId": "text_dJERVS2Y"
+          "elementId": "trend-title"
         },
         {
           "id": "action_iEjmZqXu",
-          "text": "本场景聚焦“图像的上升、下降与变化方向”。也了解了原点的特殊意义。现在，让我们从一个全新的角度来观察函数图像。我们不再只看一个个静止的点了，而是要看整条线的‘动态’。大家看看屏幕，今天我们的核心话题就是：图像的上升、下降与变化方向。",
-          "type": "speech"
+          "text": "这一页学习图像的上升、下降与变化方向。我们按横坐标从小到大的顺序，观察输出变大、变小，还是保持不变。输出是正数还是负数，是另一个需要区分的问题。",
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-08abbee28db8c44a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "1a1052385b7e1b62906f6f61e3d649c10afd323bd8d9576cbfa71b55e8c3f6e0",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_JzHHO0zh",
           "type": "spotlight",
-          "elementId": "text_Fv8wkGG6"
+          "elementId": "trend-observe"
         },
         {
           "id": "action_7Z2lujWB",
-          "text": "我们要问自己一个关键问题：当 x 沿着横轴向右走，也就是不断增大时，对应的 f(x) 这个点，在纵轴上，是往上走、往下走，还是保持不动呢？我们把这想象成观察一座山或一条路的走向。",
+          "text": "按横坐标从小到大的顺序观察：输出是在增大、减小，还是保持不变？注意，函数值是一个数，图像上的点则由输入和输出共同确定。",
           "type": "speech",
-          "audioRef": "audio/tts_s13_action_7Z2lujWB.mp3"
+          "audioRef": "audio/原音色讲解-9e0303fa37eaf062.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "a6d1f687ad2ec8a9402101be1818362a8b7b2bb48ac2284a6ce6c8a6c10070f2",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_oU_jVySA",
           "type": "spotlight",
-          "elementId": "text_DL9_Xc6y"
+          "elementId": "trend-observe"
         },
         {
           "id": "action_te3bI23a",
           "text": "所以，这节课的核心目标，就是用我们自己的语言，比如‘上升’、‘下降’或‘保持水平’，来准确地描述一个函数图像的整体趋势。这就像在给函数‘讲故事’。",
           "type": "speech",
-          "audioRef": "audio/tts_s13_action_te3bI23a.mp3"
+          "audioRef": "audio/原音色讲解-d18a5eb2f2474c06.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fe73f607262ede29e629b84030ca0a65aa166539038079f1502b38c6e308bb5e",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_IytaDxi1",
           "type": "spotlight",
-          "elementId": "text_89w9NbeN"
+          "elementId": "trend-evidence"
         },
         {
           "id": "action_qqIyPfzq",
           "text": "同时，我们还需要修复一个小误解。很多同学可能会习惯性地只盯着一两个数字去计算。现在，让我们尝试‘抬起头’，去看整条线从左到右的宏观走势，锻炼一种‘读图’的能力。",
           "type": "speech",
-          "audioRef": "audio/tts_s13_action_qqIyPfzq.mp3"
+          "audioRef": "audio/原音色讲解-8e5dc41ddf2f52f1.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "75bd7c2ff8b7ae5555952d28b9034ca38a8348b5317a4a673a628061ccd71495",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_jfC3d_17",
           "type": "spotlight",
-          "elementId": "text_TWIKMQwI"
+          "elementId": "trend-curve-0"
         },
         {
           "id": "action_6h6l79zc",
           "text": "比如，如果我们看到，随着 x 增大，f(x) 的值也跟着增大，图像看起来像是在‘爬坡’，我们就说它是‘上升’的。像我们之前见过的 y 等于 x 平方的图像，在 x 大于 0 这边，就是一条漂亮的上坡路。",
           "type": "speech",
-          "audioRef": "audio/tts_s13_action_6h6l79zc.mp3"
+          "audioRef": "audio/原音色讲解-c46358b9855881d0.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "2369e4235882ad86954a144b1224a64c877ee2e838068bdb165b76417bcbc14a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_viiBvfSH",
           "type": "spotlight",
-          "elementId": "text_tvhaa8ou"
+          "elementId": "trend-curve-1"
         },
         {
           "id": "action__3KT8miB",
           "text": "反过来，如果 x 在变大，但 f(x) 反而在变小，图像看起来像在下坡，我们自然就叫它‘下降’。比如 y 等于负 x 的图像，就是一条直直的下坡。",
           "type": "speech",
-          "audioRef": "audio/tts_s13_action__3KT8miB.mp3"
+          "audioRef": "audio/原音色讲解-c1b2df303a739eb2.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "b73004422d424f31e457bc835f4a90b0e70e5ed8a8e2e8e0afd4fec8a87bae42",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_2r4jbSb5",
           "type": "spotlight",
-          "elementId": "text_rRj_TJUO"
+          "elementId": "trend-curve-2"
         },
         {
           "id": "action_tRJGwCXY",
-          "text": "最后，还有一种特别稳定的情况，无论 x 怎么走，f(x) 永远是一个固定的数，图像就是一条水平的直线，比如 y 等于 5。像不像在平坦的大道上散步呢？这就是我们所说的‘水平’。",
+          "text": "如果输入改变时，输出一直等于同一个数，例如五，图像就是一条水平直线。这时函数既不上升，也不下降。",
           "type": "speech",
-          "audioRef": "audio/tts_s13_action_tRJGwCXY.mp3"
+          "audioRef": "audio/原音色讲解-81b2d485bee9518e.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "5f4f5f52c7303be103da17851c6964f15a57de9ca30c1cc415b634fd2cd6541f",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null
@@ -3379,7 +3681,13 @@
         {
           "id": "action_iqgZHHDo",
           "text": "本场景通过交互探索“图像的上升、下降与变化方向：拖动实验”。函数图像有时是平坦的水平线，有时却像过山车。今天我们就用小实验来亲眼看看，图像到底在什么时候上升，什么时候下降。",
-          "type": "speech"
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-9b45128734e275fc.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "88ffc62fec1bdf618e333e8db11460c0cdc40c768efbf08cfda836e49ea66853",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_1KZvRgY9",
@@ -3389,9 +3697,14 @@
         },
         {
           "id": "action_vP5UUgMN",
-          "text": "来，我们先从简单的开始。请试着用慢速，从最左边慢慢向右拖动这个x滑块，仔细看看移动过程中，右边的轨迹高度发生了什么变化？",
+          "text": "先点击启动，再在曲线上拖动观察点。按横坐标从小到大的顺序比较输出，并留意页面显示的横坐标、函数值和变化方向。",
           "type": "speech",
-          "audioRef": "audio/tts_s14_action_vP5UUgMN.mp3"
+          "audioRef": "audio/原音色讲解-db8db7554c90870a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "669798d7bd4ea45f1eb4cf8ff2d34bd7ca514f8fcefeceb61d639bdccc2dfb2c",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_YC_p7lVD",
@@ -3407,7 +3720,12 @@
           "id": "action_R_oG1X85",
           "text": "注意看，当x在不断增大的时候，如果y也跟着变大了，图像就会向高处走，这就是‘上升’。如果y反而变小了，图像向低处走，这就是‘下降’。",
           "type": "speech",
-          "audioRef": "audio/tts_s14_action_R_oG1X85.mp3"
+          "audioRef": "audio/原音色讲解-4fe809611902fdd6.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "92a866f59982ad955ffc5efb23e81eaa35a48562d80b222f2f5d653be368d1dd",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_QW4yTMdb",
@@ -3417,9 +3735,14 @@
         },
         {
           "id": "action_zXGgD2eF",
-          "text": "好，我们换个状态看看。现在请你自己试着从右向左倒着拖动，看看绿色和红色会不会反过来出现？这能帮我们更深刻地理解‘变化方向’是和x的移动牢牢绑在一起的。",
+          "text": "也可以反向拖动，比较同一段上的输出值。判断函数上升还是下降时，始终按横坐标从小到大的方向观察；鼠标反向移动不会改变函数在这个区间的增减性。",
           "type": "speech",
-          "audioRef": "audio/tts_s14_action_zXGgD2eF.mp3"
+          "audioRef": "audio/原音色讲解-ba6f042730b903ab.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "c5140520ba1cf3e0c50cac55b096bef8c3526a034da7f8657df4db179441f926",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_ltrPnJVL",
@@ -3580,7 +3903,13 @@
         {
           "id": "action_4GGBkPbR",
           "text": "本场景通过交互探索“图像的上升、下降与变化方向：关系图”。感受到了图像变化的方向。现在我们把关于“变化方向”的知识，整理成一张清晰的关系图。点击节点，看看它们是如何分类的。",
-          "type": "speech"
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-0266c3579aee5933.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "1dc28fe7aa35a98adb6008087bb936baa02a1e4f9c0da7293a6845eca9cb827b",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_lSs334Zh",
@@ -3598,7 +3927,12 @@
           "id": "action_PvJdyYP9",
           "text": "变化方向回答了一个核心问题：当x变大时，y是怎么变的？我们看到，从这个核心，分出了三种基本的变化类型。",
           "type": "speech",
-          "audioRef": "audio/tts_s15_action_PvJdyYP9.mp3"
+          "audioRef": "audio/原音色讲解-e001c9a75b209c22.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fc83aefe4bb892dce2f19b725885499fa816c623620f0bce73e811b6f6151ce5",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_Zp9qUQUP",
@@ -3622,7 +3956,12 @@
           "id": "action_qWkSsrvw",
           "text": "很好，这三种是最基础的。但有些图像没那么简单，它的变化方向是会改变的，这就属于第四种“复杂变化”。比如先升后降的“山峰”形，和先降后升的“山谷”形。",
           "type": "speech",
-          "audioRef": "audio/tts_s15_action_qWkSsrvw.mp3"
+          "audioRef": "audio/原音色讲解-c4e551c652b52d24.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "4a69f70ecdff8619dd1839879c0c2048af5e62b7ee1d7b1818cc61fe6e6f70c6",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_Vkb7_k6S",
@@ -3885,7 +4224,13 @@
         {
           "id": "action_ZrIgoIYQ",
           "text": "本场景通过交互探索“图像的上升、下降与变化方向：空间视角”。现在让我们换一个视角，真正“走进”函数的世界。看，眼前这片起伏的地面，就像一座小山。那座山的“高度”，就是函数值 f(x)。",
-          "type": "speech"
+          "type": "speech",
+          "audioRef": "audio/原音色讲解-28796ff9be1cdc9a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ec6af36eecac67802bb13918710bff40d9ea454c685f2b456d13a8fb4639aad9",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_4r632yUI",
@@ -3906,9 +4251,14 @@
         },
         {
           "id": "action_zsmMYK72",
-          "text": "我们从山顶正上方往下看，颜色越红的地方，代表山越高，也就是 f(x) 的值越大。现在，让我们在山上放一个小红球。点击“开始滑动”，看看它是怎么走的。",
+          "text": "拖动视角观察地形的高低，也可以点击开始滑动，观察小球沿指定截面的运动。判断函数增减时，仍要按横坐标从小到大的顺序比较高度。",
           "type": "speech",
-          "audioRef": "audio/tts_s17_action_zsmMYK72.mp3"
+          "audioRef": "audio/原音色讲解-9acd230f5d0a7861.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "7d082a3f8d5621b22e5767eb8f19d21123355f10d6518cd60107a23043e0f48a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_ndj-GJUL",
@@ -3935,9 +4285,14 @@
         },
         {
           "id": "action_uDpPFerv",
-          "text": "切换到侧面，仔细盯住小球。你发现了吗？在平缓的山坡上，它慢悠悠地走；而在陡峭的崖壁上，它会突然加速，飞一样地冲下去。这个速度的快慢，就是我们后面要说的“变化率”的直观感受。坡越陡，变化得就越快。",
+          "text": "切换视角，比较同样一段横向距离上的高度变化。高度变化越大，对应截面的斜率绝对值通常越大。小球的运动还受动画参数影响，不能直接把球速当作函数的变化率。",
           "type": "speech",
-          "audioRef": "audio/tts_s17_action_uDpPFerv.mp3"
+          "audioRef": "audio/原音色讲解-5f9d9f9a926e5972.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "9890ab26fcbc424afe7f2de1fd8d8a3b37eead1c8aac8749720512039866c7d6",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_j9J1DiFB",
@@ -3947,9 +4302,14 @@
         },
         {
           "id": "action_1EcNfQ8Q",
-          "text": "现在，你可以拖动下面的“重力大小”或“地形高度”滑块，自己当一次地形设计师。试试看，把山变得更陡一点，小球的反应会发生什么戏剧性的变化？",
+          "text": "改变地形高度，比较截面的高低差；改变重力，比较动画运动。正的高度倍数会改变高低差，但不会翻转同一截面从左到右的增减方向。",
           "type": "speech",
-          "audioRef": "audio/tts_s17_action_1EcNfQ8Q.mp3"
+          "audioRef": "audio/原音色讲解-bdd33f419eeb5f74.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "b656735854560a4b0b68f6a0181240b542836ab1b64951cf95f86e69460da0eb",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ],
       "whiteboards": null

@@ -37,6 +37,7 @@ async function main(){
  assert.equal(formal.protocolFingerprint,p.fingerprint);assert.equal(formal.studyId,p.id);assert.deepEqual(formal.runtimeManifest,runtime);
  runtime={build:'fixture-2',prompt:'prompt-2'};
  const next=study.protocol();assert.notEqual(next.id,p.id);assert.equal(next.teacherReview.status,'pending');
+ const continued=study.resolve({id:'synthetic-owner'},'B');assert.equal(continued.id,run.id,'体验修复不能悄悄新建空白学习轮次');assert.equal(continued.protocolFingerprint,run.protocolFingerprint,'保留原始协议标识');assert.equal(continued.previewRuntimeFingerprint,next.fingerprint);assert.equal(study.exportData().records.filter(r=>r.kind==='preview_runtime_update').length,1);assert.equal(makeStudy().resolve({id:'synthetic-owner'},'B').id,run.id);assert.equal(preferences.read(run.id).revision,revision,'配置与答题仍属于原轮次');
  assert.throws(()=>study.resolve({id:'synthetic-formal'},'assigned'),/版本/);assert.throws(()=>study.enroll({id:'synthetic-formal'},{consent:true}),/版本/);
  assert.deepEqual(study.exportData().protocols.find(x=>x.id===p.id),p,'旧协议不得被修改或借用其教师确认');
  assert.equal(makeStudy().get(formal.id).protocolFingerprint,p.fingerprint,'重启保留冻结清单');

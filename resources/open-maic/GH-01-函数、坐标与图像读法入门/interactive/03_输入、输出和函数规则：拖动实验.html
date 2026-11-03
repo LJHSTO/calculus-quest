@@ -35,7 +35,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
 {
   "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "concept-exploration-20261027-v1",
+  "contract_revision": "free-observation-no-injected-support-20261102-v1",
   "course_version": "multi-scene-functions-limits-20260917-r2",
   "chapter_id": "V14-C1",
   "chapter_title": "函数与极限",
@@ -52,9 +52,6 @@ let sessionStorage = window.__openMaicSessionStorage;
   "evidence_events": [
     "scene_entered",
     "scene_completed",
-    "attempt_submitted",
-    "challenge_result",
-    "task_progress",
     "exploration_observed"
   ],
   "capabilities": {
@@ -64,11 +61,11 @@ let sessionStorage = window.__openMaicSessionStorage;
       "button",
       "canvas"
     ],
-    "reports_attempt": true,
-    "reports_challenge": true,
+    "reports_attempt": false,
+    "reports_challenge": false,
     "reports_hint": false,
     "reports_reset": false,
-    "judges_correctness": true,
+    "judges_correctness": false,
     "requires_webgl": false,
     "requires_network": false,
     "keeps_local_state": true
@@ -88,12 +85,6 @@ let sessionStorage = window.__openMaicSessionStorage;
   "completion_semantics": {
     "success_requires": "产生与本知识点目标一致的可观察交互变化",
     "failure_is_evidence": false
-  },
-  "concept_exploration": {
-    "version": "concept-exploration-20261027-v1",
-    "optional": true,
-    "grading": "server_rechecked_process",
-    "independent": false
   },
   "free_exploration": {
     "version": "free-exploration-20261027-v1",
@@ -1179,7 +1170,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 </style>
 
 <style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
-</head>
+<link data-exploration-layout rel="stylesheet" href="../../主动探索证据/课件工作区.css"></head>
 <body>
 
 <div class="app-container">
@@ -2551,10 +2542,10 @@ updateDisplay();
 
 
 
+
+
 <!-- concept-exploration:start -->
 <script type="application/json" data-concept-exploration>{"point":"GH-01-K01","scene":"simulation"}</script>
-<script src="../../主动探索证据/exploration-model.js"></script>
-<script src="../../主动探索证据/exploration-runtime.js"></script>
 <script src="../../主动探索证据/free-exploration.js"></script>
 <script src="../../主动探索证据/free-exploration-runtime.js"></script>
 <!-- concept-exploration:end -->

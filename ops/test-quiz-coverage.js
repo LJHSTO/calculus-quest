@@ -258,13 +258,14 @@ const readableAnswerHtml = sandbox.renderQuestionReview({
     ],
     analysis: "当 n 趋于无穷时，T_n 稳定接近 12，说明该极限值就是所求面积。"
   },
-  result: { response: ["A"], answer: ["A"], isCorrect: true },
+  result: { response: ["B"], answer: ["A"], isCorrect: false },
   index: 0,
   unit: reviewUnit
 });
 assert.match(readableAnswerHtml, /class="answer-choice-marker"[^>]*>A<\/span>/);
 assert.match(readableAnswerHtml, /class="answer-choice-copy">/);
 assert.match(readableAnswerHtml, /class="analysis-line">/);
+assert.doesNotMatch(readableAnswerHtml, /题目焦点|这题主要卡在|行动建议/, '解析不能重复题干或凭选择推断学生的心理困难');
 assert.doesNotMatch(readableAnswerHtml, /class="answer-lines analysis-line">/);
 
 const readableShortAnswerHtml = sandbox.renderQuestionReview({
@@ -314,45 +315,25 @@ const linkedQuestion = {
   question: "请先回看[[cq-unit:GH-01-K01|simulation|回看课件：目标课件]]，再回答：测试题目。"
 };
 const linkedResult = { response: ["B"], answer: ["A"], isCorrect: false };
-const lockedPreHtml = sandbox.renderQuestionReview({
-  question: linkedQuestion,
-  result: linkedResult,
-  index: 0,
-  unit: { ...reviewUnit, assessmentPhase: "pre" }
-});
+const lockedPreHtml = sandbox.renderQuestionTextWithLinks(linkedQuestion, { ...reviewUnit, assessmentPhase: "pre" });
 assert.doesNotMatch(lockedPreHtml, /data-quiz-resource-link/);
 assert.match(lockedPreHtml, /请根据对应知识点/);
-assert.match(lockedPreHtml, /完成前测后的学习路径选择/);
+
 assert.doesNotMatch(lockedPreHtml, /可以先回看/);
 
-const lockedFormativeHtml = sandbox.renderQuestionReview({
-  question: linkedQuestion,
-  result: linkedResult,
-  index: 0,
-  unit: { ...reviewUnit, assessmentPhase: "formative" }
-});
+const lockedFormativeHtml = sandbox.renderQuestionTextWithLinks(linkedQuestion, { ...reviewUnit, assessmentPhase: "formative" });
 assert.doesNotMatch(lockedFormativeHtml, /data-quiz-resource-link/);
-assert.match(lockedFormativeHtml, /对应课件尚未解锁/);
+assert.match(lockedFormativeHtml, /请根据对应知识点/);
 assert.doesNotMatch(lockedFormativeHtml, /可以先回看/);
 
 accessibleQuizResources.add("GH-01-K01");
-const unlockedFormativeHtml = sandbox.renderQuestionReview({
-  question: linkedQuestion,
-  result: linkedResult,
-  index: 0,
-  unit: { ...reviewUnit, assessmentPhase: "formative" }
-});
+const unlockedFormativeHtml = sandbox.renderQuestionTextWithLinks(linkedQuestion, { ...reviewUnit, assessmentPhase: "formative" });
 assert.match(unlockedFormativeHtml, /data-quiz-resource-link="GH-01-K01"/);
-assert.match(unlockedFormativeHtml, /可以先回看/);
+
 assert.match(unlockedFormativeHtml, /回看「目标课件」课件/);
 assert.doesNotMatch(unlockedFormativeHtml, /请先回看回看课件/);
 
-const unlockedPreHtml = sandbox.renderQuestionReview({
-  question: linkedQuestion,
-  result: linkedResult,
-  index: 0,
-  unit: { ...reviewUnit, assessmentPhase: "pre" }
-});
+const unlockedPreHtml = sandbox.renderQuestionTextWithLinks(linkedQuestion, { ...reviewUnit, assessmentPhase: "pre" });
 assert.doesNotMatch(unlockedPreHtml, /data-quiz-resource-link/);
 assert.doesNotMatch(unlockedPreHtml, /回看课件/);
 assert.doesNotMatch(unlockedPreHtml, /请先回看/);
@@ -362,16 +343,11 @@ const futureLinkedQuestion = {
   ...choiceQuestion,
   question: "请先回看[[cq-unit:knowledge-future|simulation|回看课件：后续课件]]，再回答：测试题目。"
 };
-const blockedFutureFormativeHtml = sandbox.renderQuestionReview({
-  question: futureLinkedQuestion,
-  result: linkedResult,
-  index: 0,
-  unit: reviewUnit
-});
+const blockedFutureFormativeHtml = sandbox.renderQuestionTextWithLinks(futureLinkedQuestion, { ...reviewUnit, assessmentPhase: "formative" });
 assert.doesNotMatch(blockedFutureFormativeHtml, /data-quiz-resource-link/);
 assert.doesNotMatch(blockedFutureFormativeHtml, /回看课件/);
 assert.doesNotMatch(blockedFutureFormativeHtml, /请先回看/);
-assert.match(blockedFutureFormativeHtml, /本次形成性测验不提供后续课件入口/);
+
 
 for (const chapter of route.chapters || []) {
   const units = routeUnits(chapter);

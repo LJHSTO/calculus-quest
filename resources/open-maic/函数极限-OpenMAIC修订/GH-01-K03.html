@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>构造挑战：位置与方向</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px;
+            background: var(--primary);
+            color: white;
+        }
+        .header h1 { margin: 0; font-size: 1.5rem; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+        /* Game Area */
+        .game-main {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Canvas Container */
+        .canvas-wrapper {
+            position: relative;
+            background: #f9f9f9;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            aspect-ratio: 16/9;
+            width: 100%;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            background: #f1f3f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #666;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        /* Action Buttons */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #357abd; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-hint { background: #f39c12; color: white; }
+
+        /* Feedback Area */
+        .feedback {
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        .feedback.error { background: #fdf2f2; border-left: 4px solid var(--danger); display: block; }
+        .feedback.success { background: #f0fff4; border-left: 4px solid var(--success); display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Level Indicator */
+        .level-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        /* Explanation Modal */
+        .explanation-options {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #eef2f7;
+            border-radius: 8px;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .option-btn:hover { border-color: var(--primary); }
+
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.95);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+        }
+        #start-screen > button { flex: 0 0 auto; }
+
+        .hidden { display: none !important; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .controls { grid-template-columns: 1fr 1fr; }
+            .header h1 { font-size: 1.2rem; }
+        }
+    </style>
+
+<link rel="stylesheet" href="字体-6dab387eaf.css">
+<script src="依赖-dc84b296ec.js"></script>
+<script src="依赖-9cb8dacfc0.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    renderMathInElement(document.body, katexOptions);
+
+    const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        mutations.forEach((mutation) => {
+            if (mutation.target &&
+                mutation.target.className &&
+                typeof mutation.target.className === 'string' &&
+                mutation.target.className.includes('katex')) {
+                return;
+            }
+            shouldRender = true;
+        });
+
+        if (shouldRender) {
+            safeRender();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    setInterval(() => {
+        const text = document.body.innerText;
+        if (text.includes('\\(') || text.includes('$$')) {
+            safeRender();
+        }
+    }, 2000);
+});
+</script>
+<script id="cq-lesson-evidence">
+// 本页练习证据；重置题目不会抹掉本次访问已使用的提示或纠错历史。
+(function () {
+  const rounds = new Map(); let current = '第一轮';
+  function entry() { if(!rounds.has(current)) rounds.set(current,{round:current,hints:0,attempts:[],completed:false}); return rounds.get(current); }
+  function category(e) { return e.hints ? '本组提示后完成' : e.attempts.some(a=>!a.correct) ? '本组纠错后完成' : '本组未用提示完成'; }
+  function render() {
+    const list=document.getElementById('cq-record-list'); if(!list) return;
+    const total=Array.from(rounds.values()).reduce((n,e)=>n+e.hints,0);
+    list.textContent='本页累计提示 '+total+' 次（各组状态按本组记录）\n'+Array.from(rounds.values()).map(e=>e.round+'：'+(e.completed?category(e):(e.hints?'练习中（已用提示）':'练习中'))+'；提交 '+e.attempts.length+' 次').join('\n');
+  }
+  window.CQ = {
+    start(label) { current=label; entry(); render(); },
+    hint() { entry().hints++; render(); },
+    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-01-K03"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-01-K03",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261102-v1",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
+    complete() { const e=entry(); e.completed=true; render(); return category(e); },
+    summary() { return Array.from(rounds.values()).map(e=>({...e,completion:e.completed?category(e):null})); }
+  };
+  entry();
+  document.addEventListener('click',e=>{ const b=e.target.closest?.('button'); if(b && (b.id==='hint-btn'||b.id==='btn-hint'||/showHint\s*\(/.test(b.getAttribute('onclick')||'')||/^(提示|查看提示|显示提示|提示一下|💡\s*提示)$/.test(b.textContent.trim()))) CQ.hint(); },true);
+  document.addEventListener('DOMContentLoaded',()=>{
+    const p=document.createElement('details'); p.id='cq-record';
+    p.style.cssText='position:fixed;left:8px;bottom:8px;z-index:100;max-width:min(360px,90vw);padding:6px 10px;border:1px solid #64748b;border-radius:8px;background:#fff;color:#172033;font:12px/1.6 system-ui';
+    p.innerHTML='<summary style="cursor:pointer">本页练习记录</summary><div id="cq-record-list" style="white-space:pre-wrap"></div><small>记录主动提示按钮；页面常驻说明不计次数。重试保留记录；未用提示不等于独立掌握。</small>';
+    document.body.appendChild(p); render();
+  });
+})();
+</script>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K03",
+  "concept_tag": "图像的上升、下降与变化方向",
+  "scene_type": "game",
+  "resource_id": "GH-01-K03:game",
+  "resource_title": "构造挑战：负值也上升，正值也下降",
+  "learning_objective": "请说明判断上升或下降时，为什么必须按输入从小到大比较输出，而不能只看正负。",
+  "misconception": "上升下降是函数值随输入增大的变化方向；函数值为负也能上升。",
+  "observable_evidence": "构造同时满足位置和升降条件的折线。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "number",
+      "button",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": false
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": false,
+    "reentry_after_help": "restart_scene"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不上报提示使用，无法确认本次尝试是否无辅助，因此不作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script><link rel="stylesheet" href="课件布局.css"></head>
+<body>
+
+<div id="game-container">
+    <div class="header">
+        <h1>构造挑战：位置与方向</h1>
+        <p>通过调整端点纵坐标，构造满足条件的折线。</p>
+    </div>
+
+    <div class="game-main">
+        <div id="level-info" class="level-badge">关卡 1</div>
+        <div id="target-text" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">
+            目标：整条折线始终低于横轴，但第一段上升。
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="controls" id="input-controls">
+            <!-- Inputs generated by JS -->
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-secondary" onclick="resetGame()">重置本页</button>
+            <button class="btn-hint" onclick="showHint()">提示</button>
+            <button class="btn-primary" onclick="checkConstruction()">提交构造</button>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+
+        <div id="explanation" class="explanation-options">
+            <p style="margin-top:0; font-weight:bold;">解释：为什么位置（在轴上方/下方）不决定方向（上升/下降）？</p>
+            <button class="option-btn" onclick="checkExplanation('A')">A. 只要输出都是负数，折线就上升</button>
+            <button class="option-btn" onclick="checkExplanation('B')">B. 输出都是负数只说明折线在横轴下方，上升下降要看输出随输入增大是变大还是变小</button>
+            <button class="option-btn" onclick="checkExplanation('C')">C. 是否上升取决于横坐标是否都是正数</button>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h2>准备好开始挑战了吗？</h2>
+        <p>你将通过调整数字来改变折线的形状。<br>记住：位置（正负）和方向（升降）是独立的！</p>
+        <button class="btn-primary" style="width: 200px; margin-top: 20px;" onclick="startGame()">开始游戏</button>
+    </div>
+</div>
+
+<script type="application/json" id="widget-config">
+{
+  "type": "game",
+  "gameType": "construction",
+  "levels": [
+    {
+      "id": 1,
+      "target": "整条折线始终低于横轴，但第一段上升。",
+      "points": 3,
+      "validate": "y0 < 0 && y1 < 0 && y2 < 0 && y1 > y0"
+    },
+    {
+      "id": 2,
+      "target": "整条折线始终高于横轴，但第一段下降。",
+      "points": 3,
+      "validate": "y0 > 0 && y1 > 0 && y2 > 0 && y1 < y0"
+    },
+    {
+      "id": 3,
+      "target": "解释构造原理",
+      "points": 3,
+      "validate": "explanation == 'B'"
+    },
+    {
+      "id": 4,
+      "target": "整条折线始终在横轴上方，中间一段不变，最后一段下降。",
+      "points": 4,
+      "validate": "y0 > 0 && y1 > 0 && y2 > 0 && y3 > 0 && y2 == y1 && y3 < y2"
+    }
+  ]
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const config = JSON.parse(document.getElementById('widget-config').textContent);
+    
+    let currentLevel = 0;
+    let points = [0, 0, 0, 0]; // y0, y1, y2, y3
+    let hintUsed = false;
+    let gameActive = false;
+
+    // Initialize Canvas Size
+    function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        draw();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Global Functions for UI
+    window.startGame = function() {
+        document.getElementById('start-screen').classList.add('hidden');
+        gameActive = true;
+        initLevel(0);
+    };
+
+    window.resetGame = function() {
+        currentLevel = 0;
+        points = [0, 0, 0, 0];
+        hintUsed = false;
+        initLevel(0);
+    };
+
+    window.showHint = function() {
+        hintUsed = true;
+        const feedback = document.getElementById('feedback');
+        feedback.className = 'feedback success';
+        feedback.innerHTML = '<strong>提示：</strong> 观察纵坐标的变化。如果 y1 > y0，说明第一段是上升的。位置（正负）只决定在轴哪边，不决定升降。';
+    };
+
+    function initLevel(idx) {
+        gameActive=true;
+        currentLevel = idx; if(idx===0) CQ.start('第一轮'); if(idx===1) CQ.start('第二轮：正值下降'); if(idx===3) CQ.start('第三轮：四点折线');
+        const level = config.levels[idx];
+        document.getElementById('level-info').textContent = `关卡 ${level.id}`;
+        document.getElementById('target-text').textContent = `目标：${level.target}`;
+        
+        // Setup Inputs
+        const inputContainer = document.getElementById('input-controls');
+        inputContainer.innerHTML = '';
+        
+        for (let i = 0; i < level.points; i++) {
+            const group = document.createElement('div');
+            group.className = 'input-group';
+            group.innerHTML = `
+                <label>端点 ${i} 纵坐标 (y${i})</label>
+                <input type="number" min="-9" max="9" value="0" 
+                       oninput="updatePoint(${i}, this.value)">
+            `;
+            inputContainer.appendChild(group);
+        }
+
+        // Hide explanation for non-level-3
+        document.getElementById('explanation').style.display = idx===2?'block':'none';
+        document.getElementById('feedback').style.display = 'none';
+        
+        points = [0, 0, 0, 0];
+        draw();
+    }
+
+    window.updatePoint = function(idx, val) {
+        points[idx] = parseFloat(val) || 0;
+        draw();
+    };
+
+    function draw() {
+        const w = canvas.width / window.devicePixelRatio;
+        const h = canvas.height / window.devicePixelRatio;
+        ctx.clearRect(0, 0, w, h);
+
+        // Grid
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        const step = Math.max(12, Math.min(40, (w - 70) / 7, (h - 30) / 10));
+        const originX = 50;
+        const originY = h / 2;
+
+        for (let x = originX; x < w; x += step) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = originY; y < h; y += step) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // Axes
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(w, originY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, h); ctx.stroke();
+
+        // 先画连续直线段，再画端点，避免arc的beginPath切断折线。
+        const numPoints=config.levels[currentLevel].points, xCoords=[0,2,4,6];
+        ctx.strokeStyle=varColor('--primary'); ctx.lineWidth=3; ctx.beginPath();
+        for(let i=0;i<numPoints;i++) { const px=originX+xCoords[i]*step,py=originY-points[i]*step; if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py); }
+        ctx.stroke(); ctx.fillStyle=varColor('--primary');
+        for(let i=0;i<numPoints;i++){ctx.beginPath();ctx.arc(originX+xCoords[i]*step,originY-points[i]*step,5,0,Math.PI*2);ctx.fill();}
+    }
+
+
+    function varColor(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    window.checkConstruction = function() {
+        if(currentLevel===2) return;
+        const level = config.levels[currentLevel];
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'block';
+        
+        let success = false;
+        let errorMsg = "";
+
+        if (currentLevel === 0) {
+            if (points[0] >= 0 || points[1] >= 0 || points[2] >= 0) {
+                errorMsg = "始终低于横轴要求三个输出都小于 0，端点落在横轴上或上方就不算。";
+            } else if (points[1] <= points[0]) {
+                errorMsg = "位置对了，但方向反了：第一段的输出没有变大，所以这一段在下降或不变。";
+            } else {
+                success = true;
+            }
+        } else if (currentLevel === 1) {
+            if (points[0] <= 0 || points[1] <= 0 || points[2] <= 0) {
+                errorMsg = "始终高于横轴要求三个输出都大于 0，端点落在横轴上或下方就不算。";
+            } else if (points[1] >= points[0]) {
+                errorMsg = "位置对了，但方向反了：第一段的输出没有变小，所以这一段在上升或不变。";
+            } else {
+                success = true;
+            }
+        } else if (currentLevel === 3) {
+            if (points[0] <= 0 || points[1] <= 0 || points[2] <= 0 || points[3] <= 0) {
+                errorMsg = "始终在横轴上方要求四个输出都大于 0。";
+            } else if (points[2] !== points[1]) {
+                errorMsg = "中间一段不变要求 y2 等于 y1。";
+            } else if (points[3] >= points[2]) {
+                errorMsg = "最后一段下降要求 y3 小于 y2。";
+            } else {
+                success = true;
+            }
+        }
+
+        CQ.attempt(success,"构造折线",{task:"construction",round:currentLevel,values:points.slice()});
+        if (success) {
+            if(!gameActive) return; gameActive=false; CQ.complete();
+            feedback.className = 'feedback success';
+            feedback.innerHTML = '<strong>太棒了！构造成功！</strong>';
+            if (currentLevel < 2) {
+                setTimeout(() => initLevel(currentLevel + 1), 1500);
+            } else if (currentLevel === 3) {
+                document.getElementById('target-text').textContent='全部构造完成：'+CQ.complete();
+                document.getElementById('input-controls').innerHTML='<p>三组数据均通过数学条件校验。</p>'; 
+            }
+        } else {
+            feedback.className = 'feedback error';
+            feedback.innerHTML = `<strong>未达成：</strong> ${errorMsg}`;
+        }
+    };
+
+    window.checkExplanation = function(choice) {
+        const feedback = document.getElementById('feedback');
+        feedback.style.display='block';
+        if(currentLevel!==2) return; CQ.attempt(choice==='B','构造理由',{task:'reason',round:currentLevel,values:[choice]});
+        if (choice === 'B') {
+            CQ.complete(); initLevel(3); return;
+            feedback.className = 'feedback success';
+            feedback.innerHTML = '<strong>完全正确！</strong> 你理解了位置与方向的独立性。挑战完成！';
+            document.getElementById('explanation').style.display = 'none';
+            // Final state
+            document.getElementById('target-text').textContent = "🎉 恭喜通关！你已掌握构造技巧。";
+            document.getElementById('input-controls').innerHTML = '<p>点击“重置本页”再玩一次</p>';
+        } else {
+            feedback.className = 'feedback error';
+            let msg = choice === 'A' ? "不对哦，你刚才构造的折线在横轴下方，但第一段是上升的，说明负数也可以上升。" : "不对哦，横坐标的正负不影响上升下降，关键看纵坐标的变化。";
+            feedback.innerHTML = `<strong>解释有误：</strong> ${msg}`;
+        }
+    };
+});
+</script>
+
+<script id="openmaic-widget-action-listener">
+window.addEventListener('message', function(event) {
+  const { type, target, state, content } = event.data;
+
+  switch (type) {
+    case 'SET_WIDGET_STATE':
+      // Apply state to controls / game params. Keys map to controls by id;
+      // route to the game via a global setter when one exists.
+      if (state) {
+        Object.entries(state).forEach(([key, value]) => {
+          const control = document.getElementById(key + '-slider') || document.getElementById(key) || document.querySelector('[data-var="' + key + '"]');
+          if (control) {
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          if (typeof window.setGameParam === 'function') window.setGameParam(key, value);
+        });
+      }
+      break;
+
+    case 'HIGHLIGHT_ELEMENT':
+      const highlightEl = document.querySelector(target);
+      if (highlightEl) {
+        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outlineOffset = '4px';
+        highlightEl.style.animation = 'pulse-highlight 2s infinite';
+        setTimeout(() => {
+          highlightEl.style.outline = '';
+          highlightEl.style.animation = '';
+        }, 3000);
+      }
+      break;
+
+    case 'ANNOTATE_ELEMENT':
+      const annotateEl = document.querySelector(target);
+      if (annotateEl && content) {
+        const rect = annotateEl.getBoundingClientRect();
+        const tooltip = document.createElement('div');
+        tooltip.className = 'teacher-annotation';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+        tooltip.textContent = content;
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 4000);
+      }
+      break;
+
+    case 'REVEAL_ELEMENT':
+      const revealEl = document.querySelector(target);
+      if (revealEl) {
+        revealEl.style.display = '';
+        revealEl.style.opacity = '1';
+      }
+      break;
+  }
+});
+
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(style);
+</script>
+<script src="课件交互.js"></script></body>
+</html>

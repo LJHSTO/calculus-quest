@@ -86,6 +86,8 @@ _deploy_stage/
 _deploy_bundle.tar.gz
 _node_modules.tar.gz
 .workbuddy-ai/
+.codex/
+runs/
 temp-ssh-askpass.cmd
 核心学习工作区-最终稿.html
 

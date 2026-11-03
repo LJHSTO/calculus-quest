@@ -471,6 +471,20 @@ const mock = mockAssistantAnswer({
 assert.match(mock, /现在试一下/);
 assert.match(mock, /Δx 趋近于 0/);
 
+const activeRoute = require('../data/multi-scene-learning-route.json');
+const activeIndex = buildCourseContextIndex(activeRoute);
+for (const module of activeRoute.chapters.find(c => c.id === 'V14-C1').modules) {
+  for (const point of module.knowledgePoints) {
+    const game = point.resourceCandidates.find(c => c.type === 'game');
+    const gameContext = resolveAssistantContext({ index: activeIndex, chapterId: 'V14-C1', unitId: point.id, sceneType: 'game' });
+    assert.equal(gameContext.unit.goal, game.teachingContext.objective);
+    const prompt = buildAssistantPrompt({ resolved: gameContext, question: '这里下一步怎么做？', history: [] });
+    assert.ok(prompt.user.includes(game.teachingContext.task));
+    assert.ok(mockAssistantAnswer({ resolved: gameContext, question: '这里下一步怎么做？' }).includes(game.teachingContext.fact));
+    assert.equal(activeIndex.units.get(point.id).goal, point.goal, '切换场景不能污染知识点原目标');
+  }
+}
+
 const conciseMock = mockAssistantAnswer({
   resolved,
   question: "这个符号怎么读？",
@@ -794,7 +808,7 @@ const quizReviewMock = mockAssistantAnswer({
   proactivePrompt: readyQuizReview.assistantPrompt
 });
 assert.match(quizReviewMock, /第 1 题/);
-assert.match(quizReviewMock, /完全没有关系/);
+assert.match(quizReviewMock, /时间间隔趋近于零时逼近瞬时速度/);
 assert.doesNotMatch(quizReviewMock, /当时间间隔缩小时，平均速度会怎样/);
 assert.doesNotMatch(quizReviewMock, /请提供你做错的题目/);
 

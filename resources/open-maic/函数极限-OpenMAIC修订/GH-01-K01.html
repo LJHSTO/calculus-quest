@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反例挑战：两个点能定出一条规则吗</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f39c12;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        .start-screen h1 { color: var(--primary); margin-bottom: 10px; }
+        .start-screen p { line-height: 1.6; color: #666; margin-bottom: 30px; }
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+        .btn-main:hover { transform: scale(1.05); background: #357abd; }
+
+        /* Game UI */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .points-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px dashed #ccc;
+        }
+
+        .point-tag {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin: 5px;
+            font-family: monospace;
+        }
+
+        .rules-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .rule-card {
+            background: #fff;
+            border: 2px solid #eee;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .rule-card.active { border-color: var(--primary); }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .input-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .input-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .output-inputs {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .output-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .output-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        /* Feedback Area */
+        .feedback {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .feedback.error { background: #fdf2f2; color: var(--danger); border: 1px solid #f5c6cb; display: block; }
+        .feedback.success { background: #f0fff4; color: var(--success); border: 1px solid #c6f6d5; display: block; }
+
+        /* Conclusion Options */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: #f8f9fa;
+            border: 2px solid #eee;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover { border-color: var(--primary); background: #f0f7ff; }
+
+        /* Progress Steps */
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+        }
+
+        .step-dot.active { background: var(--primary); transform: scale(1.2); }
+        .step-dot.done { background: var(--success); }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .comparison-table th { background: #f8f9fa; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #666;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .hint-text {
+            display: none;
+            background: #fff9db;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            border-left: 4px solid #fcc419;
+        }
+
+        @media (max-width: 480px) {
+            .input-grid { grid-template-columns: repeat(2, 1fr); }
+            .rules-display { grid-template-columns: 1fr; }
+        }
+    </style>
+
+<link rel="stylesheet" href="字体-6dab387eaf.css">
+<script src="依赖-dc84b296ec.js"></script>
+<script src="依赖-9cb8dacfc0.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    renderMathInElement(document.body, katexOptions);
+
+    const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        mutations.forEach((mutation) => {
+            if (mutation.target &&
+                mutation.target.className &&
+                typeof mutation.target.className === 'string' &&
+                mutation.target.className.includes('katex')) {
+                return;
+            }
+            shouldRender = true;
+        });
+
+        if (shouldRender) {
+            safeRender();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    setInterval(() => {
+        const text = document.body.innerText;
+        if (text.includes('\\(') || text.includes('$$')) {
+            safeRender();
+        }
+    }, 2000);
+});
+</script>
+<script id="cq-lesson-evidence">
+// 本页练习证据；重置题目不会抹掉本次访问已使用的提示或纠错历史。
+(function () {
+  const rounds = new Map(); let current = '第一轮';
+  function entry() { if(!rounds.has(current)) rounds.set(current,{round:current,hints:0,attempts:[],completed:false}); return rounds.get(current); }
+  function category(e) { return e.hints ? '本组提示后完成' : e.attempts.some(a=>!a.correct) ? '本组纠错后完成' : '本组未用提示完成'; }
+  function render() {
+    const list=document.getElementById('cq-record-list'); if(!list) return;
+    const total=Array.from(rounds.values()).reduce((n,e)=>n+e.hints,0);
+    list.textContent='本页累计提示 '+total+' 次（各组状态按本组记录）\n'+Array.from(rounds.values()).map(e=>e.round+'：'+(e.completed?category(e):(e.hints?'练习中（已用提示）':'练习中'))+'；提交 '+e.attempts.length+' 次').join('\n');
+  }
+  window.CQ = {
+    start(label) { current=label; entry(); render(); },
+    hint() { entry().hints++; render(); },
+    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-01-K01"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-01-K01",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261102-v1",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
+    complete() { const e=entry(); e.completed=true; render(); return category(e); },
+    summary() { return Array.from(rounds.values()).map(e=>({...e,completion:e.completed?category(e):null})); }
+  };
+  entry();
+  document.addEventListener('click',e=>{ const b=e.target.closest?.('button'); if(b && (b.id==='hint-btn'||b.id==='btn-hint'||/showHint\s*\(/.test(b.getAttribute('onclick')||'')||/^(提示|查看提示|显示提示|提示一下|💡\s*提示)$/.test(b.textContent.trim()))) CQ.hint(); },true);
+  document.addEventListener('DOMContentLoaded',()=>{
+    const p=document.createElement('details'); p.id='cq-record';
+    p.style.cssText='position:fixed;left:8px;bottom:8px;z-index:100;max-width:min(360px,90vw);padding:6px 10px;border:1px solid #64748b;border-radius:8px;background:#fff;color:#172033;font:12px/1.6 system-ui';
+    p.innerHTML='<summary style="cursor:pointer">本页练习记录</summary><div id="cq-record-list" style="white-space:pre-wrap"></div><small>记录主动提示按钮；页面常驻说明不计次数。重试保留记录；未用提示不等于独立掌握。</small>';
+    document.body.appendChild(p); render();
+  });
+})();
+</script>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K01",
+  "concept_tag": "输入、输出和函数规则",
+  "scene_type": "game",
+  "resource_id": "GH-01-K01:game",
+  "resource_title": "反例挑战：两个点能定出一条规则吗",
+  "learning_objective": "请解释输入、输出与规则的区别，以及为什么同一输入不能有两个不同输出。",
+  "misconception": "函数允许不同输入得到相同输出；限制的是同一个输入。检查当前对应关系中有没有重复输入对应不同结果。",
+  "observable_evidence": "用新的输入检验两个样本能否唯一确定规则。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "number",
+      "button"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": false
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": false,
+    "reentry_after_help": "restart_scene"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script><link rel="stylesheet" href="课件布局.css"></head>
+<body>
+
+<div id="game-container">
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active start-screen">
+        <h1>反例挑战</h1>
+        <p>两个点能定出一条规则吗？<br>
+        面板上有两个已确认的点：<b>(0,1)</b> 与 <b>(1,3)</b>。<br>
+        两条候选规则都通过了这两个点。你能找到一个“反例”来区分它们吗？</p>
+        <button class="btn-main" onclick="startGame()">开始挑战</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="header">
+            <span id="level-title">第一关：寻找反例</span>
+            <span id="score-display">积分: 0</span>
+        </div>
+
+        <div class="steps">
+            <div class="step-dot active" id="step-1"></div>
+            <div class="step-dot" id="step-2"></div>
+            <div class="step-dot" id="step-3"></div>
+        </div>
+
+        <div class="points-display">
+            <div style="font-size: 0.8rem; color: #888; margin-bottom: 5px;">已知点 (已确认)</div>
+            <span class="point-tag" id="p1">(0, 1)</span>
+            <span class="point-tag" id="p2">(1, 3)</span>
+        </div>
+
+        <div class="rules-display">
+            <div class="rule-card" id="rule-a-card">
+                <div style="font-weight: bold; color: var(--primary);">规则 甲</div>
+                <div id="rule-a-text" style="font-family: monospace; font-size: 1.1rem;">f(x) = 2x + 1</div>
+            </div>
+            <div class="rule-card" id="rule-b-card">
+                <div style="font-weight: bold; color: var(--secondary);">规则 乙</div>
+                <div id="rule-b-text" style="font-family:monospace; font-size: 1.1rem;">g(x) = x² + x + 1</div>
+            </div>
+        </div>
+
+        <div id="input-section">
+            <div style="font-weight: bold; margin-bottom: 10px;">1. 选择一个新输入 x：</div>
+            <div class="input-grid" id="input-grid">
+                <!-- Buttons generated by JS -->
+            </div>
+
+            <div class="output-inputs" style="margin-top: 20px;">
+                <div class="output-row">
+                    <span style="width: 60px; font-weight: bold;">甲输出:</span>
+                    <input type="number" class="output-input" id="out-a" placeholder="?">
+                </div>
+                <div class="output-row">
+                    <span style="width: 60px; font-weight: bold;">乙输出:</span>
+                    <input type="number" class="output-input" id="out-b" placeholder="?">
+                </div>
+            </div>
+
+            <button class="btn-main" style="width: 100%;" onclick="submitComparison()">比较并提交</button>
+        </div>
+
+        <div id="conclusion-section" style="display: none; width: 100%;">
+            <table class="comparison-table">
+                <tr>
+                    <th>预测 (你的输入)</th>
+                    <th>真实计算结果</th>
+                </tr>
+                <tr>
+                    <td id="comp-pred-a">-</td>
+                    <td id="comp-true-a">-</td>
+                </tr>
+                <tr>
+                    <td id="comp-pred-b">-</td>
+                    <td id="comp-true-b">-</td>
+                </tr>
+            </table>
+            
+            <div style="font-weight: bold; margin-bottom: 10px;">2. 判断并提交结论：</div>
+            <div class="options-container" id="options-container">
+                <!-- Options generated by JS -->
+            </div>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+        
+        <div class="controls">
+            <button class="btn-secondary" onclick="showHint()">提示</button>
+            <button class="btn-secondary" onclick="resetGame()">重置本页</button>
+        </div>
+        <div id="hint-box" class="hint-text"></div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+        <h2 id="result-title">挑战成功！</h2>
+        <p id="result-desc"></p>
+        <div id="achievement-badge" style="font-size: 4rem; margin: 20px 0;">🏆</div>
+        <button class="btn-main" onclick="resetGame()">再玩一次</button>
+    </div>
+</div>
+
+<script type="application/json" id="widget-config">
+{
+  "type": "game",
+  "gameType": "counterexample-challenge",
+  "levels": [
+    {
+      "id": 1,
+      "points": [[0, 1], [1, 3]],
+      "rules": [
+        {"name": "甲", "formula": "2x + 1"},
+        {"name": "乙", "formula": "x² + x + 1"}
+      ],
+      "inputs": [-2, -1, 2, 3],
+      "options": [
+        {"text": "两个点无法确定唯一规则，因为存在两条不同规则都通过它们而在这点给出不同输出", "correct": true},
+        {"text": "两条规则其实相同，只是写法不同", "correct": false},
+        {"text": "只要代入的点足够多，就能证明规则唯一", "correct": false}
+      ]
+    },
+    {
+      "id": 2,
+      "points": [[1, 2], [2, 5]],
+      "rules": [
+        {"name": "丙", "formula": "3x - 1"},
+        {"name": "丁", "formula": "x² + 1"}
+      ],
+      "inputs": [-1, 0, 3],
+      "options": [
+        {"text": "两个点无法确定唯一规则，因为存在两条不同规则都通过它们而在这点给出不同输出", "correct": true},
+        {"text": "两条规则其实相同，只是写法不同", "correct": false},
+        {"text": "只要代入的点足够多，就能证明规则唯一", "correct": false}
+      ]
+    }
+  ]
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const config = JSON.parse(document.getElementById('widget-config').textContent);
+    
+    let currentLevelIdx = 0;
+    let score = 0;
+    let selectedInput = null;
+    let usedHint = false;
+    let gameActive = false;
+    function calculateRule(index,x) { return currentLevelIdx===0 ? (index===0?2*x+1:x*x+x+1) : (index===0?3*x-1:x*x+1); }
+
+    // Global functions for inline onclick
+    window.startGame = function() {
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+        gameActive = true;
+        initLevel();
+    };
+
+    window.resetGame = function() {
+        document.getElementById("result-screen").classList.remove("active"); document.getElementById("game-screen").classList.add("active");
+        currentLevelIdx = 0;
+        score = 0;
+        usedHint = false;
+        document.getElementById('hint-box').style.display = 'none';
+        document.getElementById('hint-box').textContent = '';
+        initLevel();
+    };
+
+    window.showHint = function() {
+        usedHint = true;
+        const hintBox = document.getElementById('hint-box');
+        hintBox.style.display = 'block';
+        hintBox.textContent = "提示：观察两条规则的公式，尝试代入一个不在已知点里的数字，看看结果是否一样。";
+    };
+
+    function initLevel() {
+        const level = config.levels[currentLevelIdx];
+        gameActive=true;
+        selectedInput = null; CQ.start(currentLevelIdx===0?"第一轮":"第二轮：新规则");
+        
+        // Update UI
+        document.getElementById('level-title').textContent = `第 ${currentLevelIdx + 1} 关：寻找反例`;
+        document.getElementById('score-display').textContent = `积分: ${score}`;
+        
+        // Points
+        document.getElementById('p1').textContent = `(${level.points[0][0]}, ${level.points[0][1]})`;
+        document.getElementById('p2').textContent = `(${level.points[1][0]}, ${level.points[1][1]})`;
+        
+        // Rules
+        document.getElementById('rule-a-text').textContent = level.rules[0].formula;
+        document.getElementById('rule-b-text').textContent = level.rules[1].formula;
+        
+        // Inputs
+        const inputGrid = document.getElementById('input-grid');
+        inputGrid.innerHTML = '';
+        level.inputs.forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = 'input-btn';
+            btn.textContent = val;
+            btn.onclick = () => selectInput(val, btn);
+            inputGrid.appendChild(btn);
+        });
+
+        // Reset inputs
+        document.getElementById('out-a').value = '';
+        document.getElementById('out-b').value = '';
+        document.getElementById('feedback').style.display = 'none';
+        
+        // Show step 1
+        document.getElementById('input-section').style.display = 'block';
+        document.getElementById('conclusion-section').style.display = 'none';
+        
+        // Steps
+        document.querySelectorAll('.step-dot').forEach((dot, i) => {
+            dot.className = 'step-dot';
+            if (i === 0) dot.classList.add('active');
+        });
+    }
+
+    function selectInput(val, btn) {
+        selectedInput = val;
+        document.querySelectorAll('.input-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    window.submitComparison = function() {
+        const level = config.levels[currentLevelIdx];
+        const outA = document.getElementById('out-a').value;
+        const outB = document.getElementById('out-b').value;
+        const feedback = document.getElementById('feedback');
+        
+        if (selectedInput === null) {
+            showFeedback("请先选择一个输入 x", "error");
+            return;
+        }
+
+        // Check if input is a known point
+        const isKnown = level.points.some(p => p[0] === selectedInput);
+        if (isKnown) {
+            showFeedback(`这两个输入正是已知点，两条规则在这里本来就相同，不能用它们区分规则，请换一个不在已知点里的输入`, "error");
+            return;
+        }
+
+        const trueA = calculateRule(0,selectedInput);
+        const trueB = calculateRule(1,selectedInput);
+
+        CQ.attempt(outA !== "" && outB !== "" && Number(outA) === trueA && Number(outB) === trueB, "两个输出预测", {task:"outputs",round:currentLevelIdx,values:[selectedInput,Number(outA),Number(outB)]});
+        if (outA !== "" && outB !== "" && parseFloat(outA) === trueA && parseFloat(outB) === trueB) {
+            if (trueA === trueB) {
+                showFeedback("这两条规则在这个点输出相同，无法区分它们，请换一个输入", "error");
+            } else {
+                showFeedback("太棒了！你找到了一个反例，两条规则在这里输出不同。", "success");
+                score += 10;
+                showConclusion();
+            }
+        } else {
+            let errorMsg = "计算有误：";
+            if (outA !== "" && parseFloat(outA) !== trueA) errorMsg += `甲在 x=${selectedInput} 时是 ${trueA}。`;
+            if (outB !== "" && parseFloat(outB) !== trueB) errorMsg += ` 乙在 x=${selectedInput} 时是 ${trueB}。`;
+            showFeedback(errorMsg, "error");
+        }
+    };
+
+    function showFeedback(msg, type) {
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = msg;
+        feedback.className = `feedback ${type}`; feedback.style.display="block";
+    }
+
+    function showConclusion() {
+        const level = config.levels[currentLevelIdx];
+        document.getElementById('input-section').style.display = 'none';
+        document.getElementById('conclusion-section').style.display = 'block';
+        
+        // Update comparison table
+        document.getElementById('comp-pred-a').textContent = document.getElementById('out-a').value;
+        document.getElementById('comp-pred-b').textContent = document.getElementById('out-b').value;
+        document.getElementById('comp-true-a').textContent = calculateRule(0,selectedInput);
+        document.getElementById('comp-true-b').textContent = calculateRule(1,selectedInput);
+
+        // Update steps
+        document.getElementById('step-1').classList.replace('active', 'done');
+        document.getElementById('step-2').classList.add('active');
+
+        // Options
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+        level.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt.text;
+            btn.onclick = () => selectOption(opt);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function selectOption(opt) {
+        const feedback = document.getElementById('feedback');
+        CQ.attempt(opt.correct,"反例解释",{task:"reason",round:currentLevelIdx,values:[config.levels[currentLevelIdx].options.indexOf(opt)]});
+        if (opt.correct) {
+            if(!gameActive) return; gameActive=false; CQ.complete();
+            showFeedback("结论正确！你成功证明了两个点不能确定唯一规则。", "success");
+            score += 20;
+            nextLevel();
+        } else {
+            if (opt.text.includes("相同")) {
+                showFeedback("在这点两条规则输出不同，说明它们是不同的规则", "error");
+            } else {
+                showFeedback("再多有限个点也只能排除规则，不能证明唯一，因为总可以另造一条规则与已知点一致", "error");
+            }
+        }
+    }
+
+    function nextLevel() {
+        currentLevelIdx++;
+        if (currentLevelIdx < config.levels.length) {
+            setTimeout(initLevel, 1000);
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('result-screen').classList.add('active');
+        
+        const resultDesc = document.getElementById('result-desc');
+        resultDesc.innerHTML = `最终积分: ${score}<br>${CQ.complete()}`;
+        
+        // Save progress
+    }
+});
+</script>
+
+<script id="openmaic-widget-action-listener">
+window.addEventListener('message', function(event) {
+  const { type, target, state, content } = event.data;
+
+  switch (type) {
+    case 'SET_WIDGET_STATE':
+      // Apply state to controls / game params. Keys map to controls by id;
+      // route to the game via a global setter when one exists.
+      if (state) {
+        Object.entries(state).forEach(([key, value]) => {
+          const control = document.getElementById(key + '-slider') || document.getElementById(key) || document.querySelector('[data-var="' + key + '"]');
+          if (control) {
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          if (typeof window.setGameParam === 'function') window.setGameParam(key, value);
+        });
+      }
+      break;
+
+    case 'HIGHLIGHT_ELEMENT':
+      const highlightEl = document.querySelector(target);
+      if (highlightEl) {
+        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outlineOffset = '4px';
+        highlightEl.style.animation = 'pulse-highlight 2s infinite';
+        setTimeout(() => {
+          highlightEl.style.outline = '';
+          highlightEl.style.animation = '';
+        }, 3000);
+      }
+      break;
+
+    case 'ANNOTATE_ELEMENT':
+      const annotateEl = document.querySelector(target);
+      if (annotateEl && content) {
+        const rect = annotateEl.getBoundingClientRect();
+        const tooltip = document.createElement('div');
+        tooltip.className = 'teacher-annotation';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+        tooltip.textContent = content;
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 4000);
+      }
+      break;
+
+    case 'REVEAL_ELEMENT':
+      const revealEl = document.querySelector(target);
+      if (revealEl) {
+        revealEl.style.display = '';
+        revealEl.style.opacity = '1';
+      }
+      break;
+  }
+});
+
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(style);
+</script>
+<script src="课件交互.js"></script></body>
+</html>

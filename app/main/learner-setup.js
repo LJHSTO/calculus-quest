@@ -97,12 +97,12 @@
   function syncEntrances(){const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
     const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment||study||global.StudyEntry);
     for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=joined||(pre&&selector==='#pilot-entry-button');}
-    for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre||study?.arm==='A';}
+    for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=Boolean(study||global.StudyEntry)||pre;}
     let accountPrefs=document.getElementById('account-learning-preferences');
     if(!accountPrefs){accountPrefs=el('button','智能体老师的帮助设置');accountPrefs.id='account-learning-preferences';accountPrefs.type='button';accountPrefs.className='user-menu-item';accountPrefs.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();};document.getElementById('account-pilot-status')?.before(accountPrefs);}
-    accountPrefs.hidden=!state.authToken;accountPrefs.textContent=enabled?'调整老师的帮助设置':'查看老师的帮助设置';
+    accountPrefs.hidden=!state.authToken;accountPrefs.textContent=enabled?'学习偏好 · 可调整':'学习偏好 · 查看';
     const prefs=document.getElementById('learner-preferences-button');if(prefs){prefs.textContent=hasSavedPreferences()?'学习偏好 · 已设置':'学习偏好';prefs.dataset.configured=String(hasSavedPreferences());}
-    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=study?'本次学习与后续任务':pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';if(study)status.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);global.ThreeArmStudyUI.openTasks();};}
+    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=study?'问卷与后续任务':pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';if(study)status.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);global.ThreeArmStudyUI.openTasks();};}
   }
   function renderGuide(){
     syncEntrances();

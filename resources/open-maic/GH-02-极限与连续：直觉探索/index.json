@@ -660,7 +660,13 @@
         {
           "id": "action_Ibi6pO8J",
           "type": "speech",
-          "text": "本场景聚焦“从数表观察趋近”。完成了热身练习，我们来看看那些让你觉得‘不对劲’的直觉陷阱究竟从何而来。先从一个看起来很简单的函数开始。比如这个，f(x)等于x平方减1，除以x减1。大家一眼就能看出来，这里的x不能取哪个值？对，就是1，因为分母不能为零。"
+          "text": "这一页从数表观察趋近。函数规则是，x 的平方减一，除以 x 减一。因为分母不能为零，x 不能取一。我们将观察 x 从左右两侧靠近一时，输出怎样变化。",
+          "audioRef": "audio/原音色讲解-13e1ab9a3a5f07f9.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "0e86f43a3a50c4634615174ee0ff99c9ecac4a29d7cb3e27a1263e58babf7619",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_Cpe8lg0U",
@@ -671,7 +677,12 @@
           "id": "action_DgCbWejc",
           "type": "speech",
           "text": "现在，我们不直接看x等于1这个点，而是看它周围邻居们的表现。请大家观察这张数值表。它记录了x从左边，也就是比1小的数，慢慢向1靠近时，函数值在发生什么变化。",
-          "audioRef": "audio/tts_s2_action_DgCbWejc.mp3"
+          "audioRef": "audio/原音色讲解-1423a59f12db8e2b.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "d5c8919c7365187645ba03e54c5606fde2f5be38797ebea5113b114d7d27533a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_6tdrTtUw",
@@ -681,8 +692,13 @@
         {
           "id": "action_jvNQjqe8",
           "type": "speech",
-          "text": "看到规律了吗？x越靠近1，函数值就越靠近一个神奇的数字——2。哪怕x永远也到不了1，但这股‘趋势’是真实存在的。",
-          "audioRef": "audio/tts_s2_action_jvNQjqe8.mp3"
+          "text": "观察表格，当输入从左侧越来越靠近一时，输出越来越靠近二。这些数值提供了趋势线索；完整的判断还要结合函数规则。",
+          "audioRef": "audio/原音色讲解-f44400cbce2641a2.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "845c959d38a0830d36b9c7ede38d9d820550453f15a86c75114e651574b986e4",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_6yDs1f3k",
@@ -697,8 +713,13 @@
         {
           "id": "action_kDVsMiy9",
           "type": "speech",
-          "text": "为了确保不是巧合，我们再派一组侦察兵从右边出发，找比1大的数，一点点后退着接近1。大家仔细看看，函数值是不是也精准地跑向了同一个目标——2？",
-          "audioRef": "audio/tts_s2_action_kDVsMiy9.mp3"
+          "text": "再看从右侧趋近的数值。输入始终大于数字一，并逐渐靠近一。比较相应输出是否也趋向二。",
+          "audioRef": "audio/原音色讲解-d587d2504f193496.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "0e76a8fcf6e34d25968fd28358ea64b2cba49da21e52638ad41bd4c794d7ebd4",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action__rhCSC3X",
@@ -708,8 +729,13 @@
         {
           "id": "action_Y1qa88ka",
           "type": "speech",
-          "text": "所以，左右两边的侦察兵虽然行军路线不同，但他们都报告了同一个目的地：2。这就像四周的溪流最终都汇集到了同一个湖泊。",
-          "audioRef": "audio/tts_s2_action_Y1qa88ka.mp3"
+          "text": "这个例子中，两侧输出都趋向二。因为在输入不等于一时，原式可以约成输入加一，所以这种趋势也可以从规则本身说明。",
+          "audioRef": "audio/原音色讲解-5e2871e1121eb268.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "314b8380beb02830ec003ea85943b79c6ccbce923aba791f3abd1cb93d20d2cf",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_j3faTKZb",
@@ -720,7 +746,12 @@
           "id": "action_e8Hs5yYK",
           "type": "speech",
           "text": "这带出我们今天最核心的一个观念：极限，描述的是一种‘趋势’和‘目标’，它并不在乎目标点上发生了什么。你看，函数在x=1时无定义，是个空洞，但任何一边的趋近结果都毫不含糊地指向2。极限不依赖点值而独立存在，这正是突破直觉的关键。",
-          "audioRef": "audio/tts_s2_action_e8Hs5yYK.mp3"
+          "audioRef": "audio/原音色讲解-ffdfd7175e358d01.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "d6d2a8bc06eab2a1f0b99e43ee668c4b3f70e944ab4286d2c6b560e685653285",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -800,7 +831,13 @@
         {
           "id": "action_NLR1Pl-F",
           "type": "speech",
-          "text": "本场景通过交互探索“从数表观察趋近：拖动实验”。无论从左边还是右边逼近 x=1，f(x) 都毫不含糊地指向 2，哪怕那个点本身是个空洞。现在，我们把数表变成活的——你亲手拖动 x 去靠近 a，看看数值面板里究竟在发生什么。"
+          "text": "当前规则在输入等于二的位置没有定义。请从两侧靠近这个目标位置，观察输出是否趋向四。注意，这个实验的目标位置与前面的讲解页不同。",
+          "audioRef": "audio/原音色讲解-cae90fad5d8b128b.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "2880ae3b402ba32d28943517c49e1006c591bc0a2dacd944f965a86e289843ca",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_0-aK9jUp",
@@ -811,8 +848,13 @@
         {
           "id": "action_Lt0clmAC",
           "type": "speech",
-          "text": "先试试从右边开始吧。把 x 从 3 附近慢慢拖向 1，一边拖一边盯着 f(x) 的数值。你会发现，它并不是一下子跳到某个数，而是一点点地靠拢，好像在瞄准一个目标。",
-          "audioRef": "audio/tts_s3_action_Lt0clmAC.mp3"
+          "text": "保持初始规则，先把输入调到比二稍大的位置，再从右侧逐步靠近二。记录相应输出，比较它与四的距离怎样变化。",
+          "audioRef": "audio/原音色讲解-e1d046145d3b9cb7.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "bd40edefb3d50ce3134d8f2860259b2efc8c439841924eb36668cdfb29e9aabe",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_FAhGPybS",
@@ -826,8 +868,13 @@
         {
           "id": "action_8LG72Ekh",
           "type": "speech",
-          "text": "好，现在把步长调成 0.1，点击按钮让 x 一步一步靠近 1。每一步停下来，都读一读 f(x) 的值。你看到了什么趋势？",
-          "audioRef": "audio/tts_s3_action_8LG72Ekh.mp3"
+          "text": "点击从左侧趋近，比较另一侧的变化。先用零点一的步长，再减小步长。两侧输入都向目标数二靠拢，输出是否都向四靠拢？",
+          "audioRef": "audio/原音色讲解-0647961e79883bce.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ab87541a9c209c3541111e2e36fbaac545bf2cb1f008ef00421eca3da99e685a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_09feGwEe",
@@ -847,8 +894,13 @@
         {
           "id": "action_vWUWlG2-",
           "type": "speech",
-          "text": "接下来把步长改得更小，0.01，再试。你会清晰地看到，x 每靠近 1 一小步，f(x) 的变化量都更小，好像离 2 越来越近、却总差一点点——这就叫“趋向于 2”。等到步长小到 0.001，你几乎看不出 f(x) 和 2 的差别了。记住这种感觉：极限不是到达，是一直在靠近。",
-          "audioRef": "audio/tts_s3_action_vWUWlG2-.mp3"
+          "text": "继续减小步长，比较越来越靠近目标点的输入和输出。极限关注附近的变化趋势，不要求在目标点取值，也不意味着所有函数都永远不能取到极限值。",
+          "audioRef": "audio/原音色讲解-df2e95c1493ba9be.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "e7426543d330c1bb485dc13cc875a8bec6df186db077f456e93ab9d0a2edbe6f",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -867,7 +919,13 @@
         {
           "id": "action_HqpPhKGr",
           "type": "speech",
-          "text": "本场景通过交互探索“从数表观察趋近：关系图”。我们在刚才的拖动实验里亲眼看到了，x 从左右两边一步一步靠近1的时候，f(x) 都拼命往2跑，却不一定能刚好“抵达”2。现在我们把这种“靠近”的感觉，用一张逻辑关系图拆开来看清楚。"
+          "text": "这张关系图把三件事分开：输入靠近目标点，输出趋向某个数，以及目标点本身的函数值。请分别查看左右序列、目标趋势和函数值节点。",
+          "audioRef": "audio/原音色讲解-7ee9d265b9fbfd9a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "e66dacabf05eb2d0f01fba290fb09f389d0f1a02bea2f25fb47ad5a9dfd447df",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_sLOHoJQ3",
@@ -879,7 +937,12 @@
           "id": "action_I6ikxb0r",
           "type": "speech",
           "text": "图上有两股力量——左侧的序列和右侧的序列——它们像两列队伍，从不同方向朝同一个目标前进。先点开“左侧序列”看看，里面记录了什么？",
-          "audioRef": "audio/tts_s4_action_I6ikxb0r.mp3"
+          "audioRef": "audio/原音色讲解-1549f219826c2e98.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "393055ca0fb2ca512b40f65e2aa58ad09d0831068fe4e85e65867a022ff4b3fc",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_8i1P-uuQ",
@@ -897,7 +960,12 @@
           "id": "action_x0Nomm68",
           "type": "speech",
           "text": "现在请你点一下“目标趋势”节点，看看这两股力量汇合时，f(x) 的变化规律是不是和我们刚才拖动实验里看到的一模一样。",
-          "audioRef": "audio/tts_s4_action_x0Nomm68.mp3"
+          "audioRef": "audio/原音色讲解-c871c80e8522dbb1.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "b63ce24944ba80003c0374193b5435b38e0577c17d7e2cd2304337f506703b97",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_khGtXDer",
@@ -909,7 +977,12 @@
           "id": "action_iO1XebsV",
           "type": "speech",
           "text": "最后，特别注意那个标着“常见误解”的陷阱位置——很多人在这儿犯错，以为极限值必须等于这一点的函数值。点开它，看看为什么这条路走不通。",
-          "audioRef": "audio/tts_s4_action_iO1XebsV.mp3"
+          "audioRef": "audio/原音色讲解-956c288aa9336966.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "3e9aa0ffd3126ad8d2cf3db532e9239d3eb823284a508c98a970c9ddf872192d",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_3fcSkY0F",
@@ -1171,7 +1244,13 @@
         {
           "id": "action_bRArVMW_",
           "type": "speech",
-          "text": "本场景通过交互探索“从数表观察趋近：空间视角”。让我们换一个视角，把这个趋近过程放到三维空间里，看得更立体一些。"
+          "text": "这一页是一个拓展例子：输入不断增大，输出趋近固定高度。它考察趋向无穷大，与前面靠近一个有限目标点的情形不同。",
+          "audioRef": "audio/原音色讲解-a7ce1fa4f7afcffd.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "bff3a42500b96b09616e374af9984587eb7f05e7affd759f65e6bac6a7e9f183",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_8RBVlZvw",
@@ -1189,8 +1268,13 @@
         {
           "id": "action_S9GOrj0s",
           "type": "speech",
-          "text": "看，这条紫色的曲线就是函数 z = 3 + 1/x 的轨迹。那个红色的小点，就是随着 x 变化，函数值所在的位置。",
-          "audioRef": "audio/tts_s6_action_S9GOrj0s.mp3"
+          "text": "紫色曲线的规则是：输出等于三，加上输入的倒数。红色的小点显示当前输入对应的输出位置。",
+          "audioRef": "audio/原音色讲解-4c4b59fe5f835618.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "3c60c3541a915f6de34f00ec00864d30bae2c289649fcecebd4bc94488c81a38",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_OeEiw48H",
@@ -1201,8 +1285,13 @@
         {
           "id": "action_DFFzvMUg",
           "type": "speech",
-          "text": "还记得我们之前从数表里得出的结论吗？当 x 越来越大时，函数值会越来越接近 3。现在，我们用一个侧面视角来亲眼看看这个过程。",
-          "audioRef": "audio/tts_s6_action_DFFzvMUg.mp3"
+          "text": "在这条规则中，输入越大，它的倒数越小，因此输出越来越接近三。请改变输入，结合数值读数观察这个趋势。",
+          "audioRef": "audio/原音色讲解-9b64a675cfdb0eb7.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "d35e20343a3828b879b17665036fa0aadc4abb332dd143be62ba8769a0792cf8",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_U4jWnlKy",
@@ -1221,7 +1310,12 @@
           "id": "action_SLJynfwM",
           "type": "speech",
           "text": "从这个侧面看，注意那个金色的投影点。它就是红点在纵轴上的脚印。请拖动 x 的滑块，让点往前滑行，仔细观察这个金色脚印的运动方向。",
-          "audioRef": "audio/tts_s6_action_SLJynfwM.mp3"
+          "audioRef": "audio/原音色讲解-cd4678365fc056c2.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "2b7e30a3d877b20dc5146f293bf003eb5b5d3a27179ccdc8347ff35ec0aab101",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_7-e0TxOX",
@@ -1232,8 +1326,13 @@
         {
           "id": "action_DDzp72hz",
           "type": "speech",
-          "text": "看到了吗？随着红点越滑越远，它的金色投影并不是越来越低，而是在慢慢地向高度“3”这个位置靠拢。无论 x 跑多远，这个脚印永远不会真正踩在 3 上，而是在无限接近它。这就是极限的空间意义。",
-          "audioRef": "audio/tts_s6_action_DDzp72hz.mp3"
+          "text": "随着正的输入不断增大，输出从三的上方逐渐靠近三。对任意有限的正输入，它仍然大于三。这个结论来自三加输入的倒数这条规则，不能推广成所有极限都无法取到。",
+          "audioRef": "audio/原音色讲解-12aa697751672706.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "f1b4851f848a9bbd7cec77435c694e34a75c3aee8c225b8ae4bbc15da643f53f",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -1245,11 +1344,21 @@
         "type": "slide",
         "schemaVersion": 1,
         "canvas": {
-          "id": "VFu0Rc-OTw9paeUhuXWIR",
-          "viewportSize": 1000,
-          "viewportRatio": 0.5625,
+          "id": "v-7ixHqaB25ve5BR9VWw-",
           "theme": {
-            "backgroundColor": "#ffffff",
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
             "themeColors": [
               "#5b9bd5",
               "#ed7d31",
@@ -1257,452 +1366,442 @@
               "#ffc000",
               "#4472c4"
             ],
-            "fontColor": "#333333",
-            "fontName": "Microsoft YaHei",
-            "outline": {
-              "color": "#d14424",
-              "width": 2,
-              "style": "solid"
-            },
-            "shadow": {
-              "h": 0,
-              "v": 0,
-              "blur": 10,
-              "color": "#000000"
-            }
+            "backgroundColor": "#ffffff"
           },
           "elements": [
             {
+              "id": "limits-title",
               "type": "text",
-              "id": "text_vjQ0V7fW",
               "left": 60,
-              "top": 50,
+              "top": 30,
               "width": 880,
-              "height": 70,
+              "height": 55,
               "rotate": 0,
-              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">极限的直观理解：函数图像与左右极限</p>",
+              "content": "<p style=\"font-size:30px;line-height:1.45;color:#1e40af;margin:0\"><b>图像上的左右极限</b></p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333"
+              "defaultColor": "#1e40af"
             },
             {
-              "type": "shape",
-              "id": "shape_89iPg5hO",
+              "id": "limits-intro",
+              "type": "text",
               "left": 60,
-              "top": 125,
+              "top": 92,
               "width": 880,
-              "height": 2,
+              "height": 40,
               "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "fixedRatio": false,
-              "fill": "#e2e8f0"
-            },
-            {
-              "type": "text",
-              "id": "text_s8KZs9GU",
-              "left": 60,
-              "top": 140,
-              "width": 420,
-              "height": 52,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #334155;\">1. 函数图像与极限趋势</p>",
+              "content": "<p style=\"font-size:20px;line-height:1.45;color:#334155;margin:0\">从两侧靠近同一个横坐标，分别观察输出趋向的高度。</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333"
+              "defaultColor": "#334155"
             },
             {
-              "type": "text",
-              "id": "text_sbHvsEXa",
-              "left": 520,
-              "top": 140,
-              "width": 420,
-              "height": 52,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #334155;\">2. 极限存在的充要条件</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333"
-            },
-            {
-              "type": "shape",
-              "id": "shape_S9L6q4Yh",
-              "left": 60,
-              "top": 195,
-              "width": 420,
-              "height": 310,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "fixedRatio": false,
-              "fill": "#f8fafc"
-            },
-            {
-              "type": "shape",
-              "id": "shape_enYMiaot",
-              "left": 520,
-              "top": 195,
-              "width": 420,
-              "height": 310,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "fixedRatio": false,
-              "fill": "#f8fafc"
-            },
-            {
+              "id": "limits-x",
               "type": "line",
-              "id": "line_b1Wtiv2O",
-              "left": 90,
-              "top": 235,
-              "width": 3,
-              "start": [
-                0,
-                110
-              ],
-              "end": [
-                300,
-                110
-              ],
-              "style": "solid",
-              "color": "#64748b",
-              "points": [
-                "",
-                "arrow"
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "line",
-              "id": "line_XZ0kbtyF",
-              "left": 90,
-              "top": 235,
-              "width": 3,
-              "start": [
-                150,
-                210
-              ],
-              "end": [
-                150,
-                0
-              ],
-              "style": "solid",
-              "color": "#64748b",
-              "points": [
-                "",
-                "arrow"
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "text",
-              "id": "text_PUSa8UTA",
-              "left": 208,
-              "top": 346,
-              "width": 64,
-              "height": 46,
-              "content": "<p style=\"font-size: 16px; text-align: center; color: #334155;\">x₀</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333",
-              "rotate": 0
-            },
-            {
-              "type": "line",
-              "id": "line__rICS2gf",
-              "left": 90,
-              "top": 235,
-              "width": 2,
-              "start": [
-                150,
-                110
-              ],
-              "end": [
-                150,
-                55
-              ],
-              "style": "dashed",
-              "color": "#94a3b8",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "line",
-              "id": "line_iE1tnzIs",
-              "left": 120,
-              "top": 265,
-              "width": 3,
-              "start": [
-                0,
-                80
-              ],
-              "end": [
-                120,
-                20
-              ],
-              "curve": [
-                60,
-                40
-              ],
-              "style": "solid",
-              "color": "#2563eb",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "line",
-              "id": "line_XY3JPcaO",
-              "left": 240,
-              "top": 285,
-              "width": 3,
-              "start": [
-                0,
-                0
-              ],
-              "end": [
-                120,
-                60
-              ],
-              "curve": [
-                60,
-                20
-              ],
-              "style": "solid",
-              "color": "#2563eb",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "shape",
-              "id": "shape_aJGa03Nn",
-              "left": 234,
-              "top": 279,
-              "width": 12,
-              "height": 12,
-              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-              "viewBox": [
-                1,
-                1
-              ],
-              "fill": "#ffffff",
-              "fixedRatio": true,
-              "rotate": 0
-            },
-            {
-              "type": "shape",
-              "id": "shape_lJfmj0ti",
-              "left": 234,
-              "top": 279,
-              "width": 12,
-              "height": 12,
-              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-              "viewBox": [
-                1,
-                1
-              ],
-              "fill": "#ffffff",
-              "fixedRatio": true,
-              "rotate": 0
-            },
-            {
-              "type": "shape",
-              "id": "shape_nbHzpvDG",
-              "left": 234,
-              "top": 279,
-              "width": 12,
-              "height": 12,
-              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-              "viewBox": [
-                1,
-                1
-              ],
-              "fill": "#ef4444",
-              "fixedRatio": true,
-              "rotate": 0
-            },
-            {
-              "type": "text",
-              "id": "text_4xseEgiv",
               "left": 105,
-              "top": 208,
-              "width": 110,
-              "height": 46,
-              "content": "<p style=\"font-size: 16px; color: #2563eb;\">左侧趋近</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333",
-              "rotate": 0
+              "top": 370,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                360,
+                0
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
             },
             {
-              "type": "text",
-              "id": "text_y2uzq4Ph",
-              "left": 275,
-              "top": 208,
-              "width": 110,
-              "height": 46,
-              "content": "<p style=\"font-size: 16px; text-align: right; color: #2563eb;\">右侧趋近</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333",
-              "rotate": 0
+              "id": "limits-y",
+              "type": "line",
+              "left": 105,
+              "top": 370,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                -200
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
             },
             {
+              "id": "limits-xlabel",
               "type": "text",
-              "id": "text_8-oVfi_k",
-              "left": 270,
-              "top": 258,
-              "width": 120,
-              "height": 46,
-              "content": "<p style=\"font-size: 16px; color: #ef4444;\">L</p>",
+              "left": 455,
+              "top": 378,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">x</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333",
-              "rotate": 0
+              "defaultColor": "#334155"
             },
             {
+              "id": "limits-ylabel",
               "type": "text",
-              "id": "text_5DKbaEQc",
-              "left": 100,
-              "top": 258,
-              "width": 140,
-              "height": 70,
-              "content": "<p style=\"font-size: 16px; color: #2563eb;\">两侧靠近</p><p style=\"font-size: 16px; color: #2563eb;\">同一高度 L</p>",
+              "left": 85,
+              "top": 152,
+              "width": 60,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">f(x)</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333",
-              "rotate": 0
+              "defaultColor": "#334155"
             },
             {
+              "id": "limits-curve",
+              "type": "shape",
+              "left": 115,
+              "top": 190,
+              "width": 340,
+              "height": 104,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 Q 0.5 2 1 0",
+              "fill": "transparent",
+              "outline": {
+                "color": "#3475c5",
+                "width": 3,
+                "style": "solid"
+              },
+              "fixedRatio": false
+            },
+            {
+              "id": "limits-vertical",
+              "type": "line",
+              "left": 285,
+              "top": 294,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                76
+              ],
+              "points": [
+                "",
+                ""
+              ],
+              "style": "solid",
+              "color": "#b0bbca"
+            },
+            {
+              "id": "limits-height",
+              "type": "line",
+              "left": 105,
+              "top": 294,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                360,
+                0
+              ],
+              "points": [
+                "",
+                ""
+              ],
+              "style": "solid",
+              "color": "#ccd5e2"
+            },
+            {
+              "id": "limits-point",
+              "type": "shape",
+              "left": 280,
+              "top": 289,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fill": "#ffffff",
+              "outline": {
+                "color": "#3475c5",
+                "width": 2,
+                "style": "solid"
+              },
+              "fixedRatio": false
+            },
+            {
+              "id": "limits-a",
               "type": "text",
-              "id": "text_3HQSKZBw",
+              "left": 273,
+              "top": 378,
+              "width": 50,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">x₀</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "limits-l",
+              "type": "text",
               "left": 80,
-              "top": 405,
-              "width": 380,
-              "height": 94,
+              "top": 281,
+              "width": 24,
+              "height": 30,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #475569;\">• <b>左极限</b>：从左侧趋近时的函数值趋势</p><p style=\"font-size: 16px; color: #475569;\">• <b>右极限</b>：从右侧趋近时的函数值趋势</p><p style=\"font-size: 16px; color: #475569;\">• 注意：单一方向趋势不代表整体极限</p>",
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">L</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333"
+              "defaultColor": "#334155"
             },
             {
-              "type": "latex",
-              "id": "latex_3iS3c7ws",
-              "left": 540,
-              "top": 210,
-              "width": 380,
-              "height": 120,
-              "rotate": 0,
-              "latex": "\\lim_{x \\to x_0} f(x) = L \\\\ \\Longleftrightarrow \\\\ \\lim_{x \\to x_0^-} f(x) = L \\text{ 且 } \\lim_{x \\to x_0^+} f(x) = L",
-              "color": "#1e3a8a",
-              "align": "center",
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.5501em;vertical-align:-0.8001em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.4em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3173em;\"><span style=\"top:-2.357em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.143em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8001em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">L</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:0.549em;vertical-align:-0.024em;\"></span><span class=\"mrel\">⟺</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.2593em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em;\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">−</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em;\"></span><span class=\"mord mathnormal\">L</span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">且</span><span class=\"mord\"> </span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.2593em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em;\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">+</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">L</span></span></span></span></span>",
-              "fixedRatio": true
+              "id": "limits-left-arrow",
+              "type": "line",
+              "left": 160,
+              "top": 263,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                56,
+                24
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#3475c5"
             },
             {
+              "id": "limits-right-arrow",
+              "type": "line",
+              "left": 409,
+              "top": 263,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                -56,
+                24
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#9658b5"
+            },
+            {
+              "id": "limits-left",
               "type": "text",
-              "id": "text_9di3lpEA",
-              "left": 540,
-              "top": 350,
-              "width": 380,
-              "height": 118,
+              "left": 105,
+              "top": 142,
+              "width": 175,
+              "height": 32,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #475569;\">• <b>充要条件</b>：左右极限必须相等</p><p style=\"font-size: 16px; color: #475569;\">• <b>常见误区</b>：仅看单一方向趋势</p><p style=\"font-size: 16px; color: #475569;\">• <b>几何意义</b>：函数在趋近点处“无缝对接”</p><p style=\"font-size: 16px; color: #475569;\">• <b>结论</b>：若左右极限不等，则极限不存在</p>",
+              "content": "<p style=\"font-size:18px;line-height:1.45;color:#3475c5;margin:0\">左侧：x < x₀</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#333333"
+              "defaultColor": "#3475c5"
+            },
+            {
+              "id": "limits-right",
+              "type": "text",
+              "left": 310,
+              "top": 142,
+              "width": 180,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size:18px;line-height:1.45;color:#9658b5;margin:0\">右侧：x > x₀</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#9658b5"
+            },
+            {
+              "id": "limits-left-rule",
+              "type": "text",
+              "left": 540,
+              "top": 170,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size:20px;line-height:1.45;color:#3475c5;margin:0\"><b>左极限</b><br>输入从小于 x₀ 的一侧靠近。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#3475c5"
+            },
+            {
+              "id": "limits-right-rule",
+              "type": "text",
+              "left": 540,
+              "top": 260,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size:20px;line-height:1.45;color:#9658b5;margin:0\"><b>右极限</b><br>输入从大于 x₀ 的一侧靠近。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#9658b5"
+            },
+            {
+              "id": "limits-both",
+              "type": "text",
+              "left": 60,
+              "top": 420,
+              "width": 880,
+              "height": 62,
+              "rotate": 0,
+              "content": "<p style=\"font-size:22px;line-height:1.45;color:#1e40af;margin:0\"><b>双侧有限极限存在 ⇔ 左右有限极限都存在且相等</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1e40af"
+            },
+            {
+              "id": "limits-point",
+              "type": "text",
+              "left": 60,
+              "top": 482,
+              "width": 880,
+              "height": 45,
+              "rotate": 0,
+              "content": "<p style=\"font-size:19px;line-height:1.45;color:#334155;margin:0\">只看一侧不够；点上的函数值可以不同，也可以没有定义。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
             }
           ],
           "background": {
             "type": "solid",
             "color": "#ffffff"
           },
-          "animations": []
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625
         }
       },
       "actions": [
         {
           "id": "action_RNC-wnUW",
           "type": "spotlight",
-          "elementId": "text_vjQ0V7fW"
+          "elementId": "limits-title"
         },
         {
           "id": "action_SftVFsUU",
           "type": "speech",
-          "text": "本场景聚焦“图像上的左右极限”。感受了函数值一点点向某个目标靠近的趋势。现在我们把这种直觉搬到图像上，就像看地图一样，来直观理解“左右极限”。"
+          "text": "本场景聚焦“图像上的左右极限”。感受了函数值一点点向某个目标靠近的趋势。现在我们把这种直觉搬到图像上，就像看地图一样，来直观理解“左右极限”。",
+          "audioRef": "audio/原音色讲解-d4c1aa8cac87b766.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fef045cbb4ee13471380300dec27cb03b7bd6f5114adeeddccb1b96f217f8476",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_7sPK0xxy",
           "type": "spotlight",
-          "elementId": "text_s8KZs9GU"
+          "elementId": "limits-curve"
         },
         {
           "id": "action_aVXJIK4M",
           "type": "speech",
           "text": "看，屏幕上有一条函数曲线。想象一下，有两只小蚂蚁，一只从左边沿着曲线爬，另一只从右边沿着曲线爬，它们的目标都是去往 x₀ 这个位置。",
-          "audioRef": "audio/tts_s7_action_aVXJIK4M.mp3"
+          "audioRef": "audio/原音色讲解-3e14cf7b9ae0fd28.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "0e553ce508aff11d172810ccda91bcaf2fdec7db0eddc72d8b3f74a6fa9494b0",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_BlLatb0E",
           "type": "laser",
-          "elementId": "shape_enYMiaot"
+          "elementId": "limits-left-rule"
         },
         {
           "id": "action_47mQeTwF",
           "type": "speech",
-          "text": "左边这只蚂蚁，不管是从山的这边还是那边出发，它所看向的最终高度，就叫做左极限。",
-          "audioRef": "audio/tts_s7_action_47mQeTwF.mp3"
+          "text": "当输入始终小于目标点，并从左侧越来越靠近它时，如果输出趋向一个确定的数，这个数就是左极限。",
+          "audioRef": "audio/原音色讲解-ed73d8e80c9ddc18.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "f8a3fd723d486ac51c94e217bd231af4d91a5ee43531d86c54fe540f2f9032fb",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_LNGNp5oB",
           "type": "laser",
-          "elementId": "shape_S9L6q4Yh"
+          "elementId": "limits-right-rule"
         },
         {
           "id": "action_WQw_Rydn",
           "type": "speech",
-          "text": "同样地，右边这只蚂蚁爬向 x₀ 时，看向的那个终点高度，就是右极限。现在最关键的问题来了——",
-          "audioRef": "audio/tts_s7_action_WQw_Rydn.mp3"
+          "text": "从右侧趋近时，输入始终大于目标横坐标。如果相应输出趋向一个确定的数，这个数就是右极限。",
+          "audioRef": "audio/原音色讲解-8399244f7fba3782.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "dd484aa3fdd76eb15f07b65da2f57094e5851e456ebf3c35b97c76e28bfac4a3",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_qbsVVR3J",
           "type": "spotlight",
-          "elementId": "text_sbHvsEXa"
+          "elementId": "limits-both"
         },
         {
           "id": "action_MrfkRgKS",
           "type": "speech",
-          "text": "极限存在的充要条件。很多同学会犯一个经典错误，看到左边蚂蚁爬到一个高度，就觉得极限就是那个值了。这是不对的。极限要想存在，必须满足：左右两只蚂蚁，最终必须在同一个高度上“会师”。",
-          "audioRef": "audio/tts_s7_action_MrfkRgKS.mp3"
+          "text": "这里判断的是内点的双侧有限极限。只看一侧不够，需要左右两个有限极限都存在，而且相等。",
+          "audioRef": "audio/原音色讲解-1cab34aea4ffe0a5.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "6fee48fbe157d2ecc9a8441c02aa6a62635720b1eec248a1ea1fd1bf8302483f",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_Dm7f8jyx",
           "type": "spotlight",
-          "elementId": "text_3HQSKZBw"
+          "elementId": "limits-point"
         },
         {
           "id": "action_s1TWF1wX",
           "type": "speech",
           "text": "注意看这条说明，单一方向的趋势不代表整体极限。只有当我们确认左极限和右极限相等时，我们才能说这个函数的极限存在，并且就是这个共同的值。",
-          "audioRef": "audio/tts_s7_action_s1TWF1wX.mp3"
+          "audioRef": "audio/原音色讲解-f4ca3e7af5c647c4.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "9eba526f8509bfc8b34de2c12f41373ab9df18fc81b6cf16df2421c0e2e1fbff",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_FIkCfwEp",
           "type": "spotlight",
-          "elementId": "text_9di3lpEA"
+          "elementId": "limits-both"
         },
         {
           "id": "action_1q1bWJYb",
           "type": "speech",
-          "text": "它的几何意义非常形象：函数在趋近点处必须“无缝对接”。如果左右趋势在目标点断开了，跳到了不同高度，那就说明极限不存在。记住，我们看的是趋势，是两只蚂蚁最终的约定地点，而不是函数在 x₀ 那一点到底等于什么。本场景中，我们就在图像上拖动验证一下这个感觉。"
+          "text": "比较左右两侧输出趋向的高度。如果两个有限极限相等，双侧有限极限就存在；若它们不相等，双侧极限不存在。这一步不要求该点的函数值等于极限，也不要求该点有定义。",
+          "audioRef": "audio/原音色讲解-6f5b2220f5033331.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "7ccd765626a64b72c615aac82a03fd863393cb0a448b2899013bedbd77dc7e8c",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -1798,7 +1897,13 @@
         {
           "id": "action_k6VU89Wo",
           "type": "speech",
-          "text": "本场景通过交互探索“图像上的左右极限：拖动实验”。上页我们说到，两只蚂蚁是否能‘会师’，决定了极限是否存在。现在，我们就亲手来拖动这两只小蚂蚁，看看它们究竟会在断点相遇，还是无奈错过。"
+          "text": "这一页用两个运动点表示从左侧和右侧趋近。先选择函数情形，再点击启动，观察两侧输出分别趋向什么高度。两侧趋势相同，不要求运动点真的相遇。",
+          "audioRef": "audio/原音色讲解-ad2b12a6057c6a25.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "cf82ad0a977ce0689ede9581bbc315db54f04216ba296ff1763f98b8a8704821",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_ZDrnqO6c",
@@ -1815,8 +1920,13 @@
         {
           "id": "action_q54YiIkr",
           "type": "speech",
-          "text": "观察图像，这里有一个明显的跳跃。现在，请先不要被函数本身的值干扰。注意左侧这只蚂蚁——当它从左边越来越靠近断点时，它最终‘约定’的高度是多少？",
-          "audioRef": "audio/tts_s8_action_q54YiIkr.mp3"
+          "text": "先选择跳跃间断的情形。分别观察输入从左侧和右侧靠近目标点时，输出趋向哪个高度。此时先把目标点本身的函数值放在一旁。",
+          "audioRef": "audio/原音色讲解-06206a2dab1c6141.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ddf1a929356c6c9181b1d6a8e09c4d225d9881f155cb90bb8bd4e66ce1d36437",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_FdekQtTC",
@@ -1827,8 +1937,13 @@
         {
           "id": "action_U_DkwzQg",
           "type": "speech",
-          "text": "接下来，切换方向，让蚂蚁从右边靠近。你会发现，它锁定的高度完全不同。左右两边的读数无法重合，这就是函数在这一点产生‘分歧’的图像证据。",
-          "audioRef": "audio/tts_s8_action_U_DkwzQg.mp3"
+          "text": "比较两侧的读数。如果左侧和右侧趋向不同的有限高度，双侧极限就不存在。注意，这里的不同指的是趋近趋势，不是当前两个点之间暂时有距离。",
+          "audioRef": "audio/原音色讲解-1dbe4b41ec6cab07.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "dcd79afe58400e5d8be2f400d11d199fb22430d7bdb654bd17ebeec8858c75ec",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_zhIbqo2x",
@@ -1839,8 +1954,13 @@
         {
           "id": "action_ngMcABRB",
           "type": "speech",
-          "text": "非常好。你现在可以把预设切换到‘可去间断点’看一次完美的‘会师失败’——蚂蚁们不约而同地来到了同一个高度，但那个点本身却被挖掉了。极限存在，但函数值缺席，这完美印证了我们之前强调的一点：极限值和函数值，是两回事。",
-          "audioRef": "audio/tts_s8_action_ngMcABRB.mp3"
+          "text": "再切换到可去间断的情形。两侧可以趋向同一个高度，即使目标点没有定义，或点值与这个高度不同，极限仍然可能存在。",
+          "audioRef": "audio/原音色讲解-2cc7fffbc3b54fc9.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "5d6e6ddb4a2d88b24a52bba10f92c86f0cbe87531745a83d6a37190dc6caafeb",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_DSsdqjH2",
@@ -1989,7 +2109,13 @@
         {
           "id": "action_wqyePQOk",
           "type": "speech",
-          "text": "本场景通过交互探索“图像上的左右极限：关系图”。直观感受了左右极限。现在我想请大家用她最擅长的方式，帮我梳理一下——判定一个极限到底存不存在，我们脑子里需要跑完一整套怎样的流程图？"
+          "text": "这张关系图梳理左右极限的判断顺序。先分别观察左侧和右侧的输出趋势，再比较两个结果。点击节点，沿着流程核对每一步。",
+          "audioRef": "audio/原音色讲解-c63c3d65c37b6e60.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "e6f4323b86d1b72d2c6468e1330431ce82c5bd755beca30b3790f3dcd447141b",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_XXCeC7MU",
@@ -2000,8 +2126,13 @@
         {
           "id": "action_6KQ7MO3K",
           "type": "speech",
-          "text": "我们一起看这张图。一切判断的出发点，是我们选定了一个函数和它趋近的点。就像我们刚拖动的那个‘断崖’图像。选中之后，我们的思维会自动兵分两路。",
-          "audioRef": "audio/tts_s9_action_6KQ7MO3K.mp3"
+          "text": "先选定函数和目标点，再分别判断左侧与右侧的输出趋势。图中的两条分支表示这两个步骤。",
+          "audioRef": "audio/原音色讲解-9b844f0dde7362a3.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "6092fdd217374dba09f8548b37890f1fe2535ee3b61833ba7a92422c19328fb4",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_WK4JUGqr",
@@ -2030,8 +2161,13 @@
         {
           "id": "action_rhZCNbgw",
           "type": "speech",
-          "text": "一路去左边算左极限L⁻，一路去右边算右极限L⁺。注意，这里最容易掉进的陷阱，就是只算了一边就急着下结论。我们必须让这两路结果在中间会师。",
-          "audioRef": "audio/tts_s9_action_rhZCNbgw.mp3"
+          "text": "左边分支判断左极限，右边分支判断右极限。不能只算一边就下结论；还要确认两个有限极限都存在，并比较它们是否相等。",
+          "audioRef": "audio/原音色讲解-8da38fb1f67d81fb.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "1b84efc4738844513cd5e6b3466c20f28c1f4c79c0fca439d95d30b32079cc67",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_wJNMDvvv",
@@ -2048,8 +2184,13 @@
         {
           "id": "action_Ny-1tEkA",
           "type": "speech",
-          "text": "看，汇聚到这一步——比较。如果相等，我们往左走，结论就是极限存在。如果不等，比如刚才那个高度不一样的断崖，就立刻走向右边：判定失效，极限不存在。",
-          "audioRef": "audio/tts_s9_action_Ny-1tEkA.mp3"
+          "text": "来到比较节点时，先确认两侧的有限极限都存在。相等时，双侧有限极限存在；不相等时，双侧极限不存在。",
+          "audioRef": "audio/原音色讲解-3d601ed2d12f5f5a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "e0a71fc2e546246d335f173a4358e9424ad432b64ea66a137f0f7853b9a2ca91",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_lDjE8Ifk",
@@ -2066,7 +2207,13 @@
         {
           "id": "action_xIi0VFq5",
           "type": "speech",
-          "text": "最后，不管结论是哪一种，都会汇入一个‘常见误解’的警示灯。尤其是大家上次提到的——函数值等于极限值吗？在这个流程图里你会发现，我们从头到尾根本没看函数值本身，全是看趋近的趋势。"
+          "text": "最后，不管结论是哪一种，都会汇入一个‘常见误解’的警示灯。尤其是大家上次提到的——函数值等于极限值吗？在这个流程图里你会发现，我们从头到尾根本没看函数值本身，全是看趋近的趋势。",
+          "audioRef": "audio/原音色讲解-ae3d8f175a85ee05.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "2a0c7746e56ac8a4067a71ca4dfd4dd2f2695e78820b2ddae9a2cc3efd7fef8b",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_5tP0boVB",
@@ -2077,8 +2224,13 @@
         {
           "id": "action_8I6CiI_G",
           "type": "speech",
-          "text": "所以这张流程图，就是你大脑里的判定程序。下次遇到图像，心里默默跑一遍这张图，你就能精准锁定极限是否存在。现在，请你自己在心里选一个上页出现的函数，默默跑一遍，看你会走到‘存在’还是‘不存在’。",
-          "audioRef": "audio/tts_s9_action_8I6CiI_G.mp3"
+          "text": "先分别判断左右有限极限是否存在，再比较二者是否相等。这张图帮助我们判断内点的双侧有限极限；该点的函数值需要单独记录。",
+          "audioRef": "audio/原音色讲解-077e07d9954029de.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "263907789bbfb7e747fa223a8aec83fe3535942258a1826f95c6c0340add9a35",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -2326,7 +2478,13 @@
         {
           "id": "action_C3ZQaAtQ",
           "type": "speech",
-          "text": "本场景通过交互探索“图像上的左右极限：空间视角”。让我们换一个更立体的视角——就像从纸面跳入空间，亲眼看看那个‘跳断’到底意味着什么。"
+          "text": "本场景通过交互探索“图像上的左右极限：空间视角”。让我们换一个更立体的视角——就像从纸面跳入空间，亲眼看看那个‘跳断’到底意味着什么。",
+          "audioRef": "audio/原音色讲解-1b845b87c931c937.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "7f33e69d0ca351e6364f63c25b8d9ee48e137c27cb394fc843be41dca4081aa3",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_2tdc8uKi",
@@ -2337,8 +2495,13 @@
         {
           "id": "action_YlnK2tND",
           "type": "speech",
-          "text": "注意看，这两个彩色光点。蓝色的代表x从左边靠近0时的极限，橘色的代表x从右边靠近0时的极限。它们现在看起来好像在一个平面上，对吗？",
-          "audioRef": "audio/tts_s11_action_YlnK2tND.mp3"
+          "text": "观察左右两侧的彩色点。它们表示当前两个输入所对应的输出，还不是极限本身。减小趋近距离，观察两侧分别趋向什么高度。",
+          "audioRef": "audio/原音色讲解-34a353528bdd0a53.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "4df223f08a5a40266b2e4f3b9730afeda0f820116a9159303fe0bfb7541c16b4",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_kDoHnu-F",
@@ -2355,8 +2518,13 @@
         {
           "id": "action_cB_TxwmI",
           "type": "speech",
-          "text": "试着旋转一下这个模型，点击‘俯视’按钮，从正上方往下看。你会发现这两个彩点，在水平位置x=0处完美重合了，这说明它们确实是在同一个点附近考察的。",
-          "audioRef": "audio/tts_s11_action_cB_TxwmI.mp3"
+          "text": "切换到俯视图，观察两侧输入如何靠近零。俯视图主要帮助比较横向位置，不能据此判断两个输出高度是否相等。",
+          "audioRef": "audio/原音色讲解-011ade3e611062b8.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "8cff5a25dcf392844793c1b4b1e3b547f00e3e5a1232476c0d795557c0565fd9",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_xVsAZIzZ",
@@ -2369,8 +2537,13 @@
         {
           "id": "action_akZh250y",
           "type": "speech",
-          "text": "现在，再切到‘侧视’图。看到了吗？那根红色的指示线，清清楚楚地展示了两个极限点的高度差。这就是左右极限不相等时，空间中‘错层’的证据。",
-          "audioRef": "audio/tts_s11_action_akZh250y.mp3"
+          "text": "再切换到侧视图，比较两侧趋近的高度。即使输入靠近同一个横坐标，输出也可能趋向不同的高度。",
+          "audioRef": "audio/原音色讲解-6de70c851dcb52a5.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "0c1e3620e084df5a6d16574cad2c9eda727c4ca63c6aff9ea12e192ba33de298",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_UbL4486c",
@@ -2389,8 +2562,13 @@
         {
           "id": "action_S6r_fvBs",
           "type": "speech",
-          "text": "所以，极限存在的前提，就是不论我们从哪个方向靠近，最终都必须落在同一个高度上。在这个三维视角里，一点偏差都藏不住。你可以再自由拖动视角，感受一下这个‘空间错位’，然后我们再来总结。",
-          "audioRef": "audio/tts_s11_action_S6r_fvBs.mp3"
+          "text": "判断这个内点的双侧有限极限，要确认左右两个有限极限存在并且相等。请结合数值读数和函数规则作出判断，空间图形只提供直观线索。",
+          "audioRef": "audio/原音色讲解-6a408822696448ef.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "98ef1f186bc134f8c25ebe51159a39ed58b2df81f9543024ad894fa24de15aab",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -2571,11 +2749,21 @@
         "type": "slide",
         "schemaVersion": 1,
         "canvas": {
-          "id": "V7QeBhdqgvDyt4BWACk2y",
-          "viewportSize": 1000,
-          "viewportRatio": 0.5625,
+          "id": "Y_hqS0BEGP6GsQ0C3A_60",
           "theme": {
-            "backgroundColor": "#ffffff",
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
             "themeColors": [
               "#5b9bd5",
               "#ed7d31",
@@ -2583,575 +2771,555 @@
               "#ffc000",
               "#4472c4"
             ],
-            "fontColor": "#333333",
-            "fontName": "Microsoft YaHei",
-            "outline": {
-              "color": "#d14424",
-              "width": 2,
-              "style": "solid"
-            },
-            "shadow": {
-              "h": 0,
-              "v": 0,
-              "blur": 10,
-              "color": "#000000"
-            }
+            "backgroundColor": "#ffffff"
           },
           "elements": [
             {
+              "id": "continuity-title",
               "type": "text",
-              "id": "text_RDRLv5Rz",
+              "left": 60,
+              "top": 30,
+              "width": 880,
+              "height": 55,
+              "rotate": 0,
+              "content": "<p style=\"font-size:29px;line-height:1.45;color:#1e40af;margin:0\"><b>连续：附近的趋势与点上的值对齐</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1e40af"
+            },
+            {
+              "id": "continuous-label",
+              "type": "text",
               "left": 100,
-              "top": 50,
-              "width": 800,
-              "height": 70,
+              "top": 100,
+              "width": 370,
+              "height": 40,
               "rotate": 0,
-              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A5276;\">连续就是不跳断</p>",
+              "content": "<p style=\"font-size:22px;line-height:1.45;color:#3475c5;margin:0\">左图：连续，f(a) = L</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#1A5276"
+              "defaultColor": "#3475c5"
             },
             {
+              "id": "discontinuous-label",
               "type": "text",
-              "id": "text_FvtwlvcG",
-              "left": 100,
-              "top": 120,
-              "width": 800,
-              "height": 52,
+              "left": 560,
+              "top": 100,
+              "width": 380,
+              "height": 40,
               "rotate": 0,
-              "content": "<p style=\"font-size: 20px; text-align: center; color: #2471A3;\">将极限与点值统一，定义完美的“平滑连接”</p>",
+              "content": "<p style=\"font-size:22px;line-height:1.45;color:#a65325;margin:0\">右图：间断，f(a) ≠ L</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#2471A3"
+              "defaultColor": "#a65325"
             },
             {
+              "id": "continuous-x",
               "type": "line",
-              "id": "line_DcYMu2Oq",
-              "left": 365,
-              "top": 225,
-              "width": 1,
+              "left": 105,
+              "top": 360,
+              "width": 1.5,
               "start": [
                 0,
                 0
               ],
               "end": [
-                0,
-                140
+                340,
+                0
+              ],
+              "points": [
+                "",
+                "arrow"
               ],
               "style": "solid",
-              "color": "#AAB7B8",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
+              "color": "#94a3b8"
             },
             {
+              "id": "continuous-y",
               "type": "line",
-              "id": "line_posz2bSU",
-              "left": 470,
-              "top": 180,
-              "width": 1,
+              "left": 105,
+              "top": 360,
+              "width": 1.5,
               "start": [
                 0,
                 0
               ],
               "end": [
                 0,
-                260
+                -190
               ],
-              "style": "dashed",
-              "color": "#BDC3C7",
               "points": [
                 "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "line",
-              "id": "line_3Lurj2eO",
-              "left": 80,
-              "top": 260,
-              "width": 3,
-              "start": [
-                0,
-                0
-              ],
-              "end": [
-                170,
-                0
+                "arrow"
               ],
               "style": "solid",
-              "color": "#2980B9",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
+              "color": "#94a3b8"
             },
             {
+              "id": "continuous-xlabel",
+              "type": "text",
+              "left": 435,
+              "top": 368,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "continuous-ylabel",
+              "type": "text",
+              "left": 85,
+              "top": 152,
+              "width": 60,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">f(x)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "continuous-curve",
               "type": "shape",
-              "id": "shape_GKdL6ZQ6",
-              "left": 161,
-              "top": 256,
-              "width": 8,
-              "height": 8,
+              "left": 115,
+              "top": 190,
+              "width": 320,
+              "height": 97.8,
               "rotate": 0,
               "viewBox": [
                 1,
                 1
               ],
-              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-              "fixedRatio": true,
-              "fill": "#27AE60"
-            },
-            {
-              "type": "text",
-              "id": "text_Q57G2UJC",
-              "left": 80,
-              "top": 242,
-              "width": 75,
-              "height": 28,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 15px; color: #2980B9; text-align: center;\">极限值 L</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#2980B9"
-            },
-            {
-              "type": "line",
-              "id": "line_BVyF5CtA",
-              "left": 378,
-              "top": 260,
-              "width": 3,
-              "start": [
-                0,
-                0
-              ],
-              "end": [
-                72,
-                0
-              ],
-              "style": "solid",
-              "color": "#2980B9",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "text",
-              "id": "text_3zoKsbob",
-              "left": 90,
-              "top": 278,
-              "width": 150,
-              "height": 38,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #1E8449; text-align: center;\">函数值 f(a)=L</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#1E8449"
-            },
-            {
-              "type": "text",
-              "id": "text_XPL0amKy",
-              "left": 80,
-              "top": 178,
-              "width": 175,
-              "height": 63,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1E8449; text-align: center;\">连续</p><p style=\"font-size: 14px; color: #1E8449; text-align: center;\">趋势与点值对齐</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#1E8449"
-            },
-            {
-              "type": "line",
-              "id": "line_zs0whevW",
-              "left": 280,
-              "top": 260,
-              "width": 3,
-              "start": [
-                0,
-                0
-              ],
-              "end": [
-                72,
-                0
-              ],
-              "style": "solid",
-              "color": "#2980B9",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "shape",
-              "id": "shape_Kt75jMzi",
-              "left": 361,
-              "top": 306,
-              "width": 8,
-              "height": 8,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-              "fixedRatio": true,
-              "fill": "#E74C3C"
-            },
-            {
-              "type": "text",
-              "id": "text_ZaCPR9BP",
-              "left": 290,
-              "top": 322,
-              "width": 150,
-              "height": 38,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #E74C3C; text-align: center;\">函数值 f(a)≠L</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#E74C3C"
-            },
-            {
-              "type": "line",
-              "id": "line_poRbN7n6",
-              "left": 165,
-              "top": 225,
-              "width": 1,
-              "start": [
-                0,
-                0
-              ],
-              "end": [
-                0,
-                95
-              ],
-              "style": "solid",
-              "color": "#AAB7B8",
-              "points": [
-                "",
-                ""
-              ],
-              "rotate": 0
-            },
-            {
-              "type": "text",
-              "id": "text_AVO3EXtf",
-              "left": 300,
-              "top": 220,
-              "width": 130,
-              "height": 34,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 15px; color: #2980B9; text-align: center;\">极限仍为 L</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#2980B9"
-            },
-            {
-              "type": "text",
-              "id": "text_vHiMrwTc",
-              "left": 270,
-              "top": 180,
-              "width": 185,
-              "height": 36,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #C0392B; text-align: center;\">间断：趋势与点值分离</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#C0392B"
-            },
-            {
-              "type": "shape",
-              "id": "shape_hPPSVMq1",
-              "left": 500,
-              "top": 180,
-              "width": 440,
-              "height": 46,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
-              ],
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "fixedRatio": false,
-              "fill": "#2471A3"
-            },
-            {
-              "type": "text",
-              "id": "text_8PrYABZp",
-              "left": 500,
-              "top": 180,
-              "width": 440,
-              "height": 46,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 16px; text-align: center; font-weight: bold; color: #ffffff;\">连续条件</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#ffffff"
-            },
-            {
-              "type": "table",
-              "id": "table_O2_IUaJo",
-              "left": 500,
-              "top": 230,
-              "width": 440,
-              "height": 200,
-              "rotate": 0,
+              "path": "M 0 0 Q 0.5 2 1 0",
+              "fill": "transparent",
               "outline": {
-                "style": "solid",
-                "width": 1,
-                "color": "#BDC3C7"
+                "color": "#3475c5",
+                "width": 3,
+                "style": "solid"
               },
-              "colWidths": [
-                0.32,
-                0.68
+              "fixedRatio": false
+            },
+            {
+              "id": "continuous-vertical",
+              "type": "line",
+              "left": 275,
+              "top": 287.8,
+              "width": 1,
+              "start": [
+                0,
+                0
               ],
-              "cellMinHeight": 50,
-              "data": [
-                [
-                  {
-                    "id": "h1",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "条件",
-                    "style": {
-                      "bold": true,
-                      "color": "#1A5276",
-                      "backcolor": "#E8F4FD",
-                      "align": "center",
-                      "fontsize": 16
-                    }
-                  },
-                  {
-                    "id": "h2",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "含义",
-                    "style": {
-                      "bold": true,
-                      "color": "#1A5276",
-                      "backcolor": "#E8F4FD",
-                      "align": "center",
-                      "fontsize": 16
-                    }
-                  }
-                ],
-                [
-                  {
-                    "id": "r1c1",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "极限存在",
-                    "style": {
-                      "bold": true,
-                      "color": "#2C3E50",
-                      "align": "center",
-                      "fontsize": 15
-                    }
-                  },
-                  {
-                    "id": "r1c2",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "当 x→a 时，f(x) 趋近于确定实数 L",
-                    "style": {
-                      "color": "#2C3E50",
-                      "fontsize": 15
-                    }
-                  }
-                ],
-                [
-                  {
-                    "id": "r2c1",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "函数值存在",
-                    "style": {
-                      "bold": true,
-                      "color": "#2C3E50",
-                      "align": "center",
-                      "fontsize": 15
-                    }
-                  },
-                  {
-                    "id": "r2c2",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "f(a) 有定义，且为某个实数",
-                    "style": {
-                      "color": "#2C3E50",
-                      "fontsize": 15
-                    }
-                  }
-                ],
-                [
-                  {
-                    "id": "r3c1",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "两者相等",
-                    "style": {
-                      "bold": true,
-                      "color": "#2C3E50",
-                      "align": "center",
-                      "fontsize": 15
-                    }
-                  },
-                  {
-                    "id": "r3c2",
-                    "colspan": 1,
-                    "rowspan": 1,
-                    "text": "极限值 L = 函数值 f(a)",
-                    "style": {
-                      "color": "#2C3E50",
-                      "fontsize": 15
-                    }
-                  }
-                ]
-              ]
-            },
-            {
-              "type": "shape",
-              "id": "shape_pvy3DOha",
-              "left": 100,
-              "top": 450,
-              "width": 800,
-              "height": 60,
-              "rotate": 0,
-              "viewBox": [
-                1,
-                1
+              "end": [
+                0,
+                72.19999999999999
               ],
-              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-              "fixedRatio": false,
-              "fill": "#F2F3F4"
+              "points": [
+                "",
+                ""
+              ],
+              "style": "solid",
+              "color": "#b0bbca"
             },
             {
-              "type": "text",
-              "id": "text_IvdrgbNd",
-              "left": 100,
-              "top": 454,
-              "width": 800,
-              "height": 52,
-              "rotate": 0,
-              "content": "<p style=\"font-size: 20px; text-align: center; font-style: italic; color: #2C3E50;\">趋势与点值对齐，连接即连续。</p>",
-              "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#2C3E50"
+              "id": "continuous-height",
+              "type": "line",
+              "left": 105,
+              "top": 287.8,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                340,
+                0
+              ],
+              "points": [
+                "",
+                ""
+              ],
+              "style": "solid",
+              "color": "#ccd5e2"
             },
             {
+              "id": "continuous-point",
               "type": "shape",
-              "id": "shape_gh02_limit_open",
-              "left": 359,
-              "top": 254,
-              "width": 12,
-              "height": 12,
+              "left": 270,
+              "top": 282.8,
+              "width": 10,
+              "height": 10,
               "rotate": 0,
               "viewBox": [
                 1,
                 1
               ],
               "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-              "fixedRatio": true,
-              "fill": "#FFFFFF",
+              "fill": "#3475c5",
               "outline": {
-                "color": "#2980B9",
-                "style": "solid",
-                "width": 2
-              }
+                "color": "#3475c5",
+                "width": 2,
+                "style": "solid"
+              },
+              "fixedRatio": false
             },
             {
+              "id": "continuous-a",
               "type": "text",
-              "id": "text_gh02_xa_continuous",
-              "left": 145,
-              "top": 315,
-              "width": 40,
-              "height": 28,
+              "left": 263,
+              "top": 368,
+              "width": 50,
+              "height": 30,
               "rotate": 0,
-              "content": "<p style=\"font-size: 13px; color: #566573; text-align: center;\">x=a</p>",
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">a</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#566573"
+              "defaultColor": "#334155"
             },
             {
+              "id": "continuous-l",
               "type": "text",
-              "id": "text_gh02_xa_discontinuous",
-              "left": 345,
-              "top": 365,
-              "width": 40,
-              "height": 28,
+              "left": 80,
+              "top": 274.8,
+              "width": 24,
+              "height": 30,
               "rotate": 0,
-              "content": "<p style=\"font-size: 13px; color: #566573; text-align: center;\">x=a</p>",
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">L</p>",
               "defaultFontName": "Microsoft YaHei",
-              "defaultColor": "#566573"
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "discontinuous-x",
+              "type": "line",
+              "left": 565,
+              "top": 360,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                340,
+                0
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
+            },
+            {
+              "id": "discontinuous-y",
+              "type": "line",
+              "left": 565,
+              "top": 360,
+              "width": 1.5,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                -190
+              ],
+              "points": [
+                "",
+                "arrow"
+              ],
+              "style": "solid",
+              "color": "#94a3b8"
+            },
+            {
+              "id": "discontinuous-xlabel",
+              "type": "text",
+              "left": 895,
+              "top": 368,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "discontinuous-ylabel",
+              "type": "text",
+              "left": 545,
+              "top": 152,
+              "width": 60,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">f(x)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "discontinuous-curve",
+              "type": "shape",
+              "left": 575,
+              "top": 190,
+              "width": 320,
+              "height": 97.8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 Q 0.5 2 1 0",
+              "fill": "transparent",
+              "outline": {
+                "color": "#3475c5",
+                "width": 3,
+                "style": "solid"
+              },
+              "fixedRatio": false
+            },
+            {
+              "id": "discontinuous-vertical",
+              "type": "line",
+              "left": 735,
+              "top": 287.8,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                72.19999999999999
+              ],
+              "points": [
+                "",
+                ""
+              ],
+              "style": "solid",
+              "color": "#b0bbca"
+            },
+            {
+              "id": "discontinuous-height",
+              "type": "line",
+              "left": 565,
+              "top": 287.8,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                340,
+                0
+              ],
+              "points": [
+                "",
+                ""
+              ],
+              "style": "solid",
+              "color": "#ccd5e2"
+            },
+            {
+              "id": "discontinuous-point",
+              "type": "shape",
+              "left": 730,
+              "top": 282.8,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fill": "#ffffff",
+              "outline": {
+                "color": "#3475c5",
+                "width": 2,
+                "style": "solid"
+              },
+              "fixedRatio": false
+            },
+            {
+              "id": "discontinuous-a",
+              "type": "text",
+              "left": 723,
+              "top": 368,
+              "width": 50,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">a</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "discontinuous-l",
+              "type": "text",
+              "left": 540,
+              "top": 274.8,
+              "width": 24,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size:16px;line-height:1.45;color:#334155;margin:0\">L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "discontinuous-value",
+              "type": "shape",
+              "left": 730,
+              "top": 218.8,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fill": "#c26a32",
+              "outline": {
+                "color": "#c26a32",
+                "width": 2,
+                "style": "solid"
+              },
+              "fixedRatio": false
+            },
+            {
+              "id": "discontinuous-value-label",
+              "type": "text",
+              "left": 747,
+              "top": 206.8,
+              "width": 145,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size:17px;line-height:1.45;color:#a65325;margin:0\">f(a) ≠ L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#a65325"
+            },
+            {
+              "id": "continuity-conditions",
+              "type": "text",
+              "left": 60,
+              "top": 425,
+              "width": 880,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size:21px;line-height:1.45;color:#334155;margin:0\"><b>在内点 a 连续，三项缺一不可：</b><br>点值存在　·　双侧有限极限存在　·　极限值等于点值</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
+            },
+            {
+              "id": "continuity-note",
+              "type": "text",
+              "left": 60,
+              "top": 510,
+              "width": 880,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size:18px;line-height:1.45;color:#334155;margin:0\">右图是可去间断：共同趋势存在，把点值改为 L 就能接上。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#334155"
             }
           ],
           "background": {
             "type": "solid",
             "color": "#ffffff"
           },
-          "animations": []
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625
         }
       },
       "actions": [
         {
           "id": "action__ygWOnYq",
           "type": "spotlight",
-          "elementId": "text_RDRLv5Rz"
+          "elementId": "continuity-title"
         },
         {
           "id": "action_3e9KeUN-",
           "type": "speech",
-          "text": "本场景聚焦“连续就是不跳断”。今天这座桥有个非常形象的名字，叫“连续”。用我们最直观的话来说，连续就是不跳断。"
+          "text": "这一页学习函数在一点的连续性。我们将比较两侧共同的趋近趋势，与该点的函数值是否一致。",
+          "audioRef": "audio/原音色讲解-b7e05e79f79978fd.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "5f8fcbb4dfa42769270068ed8531632a4e96fa655c959f2f6f98faa31ddd3d4b",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_leZNrrVg",
           "type": "spotlight",
-          "elementId": "shape_GKdL6ZQ6"
+          "elementId": "continuous-curve"
         },
         {
           "id": "action_boaLsQg_",
           "type": "speech",
           "text": "来，我们先一起看左边这个完美的例子。当x趋近于a的时候，极限值是L。",
-          "audioRef": "audio/tts_s13_action_boaLsQg_.mp3"
+          "audioRef": "audio/原音色讲解-1b046c51ee2fb504.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "9caf207ba62afcce38ff3b20f5f4e2d0e036728993a10618f754c464c225823f",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_JATWJjT1",
           "type": "spotlight",
-          "elementId": "text_3zoKsbob"
+          "elementId": "continuous-point"
         },
         {
           "id": "action_GP2GpfHv",
           "type": "speech",
           "text": "而函数在a这一点的值，f(a)，正好就等于L。趋势和点值完美对齐，接上了。这种状况，我们就说它在a点连续。",
-          "audioRef": "audio/tts_s13_action_GP2GpfHv.mp3"
+          "audioRef": "audio/原音色讲解-80ddac386579c220.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "671f00c89da2a13a55d8c08b28aee7d8eb2d257bffbbc6618ac29cc766ec0a66",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_kvL9qeFZ",
           "type": "spotlight",
-          "elementId": "shape_Kt75jMzi"
+          "elementId": "discontinuous-value"
         },
         {
           "id": "action_GcyaikI0",
           "type": "speech",
           "text": "再看右边。趋势是一样的，极限依然是L。但是你看，点却跑到别的地方去了，f(a)不等于L。这就断了，我们叫它间断。",
-          "audioRef": "audio/tts_s13_action_GcyaikI0.mp3"
+          "audioRef": "audio/原音色讲解-f5f0fc9dc673f157.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "93fa40638b9cb56ea079c4c2768069ad5f5361448d5c3f3b8ce8ace6f4364b81",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_kE01T2uV",
           "type": "spotlight",
-          "elementId": "table_O2_IUaJo"
+          "elementId": "continuity-conditions"
         },
         {
           "id": "action_QccVjny3",
           "type": "speech",
           "text": "从这两个例子里，我们可以总结出连续必须满足的三个条件。函数值要存在，极限要存在，而且它俩必须完全相等，缺一不可。这就是今天最核心的一条铁律。",
-          "audioRef": "audio/tts_s13_action_QccVjny3.mp3"
+          "audioRef": "audio/原音色讲解-0c38df1714ce4e6b.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "06319788326bfec2a30635deb617e06968ca7b96bb3e1101d676ecb11a32a9b2",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_3Zj5MNIr",
           "type": "spotlight",
-          "elementId": "text_IvdrgbNd"
+          "elementId": "continuity-note"
         },
         {
           "id": "action_tblTfRo_",
           "type": "speech",
-          "text": "所以，连续的精髓就是趋势与点值对齐。把这个逻辑理清了，本场景中，我们要看看，当这些条件被破坏时，函数会怎么跳开。准备好了就进入下一个实验吧。"
+          "text": "所以，连续的精髓就是趋势与点值对齐。把这个逻辑理清了，本场景中，我们要看看，当这些条件被破坏时，函数会怎么跳开。准备好了就进入下一个实验吧。",
+          "audioRef": "audio/原音色讲解-6b21c3b3af87bc56.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "1a74d540cbaea13a2ebdc792931399868e524a1d502c2abab710e0afa7bbb0b4",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         }
       ]
     },
@@ -3216,7 +3384,13 @@
         {
           "id": "action_M7UHSyqV",
           "type": "speech",
-          "text": "本场景通过交互探索“连续就是不跳断：拖动实验”。极限值必须等于函数值。现在屏幕上这条曲线有个小缺口，旁边还飘着一个紫色圆点——它就是那个函数值 f(a)，我们要做的，就是把它拖到正确的位置，让它和曲线的趋势完美对接。"
+          "text": "这一页练习修复可去间断。紫色点表示目标位置的函数值。要让这个例子连续，需要把点值调到两侧共同趋向的高度。",
+          "audioRef": "audio/原音色讲解-e406530bd62a65b8.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "fe88c78ebbf4f17f3447dd039090ad604f119b165fcfa1f9eb8bc75beb0347b6",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_9UkGaofE",
@@ -3228,7 +3402,12 @@
           "id": "action_2j3PNgrl",
           "type": "speech",
           "text": "先试一下拖动滑块，看看紫色点怎么移动。注意看曲线空缺的位置，那个空心圆就是极限值所在的高度，也是你要瞄准的目标。",
-          "audioRef": "audio/tts_s14_action_2j3PNgrl.mp3"
+          "audioRef": "audio/原音色讲解-1fe6f0cc992e7ce7.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "3e18b39797bfd95dfde223b8933b500057c87103a48966ed474c549e0676951a",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_s-xqjE6U",
@@ -3242,8 +3421,13 @@
         {
           "id": "action_e6GVvg8Z",
           "type": "speech",
-          "text": "现在点还悬在半空，函数断开了。慢慢向上调，当紫色点刚好填进那个空心位置时，看看会发生什么。",
-          "audioRef": "audio/tts_s14_action_e6GVvg8Z.mp3"
+          "text": "根据当前点值，向上或向下调整滑块，使实心点的高度与空心点表示的共同极限一致。只有两者相等，才能修复这个例子中的间断。",
+          "audioRef": "audio/原音色讲解-8016f0df41f87443.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "1af6028d773bd5fc49484ee7afc4445f910e0352027e37aa56212d01bc3d0bfb",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_9LcIQWqf",
@@ -3257,8 +3441,13 @@
         {
           "id": "action_M_UJsC4k",
           "type": "speech",
-          "text": "就差一点点——继续微调，直到背景变绿，面板上显示'Limit = f(a)'。那一刻，你就亲手修复了一个函数的断裂，让它重新连续起来。",
-          "audioRef": "audio/tts_s14_action_M_UJsC4k.mp3"
+          "text": "继续微调点值，并比较它与两侧共同趋向的数。只有点值等于这个共同极限，才修复了本例中的间断。若左右趋势不相等，只改一个点的值无法修复。",
+          "audioRef": "audio/原音色讲解-ff0d8bc718b3584e.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "c47bad306c8c7e02c2401fb25e1a4ede08da80d748d96892a380f16c4b88929e",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_REqiIO5V",
@@ -3443,7 +3632,13 @@
         {
           "id": "action_O5yQ6XL_",
           "type": "speech",
-          "text": "本场景通过交互探索“连续就是不跳断：关系图”。我们在拖动实验里亲手修好了断裂点，现在用这张关系图把连续性的逻辑彻底理清。这就像一个三层漏斗——只有每一层都通过，函数在这一点才是连续的。"
+          "text": "这张关系图把连续性的判断分成三层：函数值有定义、双侧极限存在、两者相等。请依次检查每个条件。",
+          "audioRef": "audio/原音色讲解-faba0262634a6f69.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "8eea12492238fbb61e5cb8ef709df76f764d874c0c65f1bbd860594706b32360",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_kvX2e8GT",
@@ -3455,7 +3650,12 @@
           "id": "action_RAv8VbLC",
           "type": "speech",
           "text": "点击顶部的‘连续判定’节点，我们开始逐层往下走。第一层先问：f(a) 有没有定义？也就是铁轨在这个位置是不是真的铺了一截。",
-          "audioRef": "audio/tts_s15_action_RAv8VbLC.mp3"
+          "audioRef": "audio/原音色讲解-dafb0edfbcea7121.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "ff9360a4843375158c8df251a7635c447769642b3bd5b7eccb2483ad70a0782b",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_nKcIO1kO",
@@ -3466,8 +3666,13 @@
         {
           "id": "action_eaLnMcsc",
           "type": "speech",
-          "text": "如果连定义都没有，比如1/x在x=0处，铁轨直接断开，就成了无穷间断。注意看，左边这条路标红了——检验第一关就失败了。",
-          "audioRef": "audio/tts_s15_action_eaLnMcsc.mp3"
+          "text": "目标点没有定义时，先检查附近的趋势。两侧是否趋向同一个有限值，决定了能否通过补充点值来延拓为连续函数。",
+          "audioRef": "audio/原音色讲解-f3cde26b85374f51.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "2f3a6677d4560fbae615af6807975056fa88f14137d3683789beb7a43a15a8ec",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_uiCywwcG",
@@ -3479,7 +3684,12 @@
           "id": "action_xjWGfmAb",
           "type": "speech",
           "text": "但只要f(a)存在，我们就进到第二层：极限存在吗？回想一下刚才拖动实验的感觉——左右两边的值是不是趋于同一个高度？",
-          "audioRef": "audio/tts_s15_action_xjWGfmAb.mp3"
+          "audioRef": "audio/原音色讲解-02ecfc9edcb79aeb.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "46b68764d0b0ea9bf78afc5781c3fe6a383b1bf0b009eff2dc33a2fdc9c34d47",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_ehHRuwaq",
@@ -3490,8 +3700,13 @@
         {
           "id": "action_TKIRoQYL",
           "type": "speech",
-          "text": "如果左极限和右极限不相等，铁轨在这点就‘跳’开了。这便是跳跃间断，就像我们之前看到的分段函数在连接点突然换了一个高度。",
-          "audioRef": "audio/tts_s15_action_TKIRoQYL.mp3"
+          "text": "如果左右两个有限极限都存在，但不相等，这就是跳跃间断。若某一侧没有有限极限，还需要进一步判断，不能一律叫作跳跃间断。",
+          "audioRef": "audio/原音色讲解-d5da87e57e4a2c05.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "daaa2f2213bccedb0e11a086cd7f4b736008b67e69d1a0ea6f4510a1bec3fcce",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_gSkM8JTn",
@@ -3503,7 +3718,12 @@
           "id": "action_S6eaLAWi",
           "type": "speech",
           "text": "极限存在之后，才是最关键的一步：这个极限值，跟f(a)一不一样？很多同学在这里会卡住——觉得极限就是函数值。但图上很清楚，两者可能差一个‘小洞’。",
-          "audioRef": "audio/tts_s15_action_S6eaLAWi.mp3"
+          "audioRef": "audio/原音色讲解-c2cc6e4f9ff6857e.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "6b1c284915b9402486b99f911f6c9e85cf607a8abc4cc664bf359fe745311058",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_NgbtelwA",
@@ -3520,14 +3740,24 @@
         {
           "id": "action_CGEFaPHU",
           "type": "speech",
-          "text": "看，这个‘可去间断’的铁轨两侧明明对齐，就中间空了一个点——只要重新填上它，函数就连续了。这就是为什么我们在拖动实验里，调整滑块到‘Limit = f(a)’就能变绿。",
-          "audioRef": "audio/tts_s15_action_CGEFaPHU.mp3"
+          "text": "如果左右两侧趋向同一个有限值，而该点没有定义，或点值与极限不相等，就可以把点值补充或改为这个共同极限，使函数在该点连续。",
+          "audioRef": "audio/原音色讲解-167ee807bab3452c.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "a97295a33ac1b6383edca8134e10c23110653550e160e955e9e660c4431b7dd7",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_96SchaSB",
           "type": "speech",
-          "text": "三层全通过，铁轨一笔画下没有跳跃、没有空洞。这张图就是连续性的完整证据链。下一关我们来做误解修复挑战，看你能不能一眼认出各种断裂类型。",
-          "audioRef": "audio/tts_s15_action_96SchaSB.mp3"
+          "text": "函数值有定义、双侧极限存在、极限等于函数值，这三个条件全部满足时，函数在这个内点连续。请用这三步检查不同情形，而不只看曲线能否一笔画出。",
+          "audioRef": "audio/原音色讲解-bb665b6bf7c0f66a.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "d4c3485de37669bf05296113ee45f4b23bfb94af0c0969daf6840b0857985089",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_8vIC-0fF",
@@ -3755,7 +3985,13 @@
         {
           "id": "action_Uhx0m7-C",
           "type": "speech",
-          "text": "本场景通过交互探索“连续就是不跳断：空间视角”。现在换个角度，我们直接从三维空间里感受一下“连续就是不跳断”。"
+          "text": "本场景通过交互探索“连续就是不跳断：空间视角”。现在换个角度，我们直接从三维空间里感受一下“连续就是不跳断”。",
+          "audioRef": "audio/原音色讲解-ed9a13e94a35daea.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "c1d928c8b9fcf211b8f1d72578d061dd52b3873855abb53934e13d4a4d15f2ce",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_pe4eK2_Z",
@@ -3768,8 +4004,13 @@
         {
           "id": "action_swKcqgqU",
           "type": "speech",
-          "text": "看这个光滑的曲线隧道。想象有一个质点正在上面滑行，如果路径是连续的，它就能一路顺滑到底，不会突然消失又出现在另一个地方。",
-          "audioRef": "audio/tts_s17_action_swKcqgqU.mp3"
+          "text": "这条空间轨道示意路径是否连接。请观察运动小球经过连接处时的表现，再回到函数值、双侧极限以及两者是否相等这三个条件。轨道外观不能代替数学判断。",
+          "audioRef": "audio/原音色讲解-5a69d3656d45ce76.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "864391ca5eb215dc6f5034c83eae630d8b5490123cb0becd8835741a62f907b3",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_GULO6FoN",
@@ -3780,8 +4021,13 @@
         {
           "id": "action_0YQl_UGN",
           "type": "speech",
-          "text": "让我们点下“巡航模式”，跟着质点跑一圈，亲身体验一下什么叫无缝衔接。",
-          "audioRef": "audio/tts_s17_action_0YQl_UGN.mp3"
+          "text": "点击巡航，让小球沿轨道运动。观察连接处的表现，再用三个条件判断函数是否连续。",
+          "audioRef": "audio/原音色讲解-138196daa1f707d0.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "af33c84d964fa9e7a937673672354b92706b28d94a36579294b45658af283e86",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_C-emvu-r",
@@ -3794,8 +4040,13 @@
         {
           "id": "action_8-5FRue-",
           "type": "speech",
-          "text": "注意看，质点始终保持在这个轨道上，没有抖动，也没有瞬移。这就是我们刚才说的连续——在曲线上任意一点，都有确定的位置，并且前后是平滑过渡的。",
-          "audioRef": "audio/tts_s17_action_8-5FRue-.mp3"
+          "text": "观察轨道前后是否衔接，可以帮助理解连续。但连续不要求光滑，也不要求可导。最终仍要检查该点有定义、双侧极限存在，以及极限等于该点函数值这三个条件。",
+          "audioRef": "audio/原音色讲解-34a8769a5a8a8006.mp3",
+          "narrationRevision": "openmaic-serena-reviewed-20261102-v3",
+          "narrationTextSha256": "6b963a245ff447c8e6a71e6ab5a819ab48407deb3bfdaaa958b9ed1ac10e8ea7",
+          "narrationVoice": "serena",
+          "narrationModel": "OpenMAIC 服务配置",
+          "narrationProvider": "cogevol_maas_tts"
         },
         {
           "id": "action_1oyQoH8s",

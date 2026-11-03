@@ -79,6 +79,7 @@ let courseLabelCache = null;
 
 let db = null;
 let saveTimer = null;
+let pendingFlush = null;
 let dbLockFd = null;
 let firstPendingSaveAt = 0;
 const SAVE_DEBOUNCE_MS = 2000;
@@ -89,8 +90,15 @@ function writeDatabaseAtomically() {
   const data = db.export();
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DB_PATH + ".tmp", Buffer.from(data));
-  fs.renameSync(DB_PATH + ".tmp", DB_PATH);
+  fs.writeFileSync(DB_PATH + ".tmp", data);
+  for (let attempt = 0; ; attempt++) {
+    try { fs.renameSync(DB_PATH + ".tmp", DB_PATH); return; }
+    catch (error) {
+      if (process.platform !== 'win32' || !['EPERM', 'EACCES', 'EBUSY'].includes(error.code) || attempt >= 5) throw error;
+      // Windows scanners can briefly hold the destination; retain the old file until atomic replacement succeeds.
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, [10, 20, 50, 100, 200][attempt]);
+    }
+  }
 }
 
 function processIsAlive(pid) {
@@ -189,6 +197,18 @@ function saveNow() {
   saveTimer = null;
   firstPendingSaveAt = 0;
   writeDatabaseAtomically();
+}
+
+function flush() {
+  // Allow network arrivals to join for 25 ms; acknowledge only after atomic replacement.
+  if (!pendingFlush) pendingFlush = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      try { saveNow(); resolve(); }
+      catch (error) { scheduleSave(); reject(error); }
+      finally { pendingFlush = null; }
+    }, 25);
+  });
+  return pendingFlush;
 }
 
 function chapterDisplayLabel(chapterId, fallback = "") {
@@ -7688,6 +7708,7 @@ module.exports = {
   getDb,
   getDbSync,
   saveNow,
+  flush,
   normalizeLearningSnapshot,
   acquireWriteLock,
   releaseWriteLock,
