@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const initSqlJs = require("sql.js");
+const { AsyncLocalStorage } = require("node:async_hooks");
 const interactionPolicy = require("./lib/interaction-policy");
 const activeTimePolicy = require("./lib/active-time-policy");
 
@@ -80,6 +81,7 @@ let courseLabelCache = null;
 let db = null;
 let saveTimer = null;
 let pendingFlush = null;
+const responseSaves = new AsyncLocalStorage();
 let dbLockFd = null;
 let firstPendingSaveAt = 0;
 const SAVE_DEBOUNCE_MS = 2000;
@@ -193,6 +195,12 @@ function scheduleSave() {
 }
 
 function saveNow() {
+  const scope = responseSaves.getStore();
+  if (scope) { scope.pending = true; scheduleSave(); return; }
+  persistNow();
+}
+
+function persistNow() {
   clearTimeout(saveTimer);
   saveTimer = null;
   firstPendingSaveAt = 0;
@@ -203,12 +211,21 @@ function flush() {
   // Allow network arrivals to join for 25 ms; acknowledge only after atomic replacement.
   if (!pendingFlush) pendingFlush = new Promise((resolve, reject) => {
     setTimeout(() => {
-      try { saveNow(); resolve(); }
+      try { persistNow(); resolve(); }
       catch (error) { scheduleSave(); reject(error); }
       finally { pendingFlush = null; }
     }, 25);
   });
   return pendingFlush;
+}
+
+function deferResponseSaves(work) {
+  return responseSaves.run({ pending: false }, work);
+}
+
+function flushResponseSaves() {
+  const scope = responseSaves.getStore();
+  return scope?.pending ? flush() : null;
 }
 
 function chapterDisplayLabel(chapterId, fallback = "") {
@@ -7709,6 +7726,8 @@ module.exports = {
   getDbSync,
   saveNow,
   flush,
+  deferResponseSaves,
+  flushResponseSaves,
   normalizeLearningSnapshot,
   acquireWriteLock,
   releaseWriteLock,

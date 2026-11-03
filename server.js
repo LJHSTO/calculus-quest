@@ -642,7 +642,19 @@ function send(res, status, body, type = "text/plain; charset=utf-8", extraHeader
 }
 
 function sendJson(res, status, payload) {
-  send(res, status, JSON.stringify(payload), "application/json; charset=utf-8");
+  const body = JSON.stringify(payload);
+  const persisted = db.flushResponseSaves();
+  if (persisted) {
+    // Admission creates several related records; acknowledge their shared durable write.
+    persisted.then(() => send(res, status, body, "application/json; charset=utf-8")).catch(error => {
+      errorMonitoring.captureException(error);
+      console.error("Response persistence failed:", error.message);
+      if (!res.headersSent) send(res, 500, JSON.stringify({ok:false,message:"保存失败，请稍后重试。"}), "application/json; charset=utf-8");
+      else res.destroy();
+    });
+    return;
+  }
+  send(res, status, body, "application/json; charset=utf-8");
 }
 
 function acceptsGzip(req) {
@@ -10000,6 +10012,11 @@ async function handleApi(req, res, url) {
 }
 
 // 网关复用空闲连接两分钟；后端提前关闭会使思考后的提交偶发 502。
+const batchedAdmissionPaths = new Set([
+  '/api/auth/register', '/api/auth/login', '/api/study/state',
+  '/api/study/confirm-defaults', '/api/study/survey',
+  '/api/learning/learner-preferences', '/api/learning/quiz/submit'
+]);
 const server = http.createServer({ keepAliveTimeout: 130000 }, (req, res) => {
   // Security headers (defense-in-depth)
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -10032,7 +10049,9 @@ const server = http.createServer({ keepAliveTimeout: 130000 }, (req, res) => {
   });
 
   if (url.pathname.startsWith("/api/")) {
-    handleApi(req, res, url).catch((error) => {
+    const handle = () => handleApi(req, res, url);
+    const response = batchedAdmissionPaths.has(url.pathname) ? db.deferResponseSaves(handle) : handle();
+    response.catch((error) => {
       errorMonitoring.captureException(error);
       console.error("Unhandled API failure:", error);
       if (!res.headersSent) {
