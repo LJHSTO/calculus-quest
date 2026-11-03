@@ -40,7 +40,10 @@ module.exports=async function({page,teacher,dir,arm,remote,point}){
  assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).inputValue(),text,'失败不能清空草稿');
  assert.match(await teacher.innerText(),/未发送|中断|重试|失败/,'失败应在正在使用的老师面板内显示');
  await page.unroute('**/api/learning/assistant/ask');record('请求失败保留草稿与就地提示');
- await send(text);assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).inputValue(),'');record('重试成功');
+ await send(text);
+ // The reply arrives before its study-state refresh and the form completion callback.
+ await page.waitForFunction(value=>[...document.querySelectorAll('textarea[data-task-draft-key]')].every(n=>n.value!==value),text);
+ assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).inputValue(),'');record('重试成功');
  await teacher.getByRole('button',{name:'用一题检查',exact:true}).click();await page.waitForFunction(()=>Boolean(KnowledgeAssistant.designSpaceSnapshot().check));
  assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).count(),0,'独立检查期间收起聊天输入');
  const check=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().check);
