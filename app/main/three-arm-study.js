@@ -108,7 +108,7 @@
       grid.append(card);
     }
     root.append(grid);
-    const guidance=el('aside');guidance.className='study-review-reading';guidance.append(el('h4','怎样据此做决定？'),el('p','先回想：帮助出现时你是否需要？形式是否方便？独立答题时能否自己说清理由？有依据时只调整一两项，也可以保持设置，再观察下一段。'),el('p','两阶段学习的知识点和题目不同。正确数的变化只能描述这次经历，不能直接说明哪版设置更有效；提示更多也不一定学得更好。'));root.append(guidance);
+    const guidance=el('aside');guidance.className='study-review-reading';guidance.append(el('h4',data.pendingStage?'怎样据此做决定？':'怎样理解这次学习？'),el('p','先回想：帮助出现时你是否需要？形式是否方便？独立答题时能否自己说清理由？'+(data.pendingStage?'有依据时只调整一两项，也可以保持设置，再观察下一段。':'结合具体经历，想一想以后需要怎样的帮助。')),el('p','两阶段学习的知识点和题目不同。正确数的变化只能描述这次经历，不能直接说明哪版设置更有效；提示更多也不一定学得更好。'));root.append(guidance);
     const post=data.results.filter(r=>r.phase==='post');if(post.length)root.append(el('p',`整章后测：${post.filter(r=>r.correct===true).length} / ${post.filter(r=>r.correct!==null).length} 道已判定题正确。这份后测覆盖整段学习，不归到某一版配置。`));
     return root;
   }

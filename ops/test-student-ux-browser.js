@@ -383,6 +383,7 @@ async function main(){
    await page.locator('#three-arm-dialog').getByRole('heading',{name:arm==='B'?'学习回顾与配置关联':'学习回顾',exact:true}).waitFor();
    if(arm==='B'){
     assert.equal(await page.locator('[data-study-phase]').count(),2);assert.match(await page.locator('[data-study-phase=S1]').innerText(),/第 1 版配置/);assert.match(await page.locator('[data-study-phase=S2]').innerText(),/第 2 版配置/);
+    assert.match(await page.locator('.study-review-reading').innerText(),/怎样理解这次学习/);assert.doesNotMatch(await page.locator('.study-review-reading').innerText(),/再观察下一段|调整一两项/,'结束后的回顾不能引导进入不存在的下一学习阶段');
     for(const width of [1366,500]){await page.setViewportSize({width,height:900});assert.equal(await page.locator('#three-arm-dialog').evaluate(n=>n.scrollWidth>n.clientWidth+1),false);await shot('后测两阶段对比-'+width);await page.locator('.study-review-reading').scrollIntoViewIfNeeded();await shot('后测两阶段对比下半部-'+width);await page.locator('#three-arm-dialog').evaluate(n=>n.scrollTop=0);}
    }else assert.equal(await page.locator('[data-linked-feedback]').count(),0,'A/C不提前接受B组的关联回顾干预');
    timings.push({arm,event:'学习期间长任务',items:await page.evaluate(()=>window.uxLongTasks)});pass(arm+'组六个知识点、三知识点后一次配置窗口、后测问卷和两阶段回顾');

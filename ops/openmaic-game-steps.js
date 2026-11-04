@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const button=(f,name)=>f.getByRole('button',{name,exact:true});
 async function start(f,id){
  const names={'GH-01-K01':'开始挑战','GH-01-K02':'开始审核','GH-01-K03':'开始游戏','GH-02-K01':'开始挑战','GH-02-K02':'开始诊断','GH-02-K03':'开始修复'};
+ await f.locator('#cq-course-actions').waitFor({state:'visible'});
  await button(f,names[id]).click();
  if(id==='GH-02-K02')assert.ok(await f.locator('#step1').getByText('当前规则：',{exact:false}).isVisible(),'开始预测后仍须能看到分段函数规则');
  assert.equal(await f.locator('#cq-visible-feedback').isVisible(),false,'未操作时不展示提示答案');

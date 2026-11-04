@@ -24,7 +24,8 @@ async function main(){
   await page.locator('[data-submit-quiz="V14-C1-pre"]').click();
   await page.waitForFunction(()=>state.submittedQuizzes.includes('V14-C1-pre'));
   assert.equal(await page.locator('#learner-setup[open]').count(),0,'提交后应保留结果直到下一步');
-  await page.getByRole('button',{name:'下一步：设置学习方式',exact:true}).first().click();await page.locator('#learner-setup[open]').waitFor();
+  const blocked=await api('/api/learning/support-cycle',{action:'report',scope:'GH-01-K01',unitId:'GH-01-K01',need:'concept'},token);assert.equal(blocked.code,'learner_preparation_required');assert.match(blocked.message,/点击“开始学习”/);
+  await page.getByRole('button',{name:'开始学习',exact:true}).first().click();await require('./operation-guide-steps')(page,dir,'普通学习');await page.locator('#learner-setup[open]').waitFor();
   assert.equal(await page.locator('#learner-setup .learner-steps button').count(),6);assert.equal((await api('/api/learning/pilot',null,token)).data.enrollment,null);
   assert.notEqual((await api('/api/learning/grade',{unitId:'V14-C1-pre',questions:[]},token)).code,'learner_preparation_required','已提交的前测评分不应被六维准备拦住');
   assert.equal((await api('/api/learning/support-cycle',{action:'report',scope:'GH-01-K01',unitId:'GH-01-K01',need:'concept'},token)).code,'learner_preparation_required');checks.push('无预试码也进入六维；保留前测结果、不自动跳转；未设置时支持API受保护');

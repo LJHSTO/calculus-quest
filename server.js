@@ -98,7 +98,7 @@ function rejectUnpreparedLearner(res,user,assessment){
   const ordinaryBlocked=p.required&&p.stage!=='ready'&&(!pretest||['entry','baseline'].includes(p.stage))&&(!assessment?.chapterId||assessment.chapterId===chapter);
   const allowedPretest=pretest&&(e?.stage==='pretest'||(assessment?.existingPretestGrade===true&&e?.stage==='configuration'));
   if(ordinaryBlocked||(e?.status==='active'&&((e.stage!=='ready'&&!allowedPretest)||e.generation!==db.currentLearningGeneration(user)))){
-    sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage||e?.stage,message:p.stage==='entry'?'请先输入加入码并确认参加，或选择普通学习，再完成知识前测。':ordinaryBlocked?'请先完成知识前测，点击“下一步：设置学习方式”，保存六项选择后开始学习。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
+    sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage||e?.stage,message:p.stage==='entry'?'请先输入加入码并确认参加，或选择普通学习，再完成知识前测。':ordinaryBlocked?'请先完成知识前测，点击“开始学习”，按引导确认学习方式后继续。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
   }return false;
 }
 const researchControlStore = {

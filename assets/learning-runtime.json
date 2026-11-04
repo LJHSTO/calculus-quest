@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "68e9c81cdb81ce0ef548",
+  "version": "8076e168fcac6b4aae29",
   "indexSha256": "c780a45f22e8953de91a4513222e7728c7d9de69dcc219e5a5cc4cb683d0858c",
   "scripts": [
     {
@@ -246,7 +246,7 @@
     {
       "tag": "<script src=\"app/main/three-arm-study.js?v=20261031\"></script>",
       "file": "app/main/three-arm-study.js",
-      "sha256": "fdec8ee1d3b84610e070ee933fb7319aa24601aa8ed43ef803c5eb143f4d07b9"
+      "sha256": "1eb8ccb32d9ea32da81f87030b83bb59077adc6febf31651a2772f12537483ad"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
