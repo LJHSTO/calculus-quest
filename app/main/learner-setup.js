@@ -6,7 +6,7 @@
   let configurationWindow=null,selectionSource='reviewed_choices',lastStep='';
   let preparation=null,refreshing=null,routing=false,currentGeneration=null,posttestComplete=false;
   let continuing=null;
-  const hasSavedPreferences=()=>Boolean(record&&(record.generation==null||record.generation===currentGeneration));
+  const hasSavedPreferences=()=>Boolean(record&&configurationWindow?.kind!=='initial_configuration'&&(record.generation==null||record.generation===currentGeneration));
   let study=null;
   function applyData(d){study=d.study||null;posttestComplete=d.posttestComplete===true;currentGeneration=d.generation;record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;preparation=d.preparation;global.ThreeArmStudyUI?.setRun(study);}
   async function refreshPreparation(){if(refreshing)return refreshing;const token=state.authToken;if(!token)return;refreshing=request().then(d=>{if(token===state.authToken){applyData(d);renderGuide();if(typeof renderBottomNextButton==='function')renderBottomNextButton();}return d;}).finally(()=>refreshing=null);return refreshing;}
@@ -16,7 +16,7 @@
   const posttestActionLabel=()=>study?.finalSurveyAt?'查看后续任务':pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':'下一步：填写学习体验问卷';
   async function continueAfterPosttest(){await refreshPreparation();if(study){await global.ThreeArmStudyUI.openSurvey('final');return;}if(pilot?.enrollment)await openPilot(pilot);}
   const isReady=()=>pilot?.enrollment?.status==='active'?pilot.enrollment.stage==='ready':preparation?.stage==='ready';
-  const pretestActionLabel=()=>continuing?'正在进入课程…':study?.arm==='A'?'开始学习':isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'下一步：设置学习方式';
+  const pretestActionLabel=()=>continuing?'正在进入课程…':isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'开始学习';
   const pretestStatusLabel=()=>pilot?.enrollment?.arm==='control'?'学习准备已完成':'学习方式已设置';
   async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='entry'){await global.PilotStudyUI.open();}else if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
   function allowsUnit(unit){
@@ -47,6 +47,9 @@
     if(!isCurrent())return;const d=await request();if(!isCurrent())return;applyData(d);
     if(preparation?.required&&preparation.stage==='entry'){await global.PilotStudyUI.open();return;}
     if(study&&preparation?.stage==='baseline'){dialog?.close();await global.ThreeArmStudyUI.openSurvey('baseline');return;}
+    if(preparation?.stage==='configuration'||pilot?.enrollment?.stage==='configuration'){
+      dialog?.close();const toured=await global.OperationGuide?.open({required:true});if(!toured||!isCurrent())return;
+    }
     if(study?.arm==='A'&&preparation?.stage==='configuration'){
       const response=await fetch('api/study/confirm-defaults',{method:'POST',headers:{Authorization:`Bearer ${state.authToken}`}});
       const result=await response.json();if(!response.ok)throw new Error(result.message||'暂未进入课程，请重试');
@@ -116,7 +119,7 @@
     if(preparation?.required){guide.replaceChildren();const done=(state.submittedQuizzes||[]).includes(preparation.chapterId+'-pre');const current=preparation.stage==='ready'?2:done?1:0;
       const steps=el('ol');steps.className='pilot-progress-steps';['知识前测','六维学习方式','开始学习'].forEach((text,i)=>{const li=el('li',text);li.dataset.state=i<current?'done':i===current?'current':'pending';if(i===current)li.setAttribute('aria-current','step');steps.append(li);});guide.append(steps);
       const row=el('div');row.className='pilot-guide-next';row.append(el('span',current===0?'先独立完成前测；提交后查看结果，再点击下一步。':current===1?'前测已完成。接下来确认六项帮助偏好，再进入课件。':'助手会根据学习过程判断是否需要询问；不用先点击求助。'));
-      if(current===1)row.append(button('下一步：设置学习方式',continueAfterPretest,true));guide.append(row);return;
+      if(current===1)row.append(button('开始学习',continueAfterPretest,true));guide.append(row);return;
     }
     guide.replaceChildren();const post=(state.submittedQuizzes||[]).includes('V14-C1-post');
     const preResult=typeof currentUnitId==='string'&&currentUnitId==='V14-C1-pre'&&(state.submittedQuizzes||[]).includes(currentUnitId);
@@ -139,7 +142,7 @@
       header('学习前，先了解一下你','学习预试 · 开始前');const body=el('div');body.className='learner-setup-body';body.append(el('p','没有正确或错误的答案。接下来先完成知识前测，再准备本次学习方式。'));survey(body,'baseline');dialog.append(body);
       dialog.append(button('保存并继续',async()=>{if(!validSurvey('baseline'))throw new Error('请逐项作答或选择不愿回答');const p=await KnowledgeAssistant.pilotRequest('/action',{action:'baseline',survey:drafts.baseline});pilot=p;await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();if(p.enrollment.stage==='pretest')await goPretest();else await openPilot(p);},true));
     }else if(mode==='pretest'){
-      header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“下一步：设置学习方式”。无需预试码也可以设置六项帮助偏好。':pilot?.version?.useMode==='internal_rehearsal'?'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步，设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
+      header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“开始学习”。无需预试码也可以设置六项帮助偏好。':pilot?.version?.useMode==='internal_rehearsal'?'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步，设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
     }else if(mode==='study'){
       const e=pilot.enrollment;header(e.status==='active'?(posttestComplete?'最后一步：填写学习体验':'本次学习已准备好'):'本次预试记录','学习预试');const body=el('div');body.className='learner-setup-body';
       body.append(el('p',`参与编号 ${e.participantCode}`),el('p',e.arm==='control'?'本次学习中，助手不会主动出现。课件、练习和知点提问入口照常使用。':'你的六项学习偏好已保存。助手会按设置判断是否介入，你可以拒绝或暂停。'));

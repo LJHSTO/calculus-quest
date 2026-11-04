@@ -261,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function() {
   window.CQ = {
     start(label) { current=label; entry(); render(); },
     hint() { entry().hints++; render(); },
-    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-02-K01"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-02-K01",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261102-v1",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
+    attempt(correct,detail,parameters) { if(parameters) window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:"GH-02-K01"+"-maic-"+parameters.task+"-"+parameters.round,knowledge_point_id:"GH-02-K01",is_correct:!!correct,independent:false,evidence_scope:"openmaic_game_attempt",feedback_version:"openmaic-games-20261104-v2",parameters}); entry().attempts.push({correct:!!correct,detail:String(detail||''),time:new Date().toISOString()}); render(); return !!correct; },
     complete() { const e=entry(); e.completed=true; render(); return category(e); },
     summary() { return Array.from(rounds.values()).map(e=>({...e,completion:e.completed?category(e):null})); }
   };
@@ -533,10 +533,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const feedback = document.getElementById('conclusion-feedback');
         feedback.style.display = 'block';
         
-        CQ.attempt(choice==='A',"有限样本结论",{task:"reason",round:state.currentLevel,values:[choice]});
-        if (choice === 'A') {
-            if(state.conclusionLocked) return; state.conclusionLocked=true; CQ.complete();
-            feedback.innerHTML = `<strong style="color:var(--success)">正确！</strong><br>再多的有限样本也不能证明规则唯一，只能排除或暴露不同。`;
+        if(state.conclusionLocked) return;
+        const correct=choice===(state.currentLevel===0?'A':'B');
+        CQ.attempt(correct,state.currentLevel===0?"有限样本结论":"不同规则与相同趋近趋势",{task:"reason",round:state.currentLevel,values:[choice]});
+        if (correct) {
+            state.conclusionLocked=true; CQ.complete();
+            feedback.innerHTML = '<strong style="color:var(--success)">正确！</strong><br>'+(state.currentLevel===0?'未限定规则范围时，有限个相同样本不足以证明两条规则处处相同。':'规则甲是 x + 2；规则乙在 0 左侧是 x + 2、右侧是 3x + 2。从两侧靠近 0，输出都趋近 2。规则不同，也可以有相同的极限。');
             setTimeout(() => {
                 if (state.currentLevel < state.config.levels.length - 1) {
                     state.currentLevel++;
@@ -547,7 +549,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 2500);
         } else {
-            feedback.innerHTML = `<strong style="color:var(--danger)">再想想：</strong><br>${choice === 'B' ? '有限个点写得完，总可以另造一条在这些点相同、在其他点不同的规则。' : '在已给两点相同只说明暂时无法区分，样本外的点已经显示不同。'}`;
+            feedback.innerHTML = '<strong style="color:var(--danger)">再想想：</strong><br>'+(state.currentLevel===0?(choice==='B'?'未限定规则范围时，可以另造一条在这些点相同、在其他点不同的规则。':'在已给两点相同只说明暂时无法区分，样本外的点已经显示不同。'):(choice==='A'?'请分别代入 0.1、0.01 和 -0.1、-0.01；比较两条规则的输出各自朝哪里靠近。':'在 x = 0 处的值相同，不代表所有输入的输出都相同；你刚才已经找到反例。'));
         }
     };
 
@@ -563,6 +565,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelector('#game-screen .rule-box').innerHTML=state.currentLevel===0?'<strong>规则甲：</strong> 输出 = 输入 + 3<br><strong>规则乙：</strong> 输入 &lt; 2 时输出 = 输入 + 3；输入 ≥ 2 时输出 = 2 × 输入 + 1':'<strong>规则甲：</strong> 输出 = 输入 + 2<br><strong>规则乙：</strong> 输入 &lt; 0 时输出 = 输入 + 2；输入 ≥ 0 时输出 = 3 × 输入 + 2';
         CQ.start(state.currentLevel===0?"第一轮":"第二轮：新规则"); state.transitioning=false; state.conclusionLocked=false;
         const level = state.config.levels[state.currentLevel];
+        const conclusion=document.getElementById('conclusion-screen');
+        conclusion.querySelector('h2').textContent=state.currentLevel===0?'第一轮：样本能说明什么？':'第二轮：规则不同，趋近趋势也一定不同吗？';
+        conclusion.querySelector('p').textContent=state.currentLevel===0?'未限定规则范围时，只观察到有限个输入的输出相同，能够得出什么结论？':'规则甲为 x + 2；规则乙在 x < 0 时为 x + 2，在 x ≥ 0 时为 3x + 2。当 x 从两侧靠近 0，哪项判断正确？';
+        const choices=state.currentLevel===0?['A. 有限个相同样本不足以证明两条规则处处相同','B. 只要相同样本足够多，就能证明规则完全相同','C. 已给样本相同，所以其他输入的输出也一定相同']:['A. 两条规则不同，所以在 0 附近一定趋向不同的数','B. 两条规则不同，但从两侧靠近 0 时，输出都趋近 2','C. 在 x = 0 时输出相同，所以两条规则完全相同'];
+        conclusion.querySelectorAll('button').forEach((b,i)=>b.textContent=choices[i]);
+        document.getElementById('conclusion-feedback').style.display='none';
         state.samples = level.initialSamples.map(x => {
             let outA, outB;
             if (state.currentLevel === 0) {

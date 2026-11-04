@@ -8,6 +8,7 @@ async function main(){
  const preferences=require('../lib/learner-preferences').createStore({db});
  const makeStudy=()=>require('../lib/three-arm-study').createStore({db,preferences,clock:()=>time,runtimeManifest:()=>structuredClone(runtime)});
  const study=makeStudy(),run=study.resolve({id:'synthetic-owner'},'B'),support=require('../lib/support-cycle').createStore({db,clock:()=>time,experimentId:'synthetic-history'});
+ preferences.save(run.id,{answers:preferences.read(run.id).answers,expectedRevision:1,generation:1,experimental:true,configurationWindow:{kind:'initial_configuration'}});study.confirm(run.id);
  const profile={...require('../lib/research-controls').defaults,supportFollowups:1,cooldownSeconds:60,ttlSeconds:900};
  let revision=preferences.read(run.id).revision;
  const guard=()=>({profileRevision:revision,boundary:true,protected:false,disabled:false,occupied:false});

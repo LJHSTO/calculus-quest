@@ -21,7 +21,7 @@ async function main(){
   await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').waitFor();
   for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();
   await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await page.waitForFunction(()=>currentUnitId==='V14-C1-pre');
-  await page.locator('#workspace-first-guide').waitFor({state:'visible'});await page.locator('[data-guide-open]').click();await page.getByRole('heading',{name:'认识知点与学习工具'}).waitFor();await page.locator('[data-guide-close]').click();assert.equal(await page.locator('#workspace-first-guide').isVisible(),false);results.guide=true;
+  assert.equal(await page.locator('#workspace-operation-tour[open]').count(),0,'前测期间不弹出导览');
   const ask=unit=>page.evaluate(async unit=>{const r=await fetch('api/learning/assistant/ask',{method:'POST',headers:{Authorization:`Bearer ${state.authToken}`,'Content-Type':'application/json'},body:JSON.stringify({unitId:unit,chapterId:'V14-C1',sceneType:'quiz',question:'请帮我理解函数输入与输出之间的关系'})});return {status:r.status,body:await r.text()};},unit);
   results.beforeSubmit=await ask('V14-C1-pre');assert.notEqual(results.beforeSubmit.status,200);
   for(const q of course.flow.preQuiz.questions)await page.locator(`[data-question="${q.id}"] ${q.type==='short_answer'?'[data-short-unknown]':'input[value="__unknown__"]'}`).check();
@@ -30,7 +30,8 @@ async function main(){
   if(remote){const done=results.afterSubmit.body.trim().split(/\r?\n/).map(line=>JSON.parse(line)).find(row=>row.type==='done');assert.ok(done);assert.equal(done.fallback,false,'真实模型不能以备用解析冒充通过');assert.equal(done.message.modelAudit.requestedModel,'gpt-5.4-2026-03-05');results.model=done.message.modelAudit;}
   results.otherUnitBeforeSetup=await ask('GH-01-K01');assert.notEqual(results.otherUnitBeforeSetup.status,200);
   assert.equal(results.afterSubmit.status,200,'已交前测但未配置时可主动提问');
-  await page.locator('[data-quiz-path-action=pilot-next]').last().click();await page.locator('#learner-setup[open]').waitFor();
+  await page.locator('[data-quiz-path-action=pilot-next]').last().click();await require('./operation-guide-steps')(page,dir,'B');results.guide=true;await page.locator('#learner-setup[open]').waitFor();
+  await page.locator('#learner-setup').getByRole('button',{name:'先使用全部默认设置',exact:true}).click();
   await page.locator('#learner-setup').getByRole('button',{name:/保存.*学习/}).click();await page.waitForFunction(()=>currentUnitId==='GH-01-K01');await page.locator('[data-openmaic-state=ready]').first().waitFor();
   results.elements=await page.locator('#lesson-player').evaluate(n=>[...n.querySelectorAll('[data-context-id],.slide-element,iframe')].slice(0,10).map(e=>({tag:e.tagName,cls:e.className,text:e.textContent.slice(0,80)})));
   results.frames=page.frames().map(f=>f.url());
@@ -59,7 +60,7 @@ async function main(){
    await page.locator('[data-knowledge-note-input]').fill('合成笔记：同一输入对应唯一输出');
    await page.screenshot({path:path.join(dir,'笔记与定位.png')});await page.locator('[data-knowledge-note-save]').click();await page.locator('[data-knowledge-note-editor]').waitFor({state:'hidden'});
   }
-  await page.locator('#auth-menu-toggle').click();await page.locator('#account-operation-guide').click();await page.locator('[data-guide-locate]').click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().assistantOpen);results.guideReplay=true;
+  await page.locator('#auth-menu-toggle').click();await page.locator('#account-operation-guide').click();await page.locator('#workspace-operation-tour[open]').waitFor();await page.locator('#workspace-operation-tour').getByRole('button',{name:'稍后继续',exact:true}).click();results.guideReplay=true;
   await page.evaluate(()=>KnowledgeAssistant.close());await frame.evaluate(()=>getSelection().removeAllRanges());await page.locator('#workspace-tools-toggle').focus();
   results.pause=await page.evaluate(()=>{const original=Date.now;let time=original();Date.now=()=>time;try{for(let i=0;i<52;i++){time+=5000;tickHelpEntryTest();}return {shown:!document.getElementById('workspace-pause-entry').hidden,snapshot:KnowledgeAssistant.designSpaceSnapshot()};}finally{Date.now=original;}});
   assert.equal(results.pause.shown,true,'课件长时间无操作可见求助入口提醒');delete results.pause.snapshot;

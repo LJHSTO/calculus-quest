@@ -3744,6 +3744,7 @@ function restoreAcceptedSupportPrompt(userId, resolved, sceneType) {
   if(!policyAssistantInterventionAccess(userId,resolved.unit.id,record).ok)return null;
   const interventionId=issueAssistantIntervention(userId,resolved,presentation,Date.now(),{id:intervention.id,decisionId:decision.id});
   return {id:decision.id,interventionId,content:presentation.assistantPrompt,action:decision.action,unitId:resolved.unit.id,scopeKey,sceneType,
+    questionId:presentation.questionId||'',questionContext:presentation.questionContext||null,
     replyOptions:presentation.replyOptions||[],restored:true,acceptedAt:life.acceptedAt||null};
 }
 
@@ -3854,6 +3855,8 @@ function publicQuizReviewPrompt({
     reviewAction: ["continue", "next"].includes(reviewAction) ? reviewAction : "",
     visible: visible !== false,
     contextSummary: decision.contextSummary || "",
+    questionId: decision.questionId || "",
+    questionContext: learningAssistant.quizQuestionContext(resolved,decision.questionId),
     replyOptions: decision.replyOptions || []
   };
 }
@@ -4638,6 +4641,10 @@ async function handleManagedProactiveIntervention({
     }
     const receipt=agentProfile.authorityLevel==="A4"
       ? agentRuntime.openHint(auth.participant.id,policyScopeKey,decisionId) : null;
+    if(resolved.isQuiz){
+      renderedDecision.questionContext=learningAssistant.quizQuestionContext(resolved,renderedDecision.questionId);
+      if(renderedDecision.questionContext)renderedDecision.questionId=renderedDecision.questionContext.questionId;
+    }
     renderedDecision.presentationFormat=agentProfile.presentationFormat;
     renderedDecision.authority={level:agentProfile.authorityLevel,autoExpanded:Boolean(receipt),
       receiptId:receipt?.id||"",permissionId:receipt?.permission_id||"",reversibleAction:"expand_hint_only"};
@@ -5740,6 +5747,13 @@ async function handleApi(req, res, url) {
         else if(req.method==='GET'&&url.pathname.endsWith('/rating'))data=threeArmStudy.ratingCases();
         else if(req.method==='POST'&&url.pathname.endsWith('/rating'))data=threeArmStudy.rateJudgment(await readJsonBody(req));
         else if(req.method==='POST'&&url.pathname.endsWith('/baseline'))data=threeArmStudy.approveBaseline(await readJsonBody(req));
+        else if(req.method==='POST'&&url.pathname.endsWith('/observation')){
+          const input=await readJsonBody(req),run=threeArmStudy.get(input.runId);
+          if(!run||!['technical','procedure','interruption','withdrawal'].includes(input.category)||!String(input.operator||'').trim()||!String(input.note||'').trim()||!/^[-\w]{8,80}$/.test(input.requestId||''))throw Object.assign(new Error('请选择学习轮次、记录类型并填写主试编号与事实说明'),{status:400});
+          const previous=threeArmStudy.readRecord(run.id,'staff_observation',input.requestId);
+          if(previous&&(previous.category!==input.category||previous.operator!==String(input.operator).trim().slice(0,100)||previous.note!==String(input.note).trim().slice(0,2000)))throw Object.assign(new Error('该记录已保存且内容不同，请刷新后核对，勿覆盖原记录'),{status:409});
+          data=threeArmStudy.record(run.id,'staff_observation',input.requestId,{category:input.category,operator:String(input.operator).trim().slice(0,100),note:String(input.note).trim().slice(0,2000),reportedAt:String(input.reportedAt||'').slice(0,40)});
+        }
         else if(req.method==='GET')data={protocol:threeArmStudy.protocol()};
         else throw Object.assign(new Error('接口不存在'),{status:404});
         sendJson(res,200,{ok:true,data});

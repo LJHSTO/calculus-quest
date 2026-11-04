@@ -29,6 +29,10 @@ async function main(){
   const sidebar=process.env.STUDENT_UX_QUIZ_SIDEBAR==='1'&&selector==='.learning-support-surface';
   const teacher=page.locator(selector),support=teacher.filter({has:page.locator('.knowledge-proactive-inline-offer')});
   await support.waitFor({state:'visible'});await page.waitForTimeout(800);
+  const questionContext=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().offer.questionContext);
+  assert.ok(questionContext?.questionId&&questionContext?.question&&questionContext.position>0,'形成测帮助必须包含服务端核对的原题上下文');
+  await support.locator('.support-question-context').waitFor({state:'visible'});
+  assert.match(await support.locator('.support-question-context').innerText(),/你提交的回答/);
   if(sidebar){
    await teacher.getByRole('button',{name:'收起',exact:true}).click();assert.equal(await teacher.locator('.knowledge-proactive-inline-offer').isVisible(),false,'收起必须实际隐藏帮助内容');
    await teacher.getByRole('button',{name:'展开帮助',exact:true}).click();await teacher.locator('.knowledge-proactive-inline-offer').waitFor({state:'visible'});
@@ -57,11 +61,12 @@ async function main(){
   }
   await support.locator('.knowledge-proactive-inline-offer footer .is-primary').click();
   await page.waitForFunction(()=>Boolean(KnowledgeAssistant.designSpaceSnapshot().prompt));
+  assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().prompt.questionContext?.questionId),questionContext.questionId,'接受后仍围绕同一题');
   await page.waitForTimeout(1000);
   if(sidebar)assert.equal(await page.locator('.workspace-chat-pane .knowledge-composer').isVisible(),false,'老师对话期间不能重复显示第二个输入框');
   const review=await page.evaluate(async()=>{const r=await fetch('api/study/review',{headers:{Authorization:`Bearer ${state.authToken}`}});return {status:r.status,...await r.json()};});
   fs.writeFileSync(path.join(dir,arm+'组-'+point+'检测后接受提示再回顾.json'),JSON.stringify({point,position,review},null,2));
-  assert.equal(review.status,200,'已完成阶段检测，接受一条讲解不能误判为独立测量：'+JSON.stringify(review));
+  assert.equal(review.status,point==='GH-01-K02'?409:200,'回顾应在第三个知识点检测后开放，交流本身不属于独立测量：'+JSON.stringify(review));
   assert.ok(position.top>=position.headerBottom-1&&position.top<position.viewport-200,'检测后应自动定位老师卡片：'+JSON.stringify(position));
   if(point==='GH-02-K02'){
    await page.locator('#auth-menu-toggle').click();await page.locator('#three-arm-review').click();await page.locator('.study-review-results').waitFor();
@@ -131,6 +136,7 @@ async function main(){
  async function closeProbe(){const invite=page.locator('#study-experience-prompt');await invite.waitFor({timeout:15000});assert.equal(await page.locator('dialog[open]').count(),0,'体验反馈不能自动打开模态问卷');assert.equal(await invite.locator('form').isVisible(),false);const box=await invite.boundingBox();assert.ok(box.height<80,'反馈邀请保持一行');assert.equal(await invite.evaluate(n=>n.parentElement.classList.contains('classroom-footer')),true,'反馈占据独立布局空间，不覆盖课件');const lessonBottom=await page.locator('#lesson-player').evaluate(n=>n.getBoundingClientRect().bottom);assert.ok(lessonBottom<=box.y+1,'反馈邀请不能盖住课件');await shot('可忽略的体验反馈');await invite.getByRole('button',{name:'反馈一下',exact:true}).click();await invite.locator('form').waitFor();assert.equal(await page.locator('dialog[open]').count(),0);await shot('主动展开体验反馈');await invite.getByRole('button',{name:'关闭',exact:true}).click();}
  async function saveSettings(sidebar){
   await page.locator('#learner-setup[open]').waitFor();
+  if(await page.getByRole('button',{name:'下一项',exact:true}).isVisible())await page.getByRole('button',{name:'先使用全部默认设置',exact:true}).click();
   if(sidebar){await page.locator('#learner-setup [data-dimension=D4] button').click();await page.locator('input[name=D4-placement][value=sidebar]').check();await page.locator('select[name=preference-reason]').selectOption({index:1});await page.locator('#learner-setup .learner-steps button').last().click();await page.getByRole('button',{name:'核对选择',exact:true}).click();}
   await page.locator('#learner-setup').getByRole('button',{name:/保存.*学习/}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});
  }
@@ -201,6 +207,7 @@ async function main(){
     await context.close();continue;
    }
    await page.locator('[data-quiz-path-action=pilot-next]').last().click();
+   await require('./operation-guide-steps')(page,dir,arm);
    if(arm!=='A')await saveSettings(arm==='B'&&(process.env.STUDENT_UX_QUIZ_SUPPORT!=='1'||process.env.STUDENT_UX_QUIZ_SIDEBAR==='1'));
    await page.waitForFunction(()=>currentUnitId==='GH-01-K01');assert.equal(await page.locator('#learner-setup[open]').count(),0);
    await page.locator('[data-openmaic-state=ready]').first().waitFor();
@@ -213,6 +220,13 @@ async function main(){
     });assert.deepEqual(header,{overlap:false,overflow:false},width+' 顶部控件不能重叠或溢出');
    }
    await page.setViewportSize({width:1440,height:960});
+   if(process.env.STUDENT_GUIDE_ONLY==='1'){
+    await page.locator('[data-workspace-canvas=interactive]').click();await page.locator('.scene-tour-tip').waitFor();
+    assert.equal(await page.locator('.scene-tour-highlight [data-knowledge-scene]').count(),4);
+    await shot('首次场景高亮');await page.locator('[data-knowledge-scene=simulation]').click();await page.locator('.scene-tour-tip').waitFor({state:'hidden'});
+    assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().taskReady),true);
+    pass(arm+'组前测后导览、演练不记进度、初始配置与首次场景高亮');await context.close();continue;
+   }
    assert.ok(await page.locator('.player-top').evaluate(n=>n.getBoundingClientRect().height)<80,'桌面顶部一行');
    assert.equal(await page.locator('#learner-preferences-button').isVisible(),false,'主界面不重复放置偏好入口');
    assert.equal(await page.locator('.player-top #three-arm-review').count(),0,'回顾收进头像菜单');
@@ -365,7 +379,13 @@ async function main(){
    for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="4"]').check();
    await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await page.getByText('学习体验已保存。',{exact:true}).waitFor();await shot('完成学习与三天任务');
    assert.equal(await page.getByRole('button',{name:'开始配置判断',exact:true}).isEnabled(),false);
-   timings.push({arm,event:'学习期间长任务',items:await page.evaluate(()=>window.uxLongTasks)});pass(arm+'组六个知识点实际下一步导航、两次手动回顾与配置窗口、后测问卷接续');
+   await page.getByRole('button',{name:arm==='B'?'比较两阶段的配置与学习经历':'回顾两阶段学习结果',exact:true}).click();
+   await page.locator('#three-arm-dialog').getByRole('heading',{name:arm==='B'?'学习回顾与配置关联':'学习回顾',exact:true}).waitFor();
+   if(arm==='B'){
+    assert.equal(await page.locator('[data-study-phase]').count(),2);assert.match(await page.locator('[data-study-phase=S1]').innerText(),/第 1 版配置/);assert.match(await page.locator('[data-study-phase=S2]').innerText(),/第 2 版配置/);
+    for(const width of [1366,500]){await page.setViewportSize({width,height:900});assert.equal(await page.locator('#three-arm-dialog').evaluate(n=>n.scrollWidth>n.clientWidth+1),false);await shot('后测两阶段对比-'+width);await page.locator('.study-review-reading').scrollIntoViewIfNeeded();await shot('后测两阶段对比下半部-'+width);await page.locator('#three-arm-dialog').evaluate(n=>n.scrollTop=0);}
+   }else assert.equal(await page.locator('[data-linked-feedback]').count(),0,'A/C不提前接受B组的关联回顾干预');
+   timings.push({arm,event:'学习期间长任务',items:await page.evaluate(()=>window.uxLongTasks)});pass(arm+'组六个知识点、三知识点后一次配置窗口、后测问卷和两阶段回顾');
    await context.close();
   }
   assert.deepEqual(errors,[]);assert.deepEqual(networkErrors.filter(e=>e.error!=='net::ERR_ABORTED'),[],'正常切课取消之外的网络错误');assert.deepEqual(httpErrors.filter(e=>e.status>=500&&!e.injectedFault),[],'实际接口或网关错误不得作为验收通过');fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,quizSupport:process.env.STUDENT_UX_QUIZ_SUPPORT==='1',quizSidebar:process.env.STUDENT_UX_QUIZ_SIDEBAR==='1',helpOnly:process.env.STUDENT_UX_HELP_ONLY==='1',checks,errors,networkErrors,httpErrors,timings},null,2));

@@ -55,27 +55,13 @@
     if(controller.signal.aborted||!loading.open)return;
     setRun(data.run);const d=modal(run.linkedFeedback?'学习回顾与配置关联':'学习回顾');
     d.append(button('返回学习',()=>d.close()));
-    d.append(el('p',data.pendingStage?`“${data.pendingStage.title}”两个知识点已完成。回顾检测结果并决定下一段怎样接受帮助，设置会用于接下来的两个知识点。`:'这里汇总你已完成的独立检测。'));
+    d.append(el('p',data.pendingStage?`“${data.pendingStage.title}”三个知识点已完成。回顾这段经历，再决定接下来三个知识点怎样接受帮助。`:'这里汇总你已完成的独立检测。'));
     d.append(el('p',`已完成 ${data.ordinary.answered} 题，答对 ${data.ordinary.correct} 题${data.ordinary.scored<data.ordinary.answered?`，另有 ${data.ordinary.answered-data.ordinary.scored} 题等待评分`:''}。`));
     const results=el('div');results.className='study-review-results';
     for(const id of [...new Set(data.results.map(r=>r.unitId))]){const unit=typeof getUnit==='function'?getUnit(id):null,rows=data.results.filter(r=>r.unitId===id);const p=el('p',`${(unit?.label||'知识点检测').replace(/^检测[：:]/,'')}：${rows.filter(r=>r.correct===true).length} / ${rows.length} 题正确`);results.append(p);}
-    if(!data.results.length)results.append(el('p','完成知识点检测后，这里会出现独立作答记录。'));d.append(results);
-    if(data.linked){
-      const linked=el('section');linked.dataset.linkedFeedback='';linked.append(el('h3','把设置、帮助经历和独立表现放在一起看'));
-      for(const item of data.linked.filter((item,i)=>item.offered||item.visible||item.configurationResults?.length||item.independentResults.length||i===data.linked.length-1)){
-        const card=el('article');card.className='study-linked-card';card.dataset.configurationRevision=item.revision;
-        card.append(el('h4',`第 ${item.revision} 版配置`));
-        const settings=el('details'),list=el('ul');settings.append(el('summary','查看当时的六项帮助设置'));for(const [id,value]of item.behavior)list.append(el('li',`${value}`));settings.append(list);card.append(settings);
-        card.append(el('p',`主动帮助记录：${item.invitations||0} 次询问，其中 ${item.visibleInvitations||0} 次出现在屏幕上；提供 ${item.helpRounds} 轮提示正文，其中 ${item.visible} 轮出现在屏幕上；确认或接受 ${item.accepted} 次。正文出现不等于已经阅读或理解，普通聊天不计作补充帮助轮次。`));
-        for(const experience of (item.experiences||[]).slice(-5)){const unit=typeof getUnit==='function'?getUnit(experience.scope):null;card.append(el('small',`${new Date(experience.at).toLocaleTimeString('zh-CN',{hour12:false})} · ${unit?.label||'本知识点'} / ${sceneNames[experience.sceneType]||'未记录场景'}：${experience.seen?'提示正文曾出现在屏幕上':'尚未记录到提示正文可见'}。`));}
-        const during=(item.configurationResults||[]).filter(r=>r.correct!==null);
-        card.append(el('p',during.length?`使用本版配置期间的全部独立检测：${during.length} 道已判定，${during.filter(r=>r.correct).length} 道正确。`:'使用本版配置期间尚无已判定的独立检测。'));
-        const scored=item.independentResults.filter(r=>r.correct!==null);
-        card.append(el('p',scored.length?`其中，提示正文出现后、下次修改设置前，同一知识点的独立检测：${scored.length} 道已判定，${scored.filter(r=>r.correct).length} 道正确。`:'其中尚无“提示正文出现后、同一知识点”的独立检测；先作答后看帮助的成绩不计入这一项。'));
-        linked.append(card);
-      }
-      linked.append(el('p','下一步可以保持设置，也可以只改一项，并在下一次独立检测后再判断是否适合自己。'));d.append(linked);
-    }
+    if(!data.results.length)results.append(el('p','完成知识点检测后，这里会出现独立作答记录。'));
+    if(data.linked)d.append(linkedReview(data),el('h3','全部独立检测记录'));
+    d.append(results);
     const actions=el('footer');
     if(data.pendingStage){
       seenReviews.add(run.id+data.pendingStage.id);
@@ -95,6 +81,38 @@
     }d.append(actions);show();
     if(typeof trackLearningEvent==='function')trackLearningEvent('study_review_opened',{studyId:run.studyId,runId:run.id,arm:run.arm,linkedFeedback:run.linkedFeedback,configurationRevisions:data.linked?.map(r=>r.revision)||[]},false).catch(()=>{});
   }
+  function linkedReview(data){
+    const root=el('section');root.dataset.linkedFeedback='';root.className='study-linked-review';
+    root.append(el('h3','我的设置，怎样用在了学习中？'),el('p','沿着下面三步阅读：先认清当时的设置，再核对实际发生的帮助，最后看自己独立作答的结果。'));
+    const legend=el('ol');legend.className='study-link-steps';for(const label of ['我选择的帮助','实际出现的帮助','我的独立检测'])legend.append(el('li',label));root.append(legend);
+    const grid=el('div');grid.className='study-phase-grid';
+    for(const [index,phase]of (data.phases||[]).entries()){
+      const card=el('article');card.className='study-linked-card';card.dataset.studyPhase=phase.id;
+      card.append(el('h4',`第 ${index+1} 阶段 · ${phase.title}`));
+      if(!phase.started){card.append(el('p','尚未开始。完成这次回顾后，再开始后面三个知识点。'));grid.append(card);continue;}
+      const config=phase.configuration;card.dataset.configurationRevision=config?.revision||'';
+      card.append(el('h5','1 · 我选择的帮助'),el('p',config?`第 ${config.displayVersion} 版配置${index&&phase.decision==='keep'?' · 沿用第一阶段设置':''}`:'尚未保存配置'));
+      if(config){const settings=el('dl');settings.className='study-setting-list';for(const dim of global.LearnerPreferences.dimensions){const a=config.answers[dim.id];settings.append(el('dt',dim.short),el('dd',dim.options.find(o=>o[0]===a.value)?.[1]||a.value));}card.append(settings);}
+      const rounds=phase.experiences||[],visible=rounds.filter(e=>e.seen);
+      card.append(el('h5','2 · 实际发生的帮助'));
+      const help=el('div');help.className='study-metric';help.append(el('strong',String(visible.length)),el('span','轮帮助正文曾显示在屏幕上'));card.append(help);
+      card.append(el('p',rounds.length?`共准备 ${rounds.length} 轮正文，${rounds.length-visible.length} 轮尚无可见记录。出现过不等于你已经阅读或理解。`:'本阶段尚未记录到主动帮助正文。没有帮助记录，也是一种可能的正常经历。'));
+      if(visible.length){const details=el('details');details.append(el('summary','回想是哪些帮助'));const list=el('ul');for(const e of visible){const u=typeof getUnit==='function'?getUnit(e.scope):null;list.append(el('li',`${u?.label||'本知识点'} · ${sceneNames[e.sceneType]||'当前活动'} · ${new Date(e.at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false})}`));}details.append(list);card.append(details);}
+      card.append(el('h5','3 · 我的独立检测'));
+      const judged=phase.results.filter(r=>r.correct!==null),correct=judged.filter(r=>r.correct).length;
+      const result=el('div');result.className='study-metric';result.append(el('strong',`${correct} / ${judged.length}`),el('span','道已判定题目答对'));card.append(result);
+      const meter=el('meter');meter.min=0;meter.max=Math.max(1,judged.length);meter.value=correct;meter.setAttribute('aria-label',`${judged.length}道已评分题中答对${correct}道`);card.append(meter);
+      const list=el('ul');for(const point of phase.points){const rows=phase.results.filter(r=>r.unitId===point+'-formative'),scored=rows.filter(r=>r.correct!==null);const u=typeof getUnit==='function'?getUnit(point):null;list.append(el('li',`${u?.label||'知识点'}：${rows.length?`${scored.filter(r=>r.correct).length} / ${scored.length} 道已判定题正确${scored.length<rows.length?'；另有题目待评分':''}`:'尚未检测'}`));}card.append(list);
+      const after=phase.results.filter(r=>visible.some(e=>r.unitId===e.scope+'-formative'&&Date.parse(r.at)>=Date.parse(e.at)));
+      card.append(el('p',after.length?`其中 ${after.length} 道在同一知识点的帮助正文出现后完成。其他题目不能当成“看帮助后”的结果。`:'还没有“看到帮助之后，再独立完成同一知识点检测”的记录。先检测、后复盘的成绩不能算作帮助后的表现。'));
+      grid.append(card);
+    }
+    root.append(grid);
+    const guidance=el('aside');guidance.className='study-review-reading';guidance.append(el('h4','怎样据此做决定？'),el('p','先回想：帮助出现时你是否需要？形式是否方便？独立答题时能否自己说清理由？有依据时只调整一两项，也可以保持设置，再观察下一段。'),el('p','两阶段学习的知识点和题目不同。正确数的变化只能描述这次经历，不能直接说明哪版设置更有效；提示更多也不一定学得更好。'));root.append(guidance);
+    const post=data.results.filter(r=>r.phase==='post');if(post.length)root.append(el('p',`整章后测：${post.filter(r=>r.correct===true).length} / ${post.filter(r=>r.correct!==null).length} 道已判定题正确。这份后测覆盖整段学习，不归到某一版配置。`));
+    return root;
+  }
+
   function rating(parent,id,title,answers,choices=null){
     const field=el('fieldset');field.dataset.studyQuestion=id;field.append(el('legend',title));const row=el('div');row.className='study-rating';
     const options=choices||['1','2','3','4','5'];
@@ -104,6 +122,7 @@
     const data=await request('survey?stage='+stage);if(data.saved){if(stage==='baseline')await global.LearnerSetup.resumePreparation();else await openTasks();return;}
     const key=(run?.id||snapshot?.ownerKey)+':'+stage,answers=surveyDrafts[key]||(surveyDrafts[key]={});
     const d=modal(stage==='baseline'?'开始前，先了解一下你':'回想这次学习体验');
+    if(stage==='baseline'&&run?.previousPreviewVersion)d.append(el('p','体验流程已更新为两个学习阶段。这次将开始新版体验；此前版本的答题、笔记与配置仍保留在原轮次记录中。'));
     d.append(el('p',stage==='baseline'?'没有标准答案。填完后进入独立前测；不会的题可以选择“我不会”。':'请只考虑刚才这次学习。1＝完全不符合，5＝完全符合。可以选择不愿回答。'));
     if(stage==='baseline')d.append(el('p','前3题：1＝完全不符合，5＝完全符合。'));
     for(const q of data.items){const choices=q.id==='ai_experience'?['从未','偶尔','每周数次','几乎每天']:q.id==='topic_experience'?['未学过','接触过但不熟悉','已系统学过']:null;rating(d,q.id,q.text,answers,choices);}
@@ -113,9 +132,10 @@
     if(global.StudyEntry.arm==='assigned'&&!run){await openEnrollment();return;}
     const data=await request('state');setRun(data.run);const d=modal('问卷与后续任务');
     const p=data.preparation;
-    d.append(el('p',p.stage==='ready'?'这里查看体验问卷的完成情况，以及三天后独立任务的开放时间。':'准备流程：学习前问卷 → 独立前测 → 准备帮助方式 → 开始学习。'));
+    d.append(el('p',p.stage==='ready'?'这里查看体验问卷的完成情况，以及三天后独立任务的开放时间。':'准备流程：学习前问卷 → 独立前测 → 操作指引 → 准备帮助方式 → 开始学习。'));
     if(p.stage!=='ready')d.append(button('继续准备',async()=>{dialog.close();await global.LearnerSetup.resumePreparation();}));
     if(!run.finalSurveyAt&&data.posttestComplete)d.append(button('填写学习体验问卷',()=>openSurvey('final')));else if(run.finalSurveyAt)d.append(el('p','学习体验已保存。'));
+    if(data.posttestComplete)d.append(button(run.linkedFeedback?'比较两阶段的配置与学习经历':'回顾两阶段学习结果',openReview));
     const j=data.judgment;
     d.append(el('h3','三天后的独立任务'),el('p',j.unlockAt?`开放时间：${new Date(j.unlockAt).toLocaleString('zh-CN')}。请先完成保持和迁移，再做六个配置判断情境。`:'完成后测72小时后，返回这里完成保持、迁移和配置判断。'));
     const outcomes=button('查看保持与迁移测验',async()=>{dialog.close();await global.KnowledgeAssistant.openOutcomeStage('retention');});outcomes.disabled=!j.unlockAt||Date.now()<Date.parse(j.unlockAt);outcomes.title=outcomes.disabled?'后测完成满72小时后开放':'';d.append(outcomes);

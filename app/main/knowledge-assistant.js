@@ -118,6 +118,12 @@
         || (supportView.format || "plain")!=="plain" || ["A1","A4"].includes(proactiveDecision?.authority?.level)));
   }
 
+  function currentCheckFeedback(meta = courseMeta()) {
+    const f=proactiveCheckFeedback;
+    return f && f.scopeKey===proactiveScopeKey(meta) && f.unitId===meta.unitId
+      && f.sceneType===(meta.sceneType||'slide') && (!f.expiresAt||Date.now()<f.expiresAt) ? f : null;
+  }
+
   function designSpaceSnapshot() {
     const meta = courseMeta();
     const locked = quizAssistantLocked(meta, false)
@@ -158,8 +164,7 @@
       checkSelection: eligible ? proactiveCheckSelection : "",
       prompt: eligible && usableProactivePrompt(pendingProactivePrompt, meta)
         ? { ...pendingProactivePrompt } : null,
-      feedback: eligible && proactiveCheckFeedback?.scopeKey === proactiveScopeKey(meta)
-        ? { ...proactiveCheckFeedback } : null,
+      feedback: eligible ? currentCheckFeedback(meta) : null,
       busy: proactiveChoiceSaving || proactiveCheckSubmitting || isAsking,
       providerLabel: provider.live ? "AI 助教" : "模拟回复",
       assistantOpen: isOpen
@@ -2979,6 +2984,8 @@ const proactiveJustificationDrafts = new Map();
         scopeKey: proactiveScopeKey(meta),
         interventionId: suggestion.interventionId || "",
         contextSummary: suggestion.contextSummary || "",
+        questionId: suggestion.questionId || "",
+        questionContext: suggestion.questionContext || null,
         replyOptions: Array.isArray(suggestion.replyOptions)
           ? suggestion.replyOptions.slice(0, 4)
           : []
@@ -4066,6 +4073,17 @@ const proactiveJustificationDrafts = new Map();
     });
   }
 
+  function quizQuestionContextNode(context) {
+    if(!context?.questionId||!courseMeta().quizSubmitted)return null;
+    const section=document.createElement('section');section.className='support-question-context';
+    const title=document.createElement('strong');title.textContent=`这次先看本次检测第 ${context.position} 题`;
+    const question=document.createElement('p');setQuestionMathContent(question,context.question||'');
+    const response=document.createElement('p');setQuestionMathContent(response,'你提交的回答：'+(context.studentResponse||'未作答'));
+    const locate=document.createElement('button');locate.type='button';locate.textContent='定位到这道题';
+    locate.onclick=()=>{const card=[...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===context.questionId);if(card){card.tabIndex=-1;card.scrollIntoView({block:'start'});card.focus({preventScroll:true});}};
+    section.append(title,question,response,locate);return section;
+  }
+
   function proactivePromptNode(prompt, options = {}) {
     const article = document.createElement("article");
     article.className = "knowledge-message assistant knowledge-proactive-question";
@@ -4079,6 +4097,7 @@ const proactiveJustificationDrafts = new Map();
     const body = document.createElement("p");
     setQuestionMathContent(body, prompt?.content || "");
     article.append(heading, body);
+    const questionContext=quizQuestionContextNode(prompt?.questionContext);if(questionContext)article.insertBefore(questionContext,body);
     if (prompt?.contextSummary && !global.StudyEntry) {
       const evidence = document.createElement("div");
       evidence.className = "knowledge-proactive-evidence";
@@ -4243,6 +4262,7 @@ const proactiveJustificationDrafts = new Map();
     actions.append(accept, dismiss);
     const actionHelp=document.createElement('small');actionHelp.className='support-action-explanation';actionHelp.textContent='接受后可继续提问或回课件尝试；这次先不看会收起本条，之后只在新的学习需要出现时再提醒。';
     article.append(heading, content, justify, actions);
+    const questionContext=quizQuestionContextNode(suggestion.questionContext);if(questionContext)article.insertBefore(questionContext,content);
     if(suggestion.authority?.autoExpanded && suggestion.authority.receiptId) {
       const undo=document.createElement("button");undo.type="button";undo.textContent="撤销自动展开";
       undo.addEventListener("click",async()=>{
@@ -4354,6 +4374,7 @@ const proactiveJustificationDrafts = new Map();
       }[decision.supportLevel] || "下一层最小必要支架";
       proactiveCheckFeedback = {
         scopeKey,
+        unitId: meta.unitId, sceneType: meta.sceneType || 'slide', expiresAt: Date.now()+6000,
         tone: result.status === "correct"
           ? "success"
           : result.status === "incorrect" ? "warning" : "neutral",
@@ -4372,6 +4393,9 @@ const proactiveJustificationDrafts = new Map();
                 : "这次作答仍有卡点，本轮不再追加提示。你可以继续学习，或主动提问。"
             : "知点不会继续升级支架，你仍可以按自己的节奏学习。"
       };
+      global.TaskSupport?.leaveConversation();
+      const completedFeedback=proactiveCheckFeedback;
+      setTimeout(()=>{if(proactiveCheckFeedback===completedFeedback){proactiveCheckFeedback=null;render();}},6000);
       if (nextSupportAuthorized) {
         proactiveDecision = {
           ...decision,
@@ -4402,6 +4426,7 @@ const proactiveJustificationDrafts = new Map();
     } catch (error) {
       proactiveCheckFeedback = {
         scopeKey,
+        unitId: meta.unitId, sceneType: meta.sceneType || 'slide',
         tone: "error",
         title: "支架后检查未提交",
         text: error.message || "请稍后再试。"
@@ -4725,12 +4750,11 @@ const proactiveJustificationDrafts = new Map();
     const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
     const meta = courseMeta();
     const verificationCheck = syncProactiveCheckState(meta);
-    const scopedFeedback = proactiveCheckFeedback?.scopeKey === proactiveScopeKey(meta)
-      ? proactiveCheckFeedback
-      : null;
+    const scopedFeedback = currentCheckFeedback(meta);
     const inlineOffer = isOpen
       && proactiveDecision?.serverIssued
       && proactiveDecision.unitId === meta.unitId
+      && (proactiveDecision.sceneType || 'slide') === (meta.sceneType || 'slide')
       ? proactiveDecision
       : null;
     const hasProactiveContent = Boolean(
@@ -6181,6 +6205,7 @@ const proactiveJustificationDrafts = new Map();
     async askInTask(question, questionId="") {
       const s=designSpaceSnapshot(),meta=courseMeta();
       if(!s.signedIn||s.locked||s.check||s.supportCycle?.status==="awaiting_check"||!s.active||isAsking)return false;
+      questionId=questionId||s.prompt?.questionId||s.offer?.questionId||'';
       if(questionId){
         const card=[...document.querySelectorAll(".question-card[data-question]")].find(node=>node.dataset.question===questionId);
         if(!meta.isQuiz||!meta.quizSubmitted||!card)return false;

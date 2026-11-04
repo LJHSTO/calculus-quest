@@ -58,4 +58,7 @@ module.exports=async function({page,teacher,dir,arm,remote,point}){
  assert.equal(await teacher.locator('.knowledge-proactive-inline-offer').count(),0,'通过后不继续加码');
  const review=await page.evaluate(async()=>{const r=await fetch('api/study/review',{headers:{Authorization:`Bearer ${state.authToken}`}});return r.status;});assert.equal(review,200);
  record('显式检查、正确退出、恢复回顾',{phase:payload.study.policyState.lifecycle.phase});await shot('检查退出');
+ await page.waitForTimeout(6500);
+ assert.equal(await page.evaluate(()=>Boolean(KnowledgeAssistant.designSpaceSnapshot().feedback)),false,'通过反馈自动消退');
+ assert.equal(await teacher.isVisible(),false,'完成一轮后工作区帮助收起');record('通过后自动收起');
 };

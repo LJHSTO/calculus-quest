@@ -16,10 +16,17 @@ for(const [i,task,round,values,expected]of rows){
  assert.equal(grade({...data,independent:true},point),null);assert.equal(grade(data,points[(i+1)%6]),null);
 }
 assert.equal(grade({evidence_scope:'openmaic_game_attempt'},points[0]),null);
+for(const [version,answer]of [['openmaic-games-20261102-v1','A'],['openmaic-games-20261104-v2','B']]){
+ const data={feedback_version:version,knowledge_point_id:points[3],evidence_scope:'openmaic_game_attempt',independent:false,parameters:{task:'reason',round:1,values:[answer]}};
+ assert.equal(grade(data,points[3]),true,'新旧题目分别按各自版本评分');
+ assert.equal(grade({...data,parameters:{...data.parameters,values:[answer==='A'?'B':'A']}},points[3]),false);
+}
 const stages=require('../app/shared/study-stages'),run={configuredAt:'2026-11-02',reviewedStages:[]};
 assert.equal(stages.reviewWindow(run,['GH-01-K01-formative'],'GH-01-K02').allowed,false);
 const submitted=['GH-01-K01-formative','GH-01-K02-formative'];
-assert.equal(stages.reviewWindow(run,submitted,'GH-01-K02-formative').allowed,true);
+assert.equal(stages.reviewWindow(run,submitted,'GH-01-K02-formative').allowed,false,'两个知识点后不打断');
 assert.equal(stages.reviewWindow(run,submitted,'GH-01-K03-formative').allowed,false);
-assert.equal(stages.reviewWindow({...run,reviewedStages:['S1']},submitted,'GH-01-K03').allowed,false);
+submitted.push('GH-01-K03-formative');
+assert.equal(stages.reviewWindow(run,submitted,'GH-01-K03-formative').allowed,true,'三个知识点后回顾');
+assert.equal(stages.reviewWindow({...run,reviewedStages:['S1']},submitted,'GH-02-K01').readOnly,true,'回顾完成后仍可只读重看');
 console.log('通过：23组原OpenMAIC作答的服务端重算、伪造正确标记/跨知识点/独立成绩保护、回顾窗口');

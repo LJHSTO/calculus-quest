@@ -13,7 +13,8 @@ async function main(){
  database.run('CREATE TABLE proactive_interventions(id TEXT,decision_id TEXT,user_id TEXT,status TEXT,shown_at TEXT,resolved_at TEXT,resolution TEXT,followup_outcome_json TEXT,created_at TEXT)');
  const db={getDbSync:()=>database,saveNow(){},upsertUser(){},currentLearningGeneration:()=>1,getQuizResultsByUser:()=>records};
  const preferences=require('../lib/learner-preferences').createStore({db});const study=require('../lib/three-arm-study').createStore({db,preferences,clock:()=>time+60000});const run=study.resolve({id:'synthetic-feedback'},'B');
- const config=preferences.read(run.id);config.at=new Date(time).toISOString();database.run('UPDATE learner_preference_history SET document=? WHERE user_id=?',[JSON.stringify(config),run.id]);
+ const initial=preferences.read(run.id);preferences.save(run.id,{answers:initial.answers,expectedRevision:initial.revision,generation:1,experimental:true,configurationWindow:{kind:'initial_configuration'}});study.confirm(run.id);
+ const config=preferences.read(run.id);config.at=new Date(time).toISOString();database.run('UPDATE learner_preference_history SET document=? WHERE id=(SELECT id FROM learner_preference_history WHERE user_id=? ORDER BY rowid DESC LIMIT 1)',[JSON.stringify(config),run.id]);
  for(const [i,offset,unit]of [['before',1000,'GH-01-K01'],['after',4000,'GH-01-K01'],['other',5000,'GH-01-K02']])records.push({id:i,unit_id:unit+'-formative',question_id:i,phase:'formative',is_correct:1,created_at:new Date(time+offset).toISOString()});
  for(const [id,action,offset]of [['invitation','review_mistake',2000],['hint','concept_hint',3000]]){
   const at=new Date(time+offset).toISOString();database.run('INSERT INTO proactive_decisions VALUES(?,?,?,?,?,?)',[id,'GH-01-K01','GH-01-K01-formative','slide',action,JSON.stringify({engineeringControl:{revision:config.revision}})]);
@@ -21,6 +22,9 @@ async function main(){
   database.run('INSERT INTO events VALUES(?,?,?,?,?)',[id,run.id,'learning_event',JSON.stringify({eventType:'proactive_surface_visible',data:{decisionId:id,qualifiedVisible:true,exposureKind:id==='hint'?'support_content':'offer'}}),at]);
  }
  const linked=study.review(run.id).linked.find(c=>c.revision===config.revision);
+ assert.equal(linked.displayVersion,1,'自主初始配置展示为第1版，系统预置不算学生的一版');
+ assert.equal(study.review(run.id).linked.length,1);assert.equal(study.review(run.id).phases.length,2);
+ assert.equal(study.review(run.id).phases[0].points.length,3);assert.equal(study.review(run.id).phases[0].results.length,3);assert.equal(study.review(run.id).phases[1].started,false);
  assert.equal(linked.invitations,1);assert.equal(linked.visibleInvitations,1);assert.equal(linked.helpRounds,1);assert.equal(linked.visible,1);assert.equal(linked.accepted,0,'正文可见不要求点击接受');
  assert.deepEqual(linked.configurationResults.map(r=>r.id),['before','after','other']);assert.deepEqual(linked.independentResults.map(r=>r.id),['after'],'先作答与其他知识点不混入帮助后结果');assert.equal(linked.experiences[0].sceneType,'quiz');
  database.run('INSERT INTO events VALUES(?,?,?,?,?)',['duplicate',run.id,'learning_event',JSON.stringify({eventType:'proactive_surface_visible',data:{decisionId:'hint',qualifiedVisible:true,exposureKind:'support_content'}}),new Date(time+10000).toISOString()]);

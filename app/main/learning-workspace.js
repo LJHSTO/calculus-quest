@@ -111,29 +111,10 @@
   }
   try { toolsCollapsed = localStorage.getItem("classroomToolsCollapsed") !== "0"; } catch {}
 
-  const guide = document.createElement('aside');
-  guide.id='workspace-first-guide';guide.className='workspace-entry-guide';guide.hidden=true;
-  guide.innerHTML='<span>第一次使用？知点是你的学习助手。点击右上角的“知点”可打开，也可以划选课件文字提问。</span><button type="button" data-guide-open>查看操作指引</button><button type="button" data-guide-dismiss aria-label="收起新用户操作指引">知道了</button>';
-  $('.player-top').after(guide);
-  const guideDialog=document.createElement('dialog');guideDialog.className='workspace-guide-dialog';guideDialog.setAttribute('aria-labelledby','workspace-guide-title');
-  guideDialog.innerHTML='<h2 id="workspace-guide-title" tabindex="-1">认识知点与学习工具</h2><ol><li><strong>知点在哪里：</strong>学习页右上角的“知点”按钮会打开对话区；窄屏时会切换到助手页面。</li><li><strong>怎样提问：</strong>直接输入问题，或在 PPT、互动课件中划选文字，点击旁边的“问知点”。可继续追问。</li><li><strong>怎样记笔记：</strong>划选文字后点“记一笔”，颜色会同步应用到笔记窗口与划线；保存后可从笔记页回看。</li><li><strong>测验与帮助：</strong>测验作答期间请独立完成；提交前测后即可主动提问，无需先设置学习方式。继续正式课程前仍需完成本组设置。</li><li><strong>主动提醒：</strong>知点会按当前帮助设置判断是否提出建议。你可以暂不接受、继续思考，也可以随时主动找它。</li></ol><footer><button type="button" data-guide-locate>找到知点</button><button type="button" data-guide-close>返回学习</button></footer>';
-  let guideOwner='',guideReturnFocus=null;const guideSeen=new Set();
-  function markGuideSeen(){if(!guideOwner)return;guideSeen.add(guideOwner);try{localStorage.setItem('cq-operation-guide-v1:'+guideOwner,'seen');}catch{}guide.hidden=true;}
-  function closeGuide(){guideDialog.close();guideReturnFocus?.focus?.();}
-  guideDialog.addEventListener('cancel',event=>{event.preventDefault();closeGuide();});
-  function openGuide(){guideReturnFocus=document.activeElement;(document.fullscreenElement||document.body).append(guideDialog);guideDialog.showModal();guideDialog.querySelector('h2').focus();markGuideSeen();}
-  guide.querySelector('[data-guide-open]').onclick=openGuide;
-  guide.querySelector('[data-guide-dismiss]').onclick=markGuideSeen;
-  guideDialog.querySelector('[data-guide-close]').onclick=closeGuide;
-  guideDialog.querySelector('[data-guide-locate]').onclick=()=>{closeGuide();global.KnowledgeAssistant?.open();};
-  const guideMenu=document.createElement('button');guideMenu.id='account-operation-guide';guideMenu.type='button';guideMenu.className='user-menu-item';guideMenu.textContent='操作指引 · 找到知点';
+  const openGuide=()=>global.OperationGuide?.open();
+  const guideMenu=document.createElement('button');guideMenu.id='account-operation-guide';guideMenu.type='button';guideMenu.className='user-menu-item';guideMenu.textContent='重新查看操作指引';
   guideMenu.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);openGuide();};document.getElementById('account-pilot-status')?.before(guideMenu);
-  function syncEntryGuide(){
-    const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();guideOwner=s?.signedIn?s.ownerKey:'';
-    let seen=guideSeen.has(guideOwner);try{seen=seen||localStorage.getItem('cq-operation-guide-v1:'+guideOwner)==='seen';}catch{}
-    guide.hidden=!guideOwner||!s?.active||seen;guideMenu.hidden=!guideOwner;
-    if(!guideOwner&&guideDialog.open)guideDialog.close();
-  }
+  function syncEntryGuide(){const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();guideMenu.hidden=!s?.signedIn;guideMenu.disabled=Boolean(s?.locked||s?.check||s?.unitType==='quiz'&&!s?.quizSubmitted);}
   global.addEventListener('cq:proactive-state',syncEntryGuide);
 
   const pauseObserver=global.ProactiveLearningCore.createHelpEntryObserver();

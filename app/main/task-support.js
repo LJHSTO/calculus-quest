@@ -111,7 +111,7 @@
     if(panel.parentElement!==host)host.append(panel);
     if(source.parentElement!==panel){
       const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点'));
-      if(snapshot.unitType==='quiz'&&!snapshot.check){const cards=[...document.querySelectorAll('.question-card[data-question]')],index=cards.findIndex(n=>n.dataset.question===(selectedQuestion||snapshot.replyQuestionId));const target=el('button',index<0?'查看本次答题':'查看第 '+(index+1)+' 题');target.type='button';target.onclick=()=>cards[Math.max(0,index)]?.scrollIntoView({block:'start',behavior:'instant'});bar.append(target);}
+      if(snapshot.unitType==='quiz'&&!snapshot.check){const cards=[...document.querySelectorAll('.question-card[data-question]')],index=cards.findIndex(n=>n.dataset.question===(selectedQuestion||snapshot.prompt?.questionId||snapshot.offer?.questionId||snapshot.replyQuestionId));const target=el('button',index<0?'查看本次答题':'查看第 '+(index+1)+' 题');target.type='button';target.onclick=()=>cards[Math.max(0,index)]?.scrollIntoView({block:'start',behavior:'instant'});bar.append(target);}
       if(snapshot.unitType==='knowledge'&&!snapshot.check){
         const toggle=el('button',focusHelp?'放大课件':'课件小窗');toggle.type='button';toggle.dataset.supportFocusToggle='';toggle.title='在完整课件和缩放小窗之间切换';
         toggle.setAttribute('aria-pressed',String(focusHelp));toggle.onclick=()=>setFocusHelp(!focusHelp);bar.append(toggle);

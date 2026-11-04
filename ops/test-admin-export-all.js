@@ -235,6 +235,7 @@ async function main() {
     console.log("admin export-all pagination and research package API tests passed");
   } finally {
     await stopChild(child);
+    db.getDbSync().close();
     if (previousDbPath === undefined) delete process.env.DB_PATH;
     else process.env.DB_PATH = previousDbPath;
     fs.rmSync(tmpDir, { recursive: true, force: true });

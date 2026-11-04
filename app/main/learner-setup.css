@@ -14,6 +14,13 @@
 .pilot-guide-next button{font:inherit;min-height:40px;padding:8px 14px;border:1px solid #c3d4cf;border-radius:9px;background:white;color:#245d52;cursor:pointer}.pilot-guide-next .learner-primary{background:#246f60;color:white;border-color:#246f60}.pilot-guide-next button:focus-visible{outline:3px solid #71b9a8;outline-offset:2px}
 @media(max-width:640px){.pilot-learning-guide{margin:0 8px 8px;padding:10px}.pilot-progress-steps{gap:6px 10px;font-size:12px}.pilot-guide-next{align-items:stretch;flex-direction:column}}
 /* Journey transitions guide attention without covering the course. */
+.study-link-steps{display:flex;gap:20px;flex-wrap:wrap;padding:16px 32px;background:#f1edff;border-radius:10px;font-weight:600}
+.study-phase-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.study-phase-grid .study-linked-card{margin:0;padding:20px;border:1px solid #d6d0ef;border-radius:14px;background:#fff;min-width:0}
+.study-phase-grid h4{font-size:18px;margin:0 0 18px}.study-phase-grid h5{font-size:15px;border-top:1px solid #e7e3f1;padding-top:15px;margin:18px 0 10px}
+.study-setting-list{display:grid;grid-template-columns:90px 1fr;gap:10px;line-height:1.6}.study-setting-list dt{color:#586274}.study-setting-list dd{margin:0;font-weight:600}
+.study-metric{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.study-metric strong{font-size:28px;color:#5b48bc}.study-metric span{font-size:13px;color:#536273}
+.study-linked-review p,.study-linked-review li{line-height:1.8}.study-linked-review meter{width:100%;height:14px}.study-review-reading{margin:20px 0;padding:16px 20px;border-radius:12px;background:#f2f7f6;border:1px solid #cee3dc}.study-review-reading h4{margin-top:0}
+@media(max-width:760px){.study-phase-grid{grid-template-columns:1fr}.study-setting-list{grid-template-columns:80px 1fr}.study-link-steps{gap:10px}}
 #pilot-entry-button[hidden],#learner-preferences-button[hidden],.proactive-hud-toggle-btn[hidden]{display:none!important}
 .learner-setup-body{animation:learner-step-enter .22s ease-out}
 .guided-next{animation:learner-step-enter .22s ease-out}
@@ -64,6 +71,12 @@
 #three-arm-review,#three-arm-tasks{padding:8px 12px;border:1px solid #d5cdea;border-radius:9px;background:#fff;color:#4c3c80;font:500 13px/1.5 "Microsoft YaHei",sans-serif;cursor:pointer;}
 #three-arm-review:hover,#three-arm-tasks:hover{background:#f4f0ff;border-color:#947ad1;}
 #three-arm-dialog .study-linked-card small{display:block;margin:7px 0;color:#53627a;}
+#three-arm-dialog:has([data-linked-feedback]){width:min(1040px,calc(100vw - 24px))}
+#three-arm-dialog .study-link-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;padding:12px;counter-reset:study-step}
+#three-arm-dialog .study-link-steps li{display:flex;align-items:center;gap:8px;margin:0;padding:8px;background:white;border-radius:8px;counter-increment:study-step}
+#three-arm-dialog .study-link-steps li::before{content:counter(study-step);display:grid;place-items:center;background:#6651c9;color:white;border-radius:50%;width:26px;height:26px;flex:0 0 26px}
+#three-arm-dialog .study-phase-grid .study-linked-card{margin:0;background:white;padding:20px}
+@media(max-width:600px){#three-arm-dialog .study-link-steps{grid-template-columns:1fr}#three-arm-dialog .study-phase-grid .study-linked-card{padding:14px}}
 #study-experience-prompt{position:fixed;right:18px;bottom:104px;z-index:120;width:min(320px,calc(100vw - 32px));max-height:calc(100dvh - 130px);overflow:auto;box-sizing:border-box;padding:16px;border:1px solid #e0dced;border-radius:12px;background:#fff;color:#26334b;box-shadow:0 4px 12px #26334b12,0 12px 36px #26334b20;font:13px/1.6 "Microsoft YaHei",sans-serif;}
 #study-experience-prompt[hidden],#study-experience-prompt [hidden]{display:none!important;}
 #study-experience-prompt p{margin:6px 0 10px;}

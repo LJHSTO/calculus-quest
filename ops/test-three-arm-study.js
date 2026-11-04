@@ -109,6 +109,9 @@ async function main(){
    assert.equal(await page.getByLabel('课外练习情况',{exact:true}).inputValue(),'合成补充：练习20分钟');assert.ok(lostDraftResponses>=4);
    await page.screenshot({path:path.join(dir,'配置判断-草稿恢复.png')});await page.getByRole('button',{name:'提交六个情境回答',exact:true}).click();await page.getByText('配置判断已提交，等待研究人员评分。',{exact:true}).waitFor();assert.deepEqual(errors,[]);check('三天后配置判断真实页面填写、刷新恢复、提交接续');
    await page.goto(base+'/three-arm-admin.html');await page.locator('#study-admin-token').fill(admin);await page.locator('#study-admin-enter').click();
+   await page.getByRole('button',{name:'数据核查与逐表导出',exact:true}).click();await page.getByLabel('导出数据来源').selectOption('preview');
+   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载轮次核查摘要 CSV',exact:true}).click();const csvDownload=await downloadPromise;await csvDownload.saveAs(path.join(dir,'轮次核查.csv'));assert.match(fs.readFileSync(path.join(dir,'轮次核查.csv'),'utf8'),/protocolFingerprint/);
+   await page.getByLabel('协助对应学习轮次').selectOption(ids.B);await page.getByLabel('主试编号',{exact:true}).fill('合成主试');await page.getByLabel('主试事实记录').fill('合成网络断开30秒，指导刷新，未提供解题帮助');await page.getByRole('button',{name:'保存主试记录',exact:true}).click();await page.getByText('主试记录已保存，并纳入完整研究记录导出。',{exact:true}).waitFor();await page.screenshot({path:path.join(dir,'管理端-数据核查与主试记录.png')});await page.getByRole('button',{name:'返回管理',exact:true}).click();
    await page.getByRole('button',{name:'查看介入与静默回放',exact:true}).click();await page.getByRole('heading',{name:'介入与静默回放',exact:true}).waitFor();await page.getByLabel('回放数据来源').selectOption('preview');await page.getByRole('button',{name:'读取所选版本',exact:true}).click();await page.getByRole('button',{name:'下载回放与人工标注文件',exact:true}).waitFor();await page.screenshot({path:path.join(dir,'管理端-决策回放.png')});await page.getByRole('button',{name:'返回管理',exact:true}).click();
    const recovery=await browser.newPage();let surveyWrites=0;
    await recovery.route('**/api/study/survey',async route=>{if(route.request().method()!=='POST')return route.continue();surveyWrites++;const response=await route.fetch();if(surveyWrites===1)return route.fulfill({status:200,contentType:'application/json',body:''});return route.fulfill({response});});
@@ -121,6 +124,11 @@ async function main(){
   const rating=await api('/api/admin/three-arm/rating',{runId:ids.B,rater:'合成评分员',scores:Object.fromEntries(judgment.data.items.map(q=>[q.id,[2,1,2]]))},'',admin);assert.equal(rating.data.total,30);check('保持与迁移、配置判断草稿保护、无答案泄露、人工评分');
   const exported=await api('/api/admin/three-arm/export',null,'',admin);assert.equal(exported.status,200);assert.equal(exported.data.runs.length,4);assert.ok(exported.data.runs.every(r=>r.mode==='preview'));check('管理导出保留实验轮次与体验数据标记');
   assert.ok(exported.data.tables.quiz_results.length>18);
+  assert.equal(exported.data.manifest.schemaVersion,'three-arm-export-v2');assert.equal(exported.data.manifest.summaries.length,4);assert.equal(exported.data.manifest.summaries.find(r=>r.runId===ids.B).staffRecords,1);assert.ok('grading_regrade_audits' in exported.data.tables);
+  const observation={runId:ids.B,category:'technical',operator:'合成主试',note:'合成幂等记录',requestId:'synthetic-retry-observation'};
+  assert.equal((await api('/api/admin/three-arm/observation',observation,'B')).status,403);
+  for(let i=0;i<2;i++)assert.equal((await api('/api/admin/three-arm/observation',observation,'',admin)).status,200);
+  assert.equal((await api('/api/admin/three-arm/export',null,'',admin)).data.records.filter(r=>r.kind==='staff_observation'&&r.slot===observation.requestId).length,1,'主试记录重试不重复');check('逐表导出、字段字典、核查摘要及主试协助记录通过真实管理界面与权限检查');
   assert.equal((await api('/api/study/enroll',{consent:true},'assigned')).status,409);
   assert.equal((await api('/api/admin/three-arm/baseline',{reviewer:'仅合成环境的教师确认',confirmed:true},'',admin)).status,200);
   const allocated=[];for(let i=0;i<6;i++){const reg=await api('/api/auth/register',{nickname:'合成正式分配'+i,password:'synthetic-test-password'},'','');const formal=await api('/api/study/enroll',{consent:true},'assigned',reg.token);assert.equal(formal.status,200,JSON.stringify(formal));allocated.push(formal.data.arm);assert.equal((await api('/api/study/enroll',{consent:true,arm:'A'},'assigned',reg.token)).data.id,formal.data.id);}

@@ -52,8 +52,8 @@ async function finish(f,id){
   for(const [j,n]of [1,3,3,2].entries())await f.locator('#input-controls input').nth(j).fill(String(n));
   await button(f,'提交构造').click();await f.locator('#target-text').filter({hasText:'全部构造完成'}).waitFor();return;
  }else if(id==='GH-02-K01'){
-  for(const x of [3,1]){
-   await f.locator('#candidate-grid').getByRole('button',{name:String(x),exact:true}).click();await button(f,'预计输出不同').click();await button(f,'提交观测点').click();await f.locator('[onclick="checkConclusion(\'A\')"]').click();
+   for(const [round,x] of [3,1].entries()){
+    await f.locator('#candidate-grid').getByRole('button',{name:String(x),exact:true}).click();await button(f,'预计输出不同').click();await button(f,'提交观测点').click();await f.locator(`[onclick="checkConclusion('${round?'B':'A'}')"]`).click();
   }
  }else if(id==='GH-02-K02'){
   if(await f.locator('#pred-left').isVisible()){await f.locator('#pred-left').fill('2');await f.locator('#pred-right').fill('4');await button(f,'提交预测').click();await button(f,'进入诊断').click();}
