@@ -785,6 +785,7 @@ const proactiveJustificationDrafts = new Map();
   function proactiveCollectionEnabled(meta = courseMeta()) {
     if (
       proactiveOutcomesOpen
+      || global.OperationGuide?.active
       || proactiveStudy.agentAssistanceBlocked
       || activeProactiveOutcomeSession()
     ) return false;
@@ -2606,6 +2607,7 @@ const proactiveJustificationDrafts = new Map();
       && isSignedInNow()
       && !quizAssistantLocked(meta)
       && !isOpen
+      && !global.OperationGuide?.active
       && !root.closest("[hidden]")
       && !root.closest(".workspace-chat-pane.is-tool-inactive")
       && !root.closest(".core-learning-workspace.tools-collapsed")

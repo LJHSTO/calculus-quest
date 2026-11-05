@@ -21,6 +21,7 @@
   async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='entry'){await global.PilotStudyUI.open();}else if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
   function allowsUnit(unit){
     if(global.ThreeArmStudyUI?.allowsUnit(unit)===false)return false;
+    if(global.OperationGuide?.canPreview(unit)){if(!global.OperationGuide.active&&!dialog?.open)resumePreparation();return true;}
     const resultPage=unit.assessmentPhase==='pre'&&pilot?.enrollment?.stage==='configuration';
     const allowed=!['entry','baseline'].includes(preparation?.stage)&&(!isPreparing(pilot?.enrollment)||resultPage)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre')&&!(ordinaryRequired(unit)&&preparation.stage!=='ready'&&unit.id!==preparation.chapterId+'-pre');
     if(!allowed)resumePreparation();return allowed;
@@ -67,7 +68,7 @@
   async function continueAfterPretest(){
     if(continuing)return continuing;
     const origin={token:state.authToken,unit:currentUnitId,view:currentView,generation:currentGeneration};
-    const isCurrent=()=>origin.token===state.authToken&&origin.unit===currentUnitId&&origin.view===currentView&&(origin.generation===null||origin.generation===currentGeneration);
+    const isCurrent=()=>origin.token===state.authToken&&(origin.unit===currentUnitId||origin.unit==='V14-C1-pre'&&currentUnitId==='GH-01-K01')&&origin.view===currentView&&(origin.generation===null||origin.generation===currentGeneration);
     let status=document.getElementById('pretest-continue-status');
     if(!status){status=el('p');status.id='pretest-continue-status';status.setAttribute('role','status');document.querySelector('#lesson-player')?.prepend(status);}
     status.textContent='正在准备下一步，请稍候…';
@@ -90,6 +91,7 @@
     if(isReady()&&preparedPath?.pendingPlan?.unitId==='V14-C1-pre'){
       preparedPath.pendingPlan=null;preparedPath.pendingAt='';saveState();
     }
+    if(isReady()&&currentUnitId==='GH-01-K01')agenticUnlockUnit('GH-01-K01','pilot_ready');
     if(typeof currentUnitId==='string'&&currentUnitId==='V14-C1-pre'){
       const path=typeof ensureAgenticPath==='function'?ensureAgenticPath():null;
       if(path?.pendingPlan?.phase==='pre_knowledge_selection'){

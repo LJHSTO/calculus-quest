@@ -80,7 +80,7 @@ async function main(){
       const third=page.locator('.question-card[data-question]').nth(2);await third.getByRole('button',{name:'和知点讨论这道题',exact:true}).click();
       assert.equal(await page.evaluate(()=>TaskSupport.selectedQuestion),await third.getAttribute('data-question'),'第三题入口必须切换当前题');
      }
-     await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).fill(question);
+     await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).fill(question);
      // A recovery banner can push Send below the viewport; finish intentional scrolling before measuring redraws.
      await teacher.getByRole('button',{name:'发送我的想法',exact:true}).scrollIntoViewIfNeeded();
      await page.evaluate(selector=>{window.flowPanel=document.querySelector(selector);window.flowLostPanel=0;window.flowPositions=[];window.flowObserving=true;const record=()=>{if(!window.flowObserving)return;const p=document.querySelector(selector);if(p!==window.flowPanel||!p?.isConnected)window.flowLostPanel++;if(p)window.flowPositions.push(p.getBoundingClientRect().top);requestAnimationFrame(record);};record();},selector);
@@ -122,7 +122,7 @@ async function main(){
    assert.equal(await teacher.locator('.task-response-form').isVisible(),false,'自由提问只保留一个输入入口');
   }
   if(point==='GH-02-K01'){
-   await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).fill('极限描述输入靠近时输出的趋势，需要与该点的函数值区分。');
+   await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).fill('极限描述输入靠近时输出的趋势，需要与该点的函数值区分。');
    await teacher.getByRole('button',{name:'发送我的想法',exact:true}).click();await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy&&Boolean(KnowledgeAssistant.designSpaceSnapshot().reply?.text));
    assert.equal(await page.evaluate(()=>Boolean(KnowledgeAssistant.designSpaceSnapshot().check)),false,'交流不能自动进入独立检查');
    await teacher.getByRole('button',{name:'用一题检查',exact:true}).click();await page.waitForFunction(()=>Boolean(KnowledgeAssistant.designSpaceSnapshot().check));
@@ -288,7 +288,7 @@ async function main(){
    await page.waitForFunction(()=>document.querySelector('#workspace-support-notice').hidden,'老师卡片可见时隐藏重复定位提示');
    if(remote){const audit=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.content.audit);const guarded=audit.fallback&&audit.failure==='ambiguous_function_correspondence';assert.ok(!audit.fallback||guarded,'公网模型调用失败不得作为真实调用验收通过');if(guarded)assert.ok(audit.attempts.some(a=>a.outcome==='received'),'术语保护必须有实际模型响应');else assert.equal(audit.provider,'openai-compatible');timings.push({arm,event:'官方模型帮助',contentSource:guarded?'术语保护后显示课程讲解':'真实模型讲解',audit});}
    await page.waitForTimeout(1600);
-   await support.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).waitFor();
+   await support.getByRole('textbox',{name:'继续交流（选填）',exact:true}).waitFor();
    assert.equal(await support.getByRole('button',{name:'继续问老师',exact:true}).count(),0,'帮助后直接呈现工作区输入框');
    if(arm==='B'){
     for(const width of [1366,1440,1920]){
@@ -308,7 +308,7 @@ async function main(){
    }
    const question='两个样本的输出相同，是否就说明两条规则相同？';
    await page.evaluate(()=>{window.uxComposerEvents=[];for(const type of ['pointerdown','pointerup','click','submit'])document.addEventListener(type,event=>{const b=document.querySelector('.task-response-form button');window.uxComposerEvents.push({type,tag:event.target.tagName,cls:event.target.className,text:event.target.textContent.slice(0,80),x:event.clientX,y:event.clientY,rect:b?.getBoundingClientRect().toJSON(),defaultPrevented:event.defaultPrevented});},true);});
-   await support.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).fill(question);
+   await support.getByRole('textbox',{name:'继续交流（选填）',exact:true}).fill(question);
    const helpResponse=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/api/learning/assistant/ask')),helpSentAt=Date.now(),helpCount=await page.evaluate(()=>uxAssistantResponses.length);
    await support.getByRole('button',{name:'发送我的想法',exact:true}).click();
    assert.equal(await page.locator('#workspace-support-notice').isVisible(),false,'帮助区可见时不能插入重复入口并遮挡发送按钮');
@@ -318,7 +318,7 @@ async function main(){
    await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy&&Boolean(KnowledgeAssistant.designSpaceSnapshot().reply?.text));
    if(remote){assert.equal(helpDone.fallback,false);if(process.env.STUDENT_EXPECT_MODEL)assert.equal(helpDone.message.modelAudit.requestedModel,process.env.STUDENT_EXPECT_MODEL);}
    fs.writeFileSync(path.join(dir,arm+'组-课件帮助真实回复.json'),JSON.stringify({elapsedMs:Date.now()-helpSentAt,...helpDone},null,2));
-   assert.equal(await support.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).inputValue(),'','发送成功后清空草稿并保留工作区对话');
+   assert.equal(await support.getByRole('textbox',{name:'继续交流（选填）',exact:true}).inputValue(),'','发送成功后清空草稿并保留工作区对话');
    const conversation=await support.locator('.has-task-conversation').evaluate(n=>{const h=n.querySelector('.task-conversation-scroll'),input=n.querySelector('textarea').getBoundingClientRect();return {bottom:h.scrollHeight-h.scrollTop-h.clientHeight,inputBottom:input.bottom,panelBottom:n.getBoundingClientRect().bottom};});
    assert.ok(conversation.bottom<3&&conversation.inputBottom<=conversation.panelBottom,'新回复自动进入视野，输入框保持可见：'+JSON.stringify(conversation));
    await shot('全屏老师讲解');await support.getByRole('button',{name:'结束这轮帮助',exact:true}).click();await closeProbe();

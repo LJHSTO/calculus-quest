@@ -9,7 +9,7 @@ module.exports=async function({page,teacher,dir,arm,remote,point}){
  const shot=name=>page.screenshot({path:path.join(dir,arm+'组-闭环-'+name+'.png')});
  async function send(text){
   const count=await page.evaluate(()=>uxAssistantResponses.length),start=Date.now();
-  await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).fill(text);
+  await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).fill(text);
   await teacher.getByRole('button',{name:'发送我的想法',exact:true}).click();
   await page.waitForFunction(n=>!KnowledgeAssistant.designSpaceSnapshot().busy&&uxAssistantResponses.length>n,count);
   const done=await page.evaluate(n=>uxAssistantResponses[n],count);
@@ -25,7 +25,7 @@ module.exports=async function({page,teacher,dir,arm,remote,point}){
  const lastReply=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().reply.text);
  const visibleReply=await teacher.locator('.task-conversation-reply .assistant-content').last().innerText();
  await page.reload();await page.waitForFunction(id=>currentUnitId===id+'-formative'&&Boolean(KnowledgeAssistant.designSpaceSnapshot().reply?.text),point);
- await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).waitFor();
+ await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).waitFor();
  assert.ok(await teacher.locator('.task-conversation-reply').count()>=4,'刷新后应恢复已发生的帮助对话，不能只剩空输入框');
  assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().reply.text),lastReply,'刷新恢复相同服务器回复');
  await page.waitForFunction(text=>[...document.querySelectorAll('.task-conversation-reply .assistant-content')].some(n=>n.innerText===text),visibleReply);
@@ -33,19 +33,19 @@ module.exports=async function({page,teacher,dir,arm,remote,point}){
  record('刷新恢复对话');await shot('刷新后交流');
  const text='我想继续这道题，先确认左右趋近值是否相等。';
  await page.route('**/api/learning/assistant/ask',r=>r.fulfill({status:503,headers:{'x-synthetic-fault':'assistant-retry'},contentType:'application/json',body:JSON.stringify({ok:false,message:'合成网络中断，请重试'})}));
- await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).fill(text);
+ await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).fill(text);
  const failed=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/api/learning/assistant/ask'));
  await teacher.getByRole('button',{name:'发送我的想法',exact:true}).click();assert.equal((await failed).status(),503);
  await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy);
- assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).inputValue(),text,'失败不能清空草稿');
+ assert.equal(await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).inputValue(),text,'失败不能清空草稿');
  assert.match(await teacher.innerText(),/未发送|中断|重试|失败/,'失败应在正在使用的老师面板内显示');
  await page.unroute('**/api/learning/assistant/ask');record('请求失败保留草稿与就地提示');
  await send(text);
  // The reply arrives before its study-state refresh and the form completion callback.
  await page.waitForFunction(value=>[...document.querySelectorAll('textarea[data-task-draft-key]')].every(n=>n.value!==value),text);
- assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).inputValue(),'');record('重试成功');
+ assert.equal(await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).inputValue(),'');record('重试成功');
  await teacher.getByRole('button',{name:'用一题检查',exact:true}).click();await page.waitForFunction(()=>Boolean(KnowledgeAssistant.designSpaceSnapshot().check));
- assert.equal(await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).count(),0,'独立检查期间收起聊天输入');
+ assert.equal(await teacher.getByRole('textbox',{name:'继续交流（选填）',exact:true}).count(),0,'独立检查期间收起聊天输入');
  const check=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().check);
  assert.equal(Object.hasOwn(check,'answer'),false);
  const index=check.options.findIndex(o=>adapter.gradeVerificationCheck({knowledgePointId:point,supportLevel:check.supportLevel,checkId:check.id,response:o.value})?.correct);

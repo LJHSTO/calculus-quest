@@ -2001,6 +2001,7 @@ function agenticIsCurrentPending(unitId = currentUnitId) {
 function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = false } = {}) {
   const target = getUnit(targetUnitId);
   if (!target) return false;
+  if(typeof window!=='undefined'&&window.OperationGuide?.canPreview(target))return true;
   const current = getUnit(currentUnitId);
   const path = ensureAgenticPath();
 

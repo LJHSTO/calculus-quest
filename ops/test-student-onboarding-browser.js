@@ -17,11 +17,11 @@ async function main(){
   results.errors=[];page.on('pageerror',error=>results.errors.push(error.message));
   await page.addInitScript(()=>{const original=window.setInterval;window.setInterval=function(fn,...args){if(fn.name==='tickHelpEntry')window.tickHelpEntryTest=fn;return original.call(this,fn,...args);};});
   await page.goto(base+'/?study=B');await page.locator('[data-auth-mode=register]').click();
-  await page.locator('#nickname').fill('合成新用户'+Date.now());await page.locator('#register-password').fill('synthetic-browser-password');await page.locator('#register-password-confirm').fill('synthetic-browser-password');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});
+  await page.locator('#nickname').fill('合成新用户'+Date.now());await page.locator('#register-password').fill('synthetic-browser-password');await page.locator('#register-password-confirm').fill('synthetic-browser-password');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});assert.equal(await page.locator('#auth-menu-toggle').evaluate(n=>n===document.activeElement),false,'登录后不自动聚焦头像'); await page.locator('#auth-menu-toggle').focus(); await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Tab'); assert.equal(await page.locator('#auth-menu-toggle').evaluate(n=>n.matches(':focus-visible')),true,'保留键盘焦点提示');
   await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').waitFor();
   for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();
   await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await page.waitForFunction(()=>currentUnitId==='V14-C1-pre');
-  assert.equal(await page.locator('#workspace-operation-tour[open]').count(),0,'前测期间不弹出导览');
+  assert.equal(await page.locator('#workspace-operation-tour').count(),0,'前测期间不弹出导览');
   const ask=unit=>page.evaluate(async unit=>{const r=await fetch('api/learning/assistant/ask',{method:'POST',headers:{Authorization:`Bearer ${state.authToken}`,'Content-Type':'application/json'},body:JSON.stringify({unitId:unit,chapterId:'V14-C1',sceneType:'quiz',question:'请帮我理解函数输入与输出之间的关系'})});return {status:r.status,body:await r.text()};},unit);
   results.beforeSubmit=await ask('V14-C1-pre');assert.notEqual(results.beforeSubmit.status,200);
   for(const q of course.flow.preQuiz.questions)await page.locator(`[data-question="${q.id}"] ${q.type==='short_answer'?'[data-short-unknown]':'input[value="__unknown__"]'}`).check();
@@ -60,8 +60,8 @@ async function main(){
    await page.locator('[data-knowledge-note-input]').fill('合成笔记：同一输入对应唯一输出');
    await page.screenshot({path:path.join(dir,'笔记与定位.png')});await page.locator('[data-knowledge-note-save]').click();await page.locator('[data-knowledge-note-editor]').waitFor({state:'hidden'});
   }
-  await page.locator('#auth-menu-toggle').click();await page.locator('#account-operation-guide').click();await page.locator('#workspace-operation-tour[open]').waitFor();await page.locator('#workspace-operation-tour').getByRole('button',{name:'稍后继续',exact:true}).click();results.guideReplay=true;
-  await page.evaluate(()=>KnowledgeAssistant.close());await frame.evaluate(()=>getSelection().removeAllRanges());await page.locator('#workspace-tools-toggle').focus();
+  await page.locator('#auth-menu-toggle').click();await page.locator('#account-operation-guide').click();await page.locator('#workspace-operation-tour').waitFor();await page.locator('#workspace-operation-tour').getByRole('button',{name:'稍后继续',exact:true}).click();results.guideReplay=true;
+  await page.evaluate(()=>KnowledgeAssistant.close());await page.locator('#workspace-tools-toggle').focus();
   results.pause=await page.evaluate(()=>{const original=Date.now;let time=original();Date.now=()=>time;try{for(let i=0;i<52;i++){time+=5000;tickHelpEntryTest();}return {shown:!document.getElementById('workspace-pause-entry').hidden,snapshot:KnowledgeAssistant.designSpaceSnapshot()};}finally{Date.now=original;}});
   assert.equal(results.pause.shown,true,'课件长时间无操作可见求助入口提醒');delete results.pause.snapshot;
   await page.locator('[data-pause-help]').click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().assistantOpen);assert.equal(await page.locator('#workspace-pause-entry').isVisible(),false);

@@ -761,7 +761,8 @@ function setAuthGateVisible(visible) {
   document.body.classList.toggle('auth-gate-open',visible);
   if(wasOpen!==visible)window.dispatchEvent(new CustomEvent('cq:authentication-changed',{detail:{visible}}));
   if(!visible&&wasOpen)requestAnimationFrame(()=>{
-    if(els.userMenu&&!els.userMenu.hidden)els.authMenuToggle?.focus({preventScroll:true});
+    const heading=document.querySelector('.view.active h1, .view.active h2');
+    if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   });
 }
 
@@ -1332,6 +1333,7 @@ async function trackLearningEvent(type, payload = {}, syncSnapshot = true) {
         }
       }
     : { value: payload, timing: { clientAt } };
+  if(window.OperationGuide?.context)eventPayload.operationGuide=window.OperationGuide.context;
   const request = deliverLearningEvent({
     eventId: learningEventClientId(),
     type,

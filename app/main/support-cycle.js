@@ -85,7 +85,8 @@
     section.append(el("small",c.content.audit.fallback?"课程提示":"知点 · 智能体老师"));
     const actions=el("footer");if(c.status==="offered")actions.append(button("我先试一试",()=>request({action:"accept",id:c.id})));
     actions.append(button("结束这轮帮助",()=>request({action:"close",id:c.id})));
-    const nextSteps=feedback(next,c);nextSteps.append(button("做一次独立检查",()=>request({action:"start_check",id:c.id})));
+    actions.append(button("做一次独立检查",()=>request({action:"start_check",id:c.id})));
+    const nextSteps=feedback(next,c);
     const provenance=el('details');provenance.className='support-inquiry-evidence';provenance.append(el('summary','讲解信息'),el('p',`这次主要帮助你${({cognitive:'理解概念与步骤',metacognitive:'检查理解、调整方法',motivational:'找到学习的价值与信心',emotional:'缓解学习中的紧张',behavioral:'安排接下来的学习'})[c.plan.primaryGoal]}。${c.content.audit.fallback?'当前使用课程内的讲解。':'由智能体老师根据当前任务生成。'}`));
     section.append(actions,nextSteps,provenance);return section;
   }

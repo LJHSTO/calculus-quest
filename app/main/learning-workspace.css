@@ -291,35 +291,24 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
 .workspace-guide-dialog ol { padding-left: 24px; line-height: 1.85; }
 .workspace-guide-dialog li + li { margin-top: 10px; }
 .workspace-guide-dialog footer { display: flex; justify-content: flex-end; gap: 10px; }
-.operation-tour { width: min(1160px,calc(100vw - 24px)); max-width: none; padding: 18px; }
-.operation-tour > header,.tour-tabs { display:flex;align-items:center;justify-content:space-between;gap:12px; }
-.tour-layout { display:grid;grid-template-columns:180px 1fr;gap:18px;margin:18px 0;max-height:57dvh;overflow:auto;padding:6px; }
-.tour-layout > aside { border-right:1px solid #dfe2ee;padding:12px;line-height:1.8; }
-.tour-layout main { min-width:0; }
-.tour-layout section { padding:10px;border:1px solid #e4e4ee;border-radius:10px;margin-top:12px; }
-.tour-layout [data-tour-target] { transition:opacity .15s; }
-.tour-layout [data-tour-target][inert] { opacity:.35; }
-.tour-layout .is-tour-target { outline:3px solid #6955d9;outline-offset:3px;box-shadow:0 0 0 6px #eee9ff; }
-.tour-tabs > span { flex:1;font-weight:600; }
-.tour-slide { max-width:700px;margin:auto;overflow:hidden; }
-.tour-slide .slide-stage { transform-origin:top left; }
-.tour-scenes { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
-.tour-scenes [aria-pressed=true] { background:#e9e2ff;border-color:#6955d9; }
-.tour-practice { border:1px solid #cfc6ef;border-radius:12px;padding:14px;margin-top:12px; }
-.tour-practice textarea { display:block;width:100%;box-sizing:border-box;min-height:70px;margin:12px 0; }
-.operation-tour .tour-coach { justify-content:space-between;align-items:center;border-top:1px solid #e4e4ee;padding-top:16px; }
-.tour-coach > div:first-child { max-width:750px; }
-.tour-coach p { line-height:1.7;margin:8px 0; }.tour-coach small { color:#637080; }
-.tour-coach > div:last-child { display:flex;gap:8px;flex-shrink:0; }
-.operation-tour button:disabled { opacity:.45;cursor:default; }
-.operation-tour [data-guide-next] { background:#6955d9;color:#fff; }
+.operation-guide-inline { flex:0 0 auto;margin:0;padding:12px 20px;background:#f6f3ff;border-block:1px solid #d9d1f4;line-height:1.6; }
+.operation-guide-inline header,.operation-guide-inline footer { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.operation-guide-inline header strong,.operation-guide-inline footer span { flex:1; }
+.operation-guide-inline h2 { font-size:17px;margin:7px 0; }
+.operation-guide-inline p { margin:5px 0; }
+.operation-guide-inline button { padding:6px 12px;min-height:36px;background:white;border:1px solid #c9c0ec;border-radius:6px;color:#5143b4;font:inherit; }
+.operation-guide-inline button:disabled { opacity:.5;cursor:default; }
+.operation-guide-inline [data-guide-next] { background:#6955d9;color:white; }
+.operation-guide-inline [data-guide-settings] { display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-size:13px;padding-left:18px; }
+.operation-guide-target { outline:3px solid #6955d9!important;outline-offset:-3px;box-shadow:0 0 0 3px #d9d0ff!important; }
+.operation-guide-active #learning-action-dock { opacity:.65; }
+.operation-guide-inline [data-guide-feedback] { font-size:12px;color:#496549; }
 .scene-tour-highlight { outline:3px solid #6955d9;outline-offset:-3px;background:#f6f2ff; }
 .scene-tour-tip { padding:14px 20px;background:#f1edff;border:1px solid #cfc6ef;color:#33275e;border-radius:10px;margin:12px;line-height:1.6; }
 .scene-tour-tip p { margin:5px 0; }.scene-tour-tip button { padding:6px 14px; }
 .support-question-context { padding:12px;border-left:3px solid #7866cb;background:#f6f3ff;line-height:1.7;margin:10px 0; }
 .support-question-context p { margin:6px 0; }
-@media(max-width:700px){.tour-layout{grid-template-columns:1fr;max-height:48dvh}.tour-layout>aside{border:0}.tour-scenes{grid-template-columns:1fr 1fr}.operation-tour .tour-coach{display:block}.tour-coach>div:last-child{justify-content:flex-end;margin-top:10px}.tour-tabs{flex-wrap:wrap}}
-@media(prefers-reduced-motion:reduce){.tour-layout [data-tour-target]{transition:none}}
+@media(max-width:700px){.operation-guide-inline{padding:9px 12px;font-size:13px}.operation-guide-inline [data-guide-settings]{grid-template-columns:1fr}.operation-guide-inline h2{font-size:15px}.operation-guide-inline footer span{flex-basis:100%}}
 #learn-view .core-learning-workspace.lesson-collapsed .lesson-rail { display: none; }
 #learn-view .core-learning-workspace .learning-workspace-tools {
   position: sticky;

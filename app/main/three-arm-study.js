@@ -122,8 +122,9 @@
     const data=await request('survey?stage='+stage);if(data.saved){if(stage==='baseline')await global.LearnerSetup.resumePreparation();else await openTasks();return;}
     const key=(run?.id||snapshot?.ownerKey)+':'+stage,answers=surveyDrafts[key]||(surveyDrafts[key]={});
     const d=modal(stage==='baseline'?'开始前，先了解一下你':'回想这次学习体验');
-    if(stage==='baseline'&&run?.previousPreviewVersion)d.append(el('p','体验流程已更新为两个学习阶段。这次将开始新版体验；此前版本的答题、笔记与配置仍保留在原轮次记录中。'));
+    if(stage==='baseline'&&run?.previousPreviewVersion)d.append(el('p','学习体验已更新。这次将开始新版体验；此前版本的答题、笔记与配置仍保留在原轮次记录中。'));
     d.append(el('p',stage==='baseline'?'没有标准答案。填完后进入独立前测；不会的题可以选择“我不会”。':'请只考虑刚才这次学习。1＝完全不符合，5＝完全符合。可以选择不愿回答。'));
+    if(stage==='baseline')d.append(el('p','本站的 AI 学习助手叫“知点”，入口在学习页面右上角。它可以解释概念、提供线索并回应问题；前测请先独立完成。你还没有用过它也没关系，下面按自己目前的情况回答。'));
     if(stage==='baseline')d.append(el('p','前3题：1＝完全不符合，5＝完全符合。'));
     for(const q of data.items){const choices=q.id==='ai_experience'?['从未','偶尔','每周数次','几乎每天']:q.id==='topic_experience'?['未学过','接触过但不熟悉','已系统学过']:null;rating(d,q.id,q.text,answers,choices);}
     d.append(button('保存并继续',async()=>{await request('survey',{stage,answers});delete surveyDrafts[key];dialog.close();if(stage==='baseline')await global.LearnerSetup.resumePreparation();else await openTasks();}),button('稍后继续',()=>{dialog.close();if(stage==='baseline'&&typeof switchView==='function')switchView('home');}));show();

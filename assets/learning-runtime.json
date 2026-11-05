@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "8076e168fcac6b4aae29",
+  "version": "4a980b03045bc33e17d2",
   "indexSha256": "c780a45f22e8953de91a4513222e7728c7d9de69dcc219e5a5cc4cb683d0858c",
   "scripts": [
     {
@@ -66,7 +66,7 @@
     {
       "tag": "<script src=\"app/main/core.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/core.js",
-      "sha256": "615a33357b18d661288c4d6cd87e18c29bceb984683331ebd0ca23a6155976fa"
+      "sha256": "bc160c227f5f4d4b17e68f24e06c2aee8d0cb7b275552d2f03cc5e1481969eae"
     },
     {
       "tag": "<script src=\"app/main/system-announcements.js?v=20260726-announcements-v7\"></script>",
@@ -151,7 +151,7 @@
     {
       "tag": "<script src=\"app/main/agentic-path.js?v=20260909-flow-v5\"></script>",
       "file": "app/main/agentic-path.js",
-      "sha256": "84baf4a0b39e7622737202c73ad6d94e54ac9bf6efc86fe3bde6dd66e52d9165"
+      "sha256": "4205c3036d7f271b7bfb7bf97f5c1f4aceb200c5726ed232f4bc7f3cadbca1f7"
     },
     {
       "tag": "<script src=\"app/main/feedback-targets.js?v=20260722-multi-scene-v1\"></script>",
@@ -191,7 +191,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "1af0ed733ccd18f855de7b248ee61c0453a471de603d02446e08dadd4d656e5b"
+      "sha256": "27c857ccba42a9ad846e6c626c0ffa006a784114a8084e7e0dde7b858996a834"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -201,12 +201,12 @@
     {
       "tag": "<script src=\"app/main/workspace-guide.js?v=20261104\"></script>",
       "file": "app/main/workspace-guide.js",
-      "sha256": "9876d59b2c7352e94d20d72e69c38b12a1f12a713512f14a81292d0f53a29c0d"
+      "sha256": "3dc8595c693921504e94c3ac7ee054d88a159c4a8f2b0fdec91251a1abec50f4"
     },
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "1f288c0063a37c14601b2e617c82f2c2af8f634fcb39107275cd96946d779885"
+      "sha256": "02eae0ea955e1831af9bf9d1d950c5786c90429a67a81669e9863f3fa9eeaea3"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
@@ -226,7 +226,7 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "1de37b9f6690a62717b1be54f43b4b6c1b5c97eb343854ac62d416f19e0a94fb"
+      "sha256": "6c1f30596d1510fc1105e5a2035ef2023686fd85cdd46e8a6bbe9bad07c2e56f"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
@@ -246,17 +246,17 @@
     {
       "tag": "<script src=\"app/main/three-arm-study.js?v=20261031\"></script>",
       "file": "app/main/three-arm-study.js",
-      "sha256": "1eb8ccb32d9ea32da81f87030b83bb59077adc6febf31651a2772f12537483ad"
+      "sha256": "a6175dfde0b756fad3f23a340e259668f6a6fd665b71af72708cd78167bf2bdd"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "4b41fbfb6c8c562fb2e2ff9df823f8d219ee29b5b05fd8553f270b3a21ff5c5b"
+      "sha256": "e0e646c59ed6f691dc28a950dbad26494214a56154b0d6533a094ed95ab74f39"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "feeef01a3b2e47d7200ed18d12845d736d516feb3793ec312bebfde6ab1c7d20"
+      "sha256": "542778f9fbadad0356d35e4bfb54047d6cafee089c6687c7879b351d4dde4549"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
@@ -315,7 +315,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "8d69a8830980a20ce70a",
+  "styleVersion": "a72a95d25252a0a8ef22",
   "styleSources": [
     {
       "file": "styles.css",
@@ -335,7 +335,7 @@
     },
     {
       "file": "app/main/learning-workspace.css",
-      "sha256": "5fa3401b6c40fe3bb1404d8481587149d8f6b1a2e7f388f4b031a043abc64ff7"
+      "sha256": "56a0c89bcae00cda06867d1704ebfe094c24bcd034cbfc6f1f0444b322b33b64"
     },
     {
       "file": "app/main/openmaic-classroom.css",

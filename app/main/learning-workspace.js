@@ -148,7 +148,7 @@
     const eligible=s.signedIn&&s.active&&s.loaded&&s.taskReady!==false&&s.unitType!=='quiz'&&!s.locked&&!s.busy&&!s.assistantOpen
       &&!s.check&&!s.offer&&!s.supportBusy&&!['awaiting_confirmation','queued','offered','engaged','awaiting_check'].includes(s.supportCycle?.status)
       &&!s.muted&&s.preference!=='off'&&s.mode==='active'&&s.researchControls?.profile?.proactivity!=='reactive'
-      &&!document.hidden&&document.hasFocus()&&!playing&&!document.querySelector('dialog[open],.knowledge-note-editor:not([hidden]),.knowledge-selection-toolbar:not([hidden])')
+      &&!global.OperationGuide?.active&&!document.hidden&&document.hasFocus()&&!playing&&!document.querySelector('dialog[open],.knowledge-note-editor:not([hidden]),.knowledge-selection-toolbar:not([hidden])')
       &&!editing;
     if(!eligible)pauseEntry.hidden=true;
     const candidate=pauseObserver.tick({key:owner+':'+s.unitId+':'+s.sceneType,eligible,reading:!s.sceneType||s.sceneType==='slide'});

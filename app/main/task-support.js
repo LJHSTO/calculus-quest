@@ -46,7 +46,7 @@
   function deliver(){if(!frame?.isConnected||!source||snapshot?.locked||snapshot?.check)return;const tree=serialize(source),signature=JSON.stringify(tree);if(signature!==serializedKey){serializedKey=signature;revision++;}message("cq:task-show",{scope:snapshot.scopeKey,sceneType:snapshot.sceneType,revision,tree});}
   function draftForm(parent, prompt, draftKey, questionId=""){
     const form=el("form",null,"task-response-form"), label=el("label",prompt), input=el("textarea");
-    input.rows=2;input.maxLength=2000;input.placeholder="写下你的理解或问题…";input.value=drafts.get(draftKey)||"";input.setAttribute("aria-label",prompt);
+    input.rows=2;input.maxLength=2000;input.placeholder="有疑问或想核对理解时再写，不必每次填写。";input.value=drafts.get(draftKey)||"";input.setAttribute("aria-label",prompt);
     input.dataset.taskDraftKey=draftKey;
     input.addEventListener("input",()=>drafts.set(draftKey,input.value));label.append(input);
     const submit=el("button","发送我的想法"), status=el("p",null,"task-response-status");submit.type="submit";submit.disabled=snapshot.busy;
@@ -88,7 +88,7 @@
     if(!next.prompt&&next.unitType==='quiz'&&next.quizResourceUnitId){
       const back=el('button','回到本知识点课件','task-course-return');back.type='button';back.dataset.quizResourceLink=next.quizResourceUnitId;back.dataset.quizResourceScene='simulation';parent.append(back);
     }
-    draftForm(parent,'把你的想法告诉知点',`${next.scopeKey}:${next.sceneType||'slide'}:conversation`);
+    draftForm(parent,'继续交流（选填）',`${next.scopeKey}:${next.sceneType||'slide'}:conversation`);
   }
   function quizReview(next){
     for(const card of document.querySelectorAll(".question-card[data-question]")){
