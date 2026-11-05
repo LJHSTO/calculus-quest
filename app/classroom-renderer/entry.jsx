@@ -109,6 +109,11 @@ function Canvas({ effects }) {
 window.addEventListener("message", (event) => {
   if (event.source !== parent || !event.data || typeof event.data !== "object") return;
   const message = event.data;
+  if (message.type === "cq:guide-text-target") {
+    const text = [...document.querySelectorAll('#slide p')].find(n => n.textContent.trim().length > 8 && n.getBoundingClientRect().width > 20);
+    if (text) post({ type: "cq:guide-text-target", rect: text.getBoundingClientRect().toJSON(), viewportWidth: innerWidth, viewportHeight: innerHeight });
+    return;
+  }
   if (message.type === "cq:openmaic-slide-load" && message.slide && Array.isArray(message.slide.elements)) {
     model = message;
     playbackEffects = {};

@@ -1,10 +1,10 @@
 {
   "upstreamCommit": "729c044b5b737439c80856575f43c3de8c7f83f4",
   "rendererVersion": "0.1.14",
-  "sha256": "d7d58f4bd6c3a153407cce5db3446a715ff6a7f8691a14bfc1bf8b557572f8f1",
-  "assetVersion": "7b768bd6c325fcf90499",
-  "bytes": 1797889,
-  "gzipBytes": 582739,
+  "sha256": "94bafaf644502da4ce0b05859f3fc94ee2221fb3a9a2d5fd977b533cdbe39092",
+  "assetVersion": "01d9d9ba7994bbae802c",
+  "bytes": 1798185,
+  "gzipBytes": 582822,
   "inputCount": 2723,
   "optionalHighlighter": {
     "assetVersion": "8f8f7797099469647db5",

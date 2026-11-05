@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "4a980b03045bc33e17d2",
+  "version": "674a6afb5e31373f732e",
   "indexSha256": "c780a45f22e8953de91a4513222e7728c7d9de69dcc219e5a5cc4cb683d0858c",
   "scripts": [
     {
@@ -201,7 +201,7 @@
     {
       "tag": "<script src=\"app/main/workspace-guide.js?v=20261104\"></script>",
       "file": "app/main/workspace-guide.js",
-      "sha256": "3dc8595c693921504e94c3ac7ee054d88a159c4a8f2b0fdec91251a1abec50f4"
+      "sha256": "490baeb940ae1df1d03aff627b4af392b9024ff5b53ef520dbb2858771e5efce"
     },
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
@@ -315,7 +315,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "a72a95d25252a0a8ef22",
+  "styleVersion": "b3129831467fafca4e3b",
   "styleSources": [
     {
       "file": "styles.css",
@@ -335,7 +335,7 @@
     },
     {
       "file": "app/main/learning-workspace.css",
-      "sha256": "56a0c89bcae00cda06867d1704ebfe094c24bcd034cbfc6f1f0444b322b33b64"
+      "sha256": "e07b362ad700990143308757cb73d01d62361ec4d38ae540674ac192afda6370"
     },
     {
       "file": "app/main/openmaic-classroom.css",
