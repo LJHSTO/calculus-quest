@@ -302,6 +302,9 @@ try {
   flowTestRouteJson = JSON.stringify(learningRoute);
   assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
   for(const [id,entry] of courseAssessment.buildAssessmentIndex(archivedLearningRoute))if(!assessmentIndex.has(id))assessmentIndex.set(id,entry);
+  for(const version of mathInstruments.versions){
+    for(const [id,entry] of mathIndexesForVersion(version).assessmentIndex)if(!assessmentIndex.has(id))assessmentIndex.set(id,entry);
+  }
   assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
 } catch (error) {
   console.warn("Multi-scene learning route load skipped:", error.message);

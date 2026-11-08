@@ -1,12 +1,12 @@
 'use strict';
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwright-core'),bank=require('../lib/assessments/functions-limits-r11');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwright-core'),registry=require('../lib/assessments/functions-limits-registry');
 const base=process.argv.find(x=>x.startsWith('http:'))||'http://127.0.0.1:53657';assert.match(base,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/);
 const out=path.resolve(__dirname,'../tmp/preconfiguration-questions-r11');fs.mkdirSync(out,{recursive:true});
 async function main(){
  const nickname='前测后提问合成'+Date.now(),password='Synthetic-preconfig-question-123';let token='',runId='';const checks=[],errors=[];
  const api=async(route,body)=>{const r=await fetch(base+route,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-Study-Arm':'B',...(token?{Authorization:'Bearer '+token}:{}),...(runId&&!route.startsWith('/api/auth/')?{'X-Study-Run':runId}:{})},...(body?{body:JSON.stringify(body)}:{})});const text=await r.text();let payload;try{payload=JSON.parse(text);}catch{payload={stream:text};}return {status:r.status,payload};};
  const registration=await api('/api/auth/register',{nickname,password});assert.equal(registration.status,200);token=registration.payload.token;
- const run=(await api('/api/study/state')).payload.data.run;runId=run.id;
+ const run=(await api('/api/study/state')).payload.data.run;runId=run.id;const bank=registry.forVersion(run.assessmentVersion);assert(bank);
  const survey=(await api('/api/study/survey?stage=baseline')).payload.data;
  assert.equal((await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,3]))})).status,200);
  const concept={chapterId:'V14-C1',unitId:'GH-01-K01',sceneType:'slide',question:'什么是函数？请说明允许的输入与输出之间的关系。',contextRef:{kind:'unit',scope:'lesson',unitId:'GH-01-K01',chapterId:'V14-C1'}};
