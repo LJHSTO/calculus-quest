@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "5c3f52e76e8e66b3f2be",
+  "version": "115126c9d2da0a108732",
   "indexSha256": "b57a8e561574d6f18e368c38cfc4a601f747abc391fa2453356e3a0896705e8c",
   "scripts": [
     {
@@ -66,7 +66,7 @@
     {
       "tag": "<script src=\"app/main/core.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/core.js",
-      "sha256": "b0d244128d8203e9a6f82c9c6b121081b975bf167d8953ff1e942325912b4faa"
+      "sha256": "8e0c0e81540db6acaadf073aa9d174691ee0f1df2eaae5cf8019e9aee9f38797"
     },
     {
       "tag": "<script src=\"app/main/system-announcements.js?v=20260726-announcements-v7\"></script>",
@@ -206,7 +206,7 @@
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "6950359f2782c751f80e3526dac4a76bb09b41753f4ba79d8d245379368c73ea"
+      "sha256": "2d9b103b2313e711b7961d90a549f3851b112ab51f8b4382f33591f9eaeb8a9a"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",

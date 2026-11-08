@@ -5928,6 +5928,7 @@ async function handleApi(req, res, url) {
         }
         if(url.pathname==='/api/study/review'&&req.method==='GET'){
           const results=db.getQuizResultsByUser(user),submitted=studyStages.order.filter(id=>studyStages.completed({points:[id]},results)).map(id=>id+'-formative');
+          if(proactiveAssessmentCompletion(user,'pre').ready)submitted.push('V14-C1-pre');
           if(proactiveAssessmentCompletion(user,'post').ready)submitted.push('V14-C1-post');
           const current=parseStoredJson(db.getLearningSnapshotState(user,nowIso()).snapshot?.data||'{}',{}).currentUnitId||'';
           const window=studyStages.reviewWindow(run,submitted,current);

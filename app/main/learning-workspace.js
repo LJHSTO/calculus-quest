@@ -9,6 +9,7 @@
   let tab = "chat";
   let lastUnitId = "";
   let lastScene = "";
+  let lastSurfaceOwner = "";
   let canvasMode = "slide";
   let playbackRate = 1;
   let toolsCollapsed = true;
@@ -841,23 +842,26 @@
     syncPlayback();
     syncFullscreenHint();
     syncKnowledgePrimaryAction();
+    if (changed && typeof saveState === 'function') saveState();
   }
 
   function sync() {
+    // Bootstrap can render cached units before auth/snapshot hydration has completed.
+    if (state.authToken && typeof learningSnapshotReady !== 'undefined' && !learningSnapshotReady) return;
     const unit = typeof getUnit === "function" ? getUnit() : null;
     const scene = unit?.type === "knowledge" ? selectedKnowledgeSceneType(unit) : "";
-    if (unit?.id !== lastUnitId) {
-      hideFullscreenHint();
-      canvasMode = "slide";
-      focusRestore = null;
-      compactLecturePrepared = false;
-      setToolsCollapsed(toolsCollapsed, false, false);
-      if (typeof setLessonRailCollapsed === "function") setLessonRailCollapsed(false, { persist: true });
-      setLectureCollapsed(false);
-    }
+    const owner = `${state.participant?.participantId || ''}:${typeof learningSnapshotGeneration === 'undefined' ? '' : learningSnapshotGeneration}`;
+    const resetPanels = unit?.id !== lastUnitId || owner !== lastSurfaceOwner;
+    const restored = typeof learningSurfaceRestoreFor === 'function' ? learningSurfaceRestoreFor(unit?.id) : null;
+    if (restored) {
+      canvasMode = unit?.type === 'knowledge' && (restored.surface === 'slide'
+        || scene && scene === restored.sceneType) ? restored.surface : 'slide';
+      if (canvasMode !== restored.surface) learningSurfaceRestore = null;
+    } else if (resetPanels) canvasMode = "slide";
     else if (scene && scene !== lastScene) canvasMode = "interactive";
     lastUnitId = unit?.id || "";
     lastScene = scene;
+    lastSurfaceOwner = owner;
     const player = $(".multi-scene-knowledge-player");
     const titleBar=shell.querySelector('.player-top');
     const oldHeader=titleBar?.querySelector('.workspace-header-controls');
@@ -901,7 +905,16 @@
       if (sceneChoice) toolbar.append(sceneChoice);
       player.prepend(toolbar);
     }
+    if (resetPanels) {
+      hideFullscreenHint();
+      focusRestore = null;
+      compactLecturePrepared = false;
+      setToolsCollapsed(toolsCollapsed, false, false);
+      if (typeof setLessonRailCollapsed === "function") setLessonRailCollapsed(false, { persist: false });
+      setLectureCollapsed(false);
+    }
     setCanvasMode(canvasMode);
+    if (restored) learningSurfaceRestore = null;
     const chapter = typeof getChapter === "function" ? getChapter() : null;
     const units = chapter?.units || [];
     const done = units.filter((entry) => typeof unitCountsTowardProgress === "function"

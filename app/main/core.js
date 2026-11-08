@@ -63,6 +63,7 @@ let lastRenderedProfileParticipantId = "";
 let learningSnapshotGeneration = 0;
 let learningSnapshotRevision = 0;
 let learningSnapshotReady = false;
+let learningSurfaceRestore = null;
 let learningSnapshotSyncPaused = false;
 let learningSnapshotSyncChain = Promise.resolve();
 let learningSnapshotRetryTimer = null;
@@ -873,7 +874,22 @@ async function apiRequest(path, body = {}, options = {}) {
   }
 }
 
+function learningSurfaceRestoreFor(unitId) {
+  const saved = learningSurfaceRestore;
+  if (!saved) return null;
+  const runId = window.ThreeArmStudyUI?.run?.id;
+  if (!learningSessionIsCurrent(saved.session) || saved.generation !== learningSnapshotGeneration
+    || saved.unitId !== currentUnitId
+    || (window.StudyEntry && (state.participant?.study?.id !== saved.session.participantId
+      || (runId && runId !== saved.session.participantId)))) {
+    learningSurfaceRestore = null;
+    return null;
+  }
+  return saved.unitId === unitId ? saved : null;
+}
+
 function learningSnapshot() {
+  const restoredSurface = typeof learningSurfaceRestoreFor === 'function' ? learningSurfaceRestoreFor(currentUnitId) : null;
   return {
     courseAssessmentFingerprint: String(
       typeof multiSceneLearningRoute !== "undefined"
@@ -887,7 +903,7 @@ function learningSnapshot() {
     quizAttempts: state.quizAttempts || {},
     submittedQuizzes: state.submittedQuizzes || [],
     selectedKnowledgeScenes: state.selectedKnowledgeScenes || {},
-    learningSurface: typeof document==='undefined'?'':document.querySelector('.core-learning-workspace')?.dataset.classroomSurface || '',
+    learningSurface: restoredSurface?.surface || (typeof document==='undefined'?'':document.querySelector('.core-learning-workspace')?.dataset.classroomSurface || ''),
     pendingKnowledgeTransition: state.pendingKnowledgeTransition || null,
     knowledgeTransitionChoices: state.knowledgeTransitionChoices || {},
     returnToQuiz: state.returnToQuiz || null,
@@ -1073,6 +1089,7 @@ async function loadAuthoritativeQuizResults(options = {}) {
 async function hydrateLearningState(options = {}) {
   if (!isSignedIn()) return false;
   const session = learningSession();
+  learningSurfaceRestore = null;
   const conflicts = state.learningConflicts || [];
   learningSnapshotReady = false;
   // A bare fetch here had no timeout, so a hung snapshot request could leave the
@@ -1116,6 +1133,13 @@ async function hydrateLearningState(options = {}) {
     state.quizDraftRecovery[key] = draft;
   }
   normalizeFailedQuizReviews();
+  const savedSurface = payload.snapshot;
+  if (savedSurface?.currentUnitId && ['slide', 'interactive'].includes(savedSurface.learningSurface)) {
+    // Only the authenticated server snapshot may restore a surface, never stale local UI fields.
+    learningSurfaceRestore = { session, generation: learningSnapshotGeneration,
+      unitId: savedSurface.currentUnitId, surface: savedSurface.learningSurface,
+      sceneType: savedSurface.selectedKnowledgeScenes?.[savedSurface.currentUnitId] || '' };
+  }
   learningSnapshotReady = true;
   persistStateLocally();
   lastSnapshotJson = snapshotContentJson(learningSnapshot());
@@ -1472,6 +1496,7 @@ async function logoutParticipant() {
   persistStateLocally();
   stopNarrationQueue();
   state.participant = null;
+  learningSurfaceRestore = null;
   learningSnapshotGeneration = 0;
   learningSnapshotRevision = 0;
   learningSnapshotReady = false;
