@@ -436,12 +436,12 @@
       ].includes(eventType)) {
         const data=event.data||{};
         if(eventType==='courseware_challenge_result' && data.independent===false
-          && ['assisted_game_attempt','concept_exploration_attempt','openmaic_game_attempt'].includes(data.evidence_scope) && typeof data.is_correct==='boolean') {
+          && ['assisted_game_attempt','concept_exploration_attempt','openmaic_game_attempt','guided_courseware_r7','native_construction_r9','native_construction_r10'].includes(data.evidence_scope) && typeof data.is_correct==='boolean') {
           const key=currentUnit.unitId;
           const recent=(practiceFailures.get(key)||[]).filter(x=>at-x.at<=300000);
           if(data.is_correct)practiceFailures.set(key,[]);
           else {
-            const id=data.evidence_scope==='concept_exploration_attempt'?`${data.task_version}:${data.challenge_id}:${data.response}`:data.attempt_id||`${data.challenge_id}:${data.attempt_number}`;
+            const id=['native_construction_r9','native_construction_r10'].includes(data.evidence_scope)?JSON.stringify([data.parameters?.task_id,Object.keys(data.parameters?.state||{}).sort().map(k=>[k,data.parameters.state[k]])]):data.evidence_scope==='concept_exploration_attempt'?`${data.task_version}:${data.challenge_id}:${data.response}`:data.attempt_id||`${data.challenge_id}:${data.attempt_number}`;
             if(!recent.some(x=>x.id===id))recent.push({id,at});
             practiceFailures.set(key,recent);
             if(recent.length>=2)return createSuggestion('task_difficulty',at,{

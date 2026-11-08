@@ -10,6 +10,8 @@ const context = {
   safeRows: (rows) => Array.isArray(rows) ? rows : []
 };
 vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf("function proactiveOutcomeScoreComplete("),
+  source.indexOf("function proactiveDuration(")), context);
 vm.runInContext(source.slice(source.indexOf("function proactiveDecisionCsvRows("),
   source.indexOf("function proactiveShadowCodingCsvRows(")), context);
 vm.runInContext(source.slice(source.indexOf("function proactiveParticipantAnalysisCsvRows("),
@@ -68,6 +70,16 @@ const participantCategories = context.proactiveParticipantAnalysisCsvRows([{
 assert.equal(participantCategories[1].length, participantCategories[0].length);
 assert.equal(participantCategories[1][participantCategories[0].indexOf("漏接尝试")], 3);
 assert.equal(participantCategories[1][participantCategories[0].indexOf("未归类尝试")], 4);
+const outcomeRows = context.proactiveParticipantAnalysisCsvRows([
+  {outcomes:{retention:{status:"submitted",score:null,max_score:8,accuracy:null,score_complete:0},transfer:{status:"submitted",score:0,max_score:6,accuracy:0,score_complete:1}}},
+  {outcomes:{near_transfer:{status:"submitted",score:2,max_score:5,accuracy:40},representation_transfer:{status:"submitted",score:3,max_score:5,accuracy:60}}}
+]);
+const outcomeCell=(row,header)=>outcomeRows[row][outcomeRows[0].indexOf(header)];
+outcomeRows.slice(1).forEach(row=>assert.equal(row.length,outcomeRows[0].length));
+assert.equal(outcomeCell(1,"保持测得分"),"");assert.equal(outcomeCell(1,"保持测完整计分"),0);
+assert.equal(outcomeCell(1,"新情境应用得分"),0);assert.equal(outcomeCell(1,"新情境应用满分"),6);assert.equal(outcomeCell(1,"新情境应用完整计分"),1);
+assert.equal(outcomeCell(2,"近迁移得分"),2);assert.equal(outcomeCell(2,"跨表征得分"),3);assert.equal(outcomeCell(2,"新情境应用得分"),"");
+assert.equal(context.proactiveOutcomePercent(null),"—");assert.equal(context.proactiveOutcomePercent(0),"0%");
 const checkRows = context.proactiveDecisionCsvRows([{}, {
   followup_outcome: { independentAttempt: {
     source: "policy_owned_probe", instrumentVersion: "v14-c3-verification-v2",

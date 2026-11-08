@@ -403,6 +403,10 @@
   .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option { min-height: 52px !important; height: auto !important; }
   .core-learning-workspace .classroom-controls { flex-wrap: wrap; }
 }
+@media (max-width: 600px) {
+  /* Keep completion before playback controls that wrap into several rows. */
+  .core-learning-workspace .classroom-footer > .learning-action-dock { order: -1; }
+}
 /* Independent probes occupy normal document flow. Lesson geometry is preserved
    during exploration; measurement temporarily hides answer-bearing material. */
 .common-learning-task{max-width:100%;margin:18px 0;padding:22px 24px;background:var(--panel-bg,#fff);border:1px solid #d1ded7;border-radius:12px;color:#253b35;line-height:1.8;flex:0 0 auto;overflow-wrap:anywhere}
@@ -429,3 +433,11 @@
 }
 .support-memory-controls { border-top: 1px solid #d8dedb; margin-top: 12px; padding-top: 12px; }
 .support-memory-controls button { white-space: normal; max-width: 100%; margin: 4px; }
+
+@media(min-width:1181px){
+  #learn-view .core-learning-workspace .task-support-workspace:not(.support-focus-help){height:100%;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;}
+  #learn-view .task-support-workspace:not(.support-focus-help)>:is([data-knowledge-scene-stage],[data-resource-fullscreen-target]){min-height:0!important;height:100%!important;}
+  #learn-view .task-support-workspace:not(.support-focus-help)>.task-support-panel{max-height:100%;}
+}
+
+.openmaic-page-nav{display:flex;align-items:center;justify-content:center;gap:12px;flex:0 0 auto;padding:6px 10px;color:#263d56;background:#f6f8fc}.openmaic-page-nav button{font:inherit;padding:7px 12px;min-height:38px;cursor:pointer;border:1px solid #ccd7e6;border-radius:6px;background:white;color:inherit}.openmaic-page-nav button:focus-visible{outline:3px solid #7b6ccc;outline-offset:2px}.openmaic-page-nav button:disabled{opacity:.5;cursor:default}.openmaic-page-nav span{font-size:13px;white-space:nowrap}

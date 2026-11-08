@@ -376,33 +376,37 @@
     playback.hidden = !surface || unit?.type !== "knowledge";
     if (playback.hidden) return;
     const sources = Array.from(surface.querySelectorAll(".coach-line[data-playback-speech], .coach-line[data-audio-src]"));
-    playback.hidden = sources.length === 0;
-    $(".classroom-lecture-label").textContent = sources.length ? "讲解 · 合成语音" : "互动操作";
-    const authored = global.LessonPlayback?.snapshot(surface);
+    const lecturePage=surface.querySelector('[data-openmaic-page]');
+    const textOnly=Number(lecturePage?.dataset.openmaicPage||1)>1;
+    playback.hidden = sources.length === 0 && !textOnly;
+    $(".classroom-lecture-label").textContent = textOnly ? "讲解 · 文字" : sources.length ? (sources.some(source => source.dataset.audioSrc) ? "讲解 · 合成语音" : "讲解 · 文字") : "互动操作";
+    const authored = textOnly ? null : global.LessonPlayback?.snapshot(surface);
     const toolbar = surface.querySelector(".coach-toolbar[data-narration-unit]");
-    const queue = typeof activeNarration !== "undefined" && activeNarration?.unitId === toolbar?.dataset.narrationUnit
+    const queue = !textOnly && typeof activeNarration !== "undefined" && activeNarration?.unitId === toolbar?.dataset.narrationUnit
       ? activeNarration : null;
     const playing = (authored || queue)?.status === "playing";
     const button = $('[data-classroom-action="play"]');
     const loading = surface.querySelector('[data-openmaic-state="loading"]');
-    button.disabled = sources.length === 0 || Boolean(loading);
-    button.title = playing ? "暂停讲解" : "播放讲解";
+    button.disabled = textOnly || sources.length === 0 || Boolean(loading);
+    button.title = textOnly ? "当前页为文字讲解" : playing ? "暂停讲解" : "播放讲解";
     button.setAttribute("aria-label", button.title);
     button.querySelector("img").src = `assets/classroom-icons/${playing ? "Pause" : "Play"}.svg`;
-    $('[data-classroom-action="replay"]').disabled = sources.length === 0 || Boolean(loading);
-    $("#classroom-playback-rate").disabled = sources.length === 0;
+    $('[data-classroom-action="replay"]').disabled = textOnly || sources.length === 0 || Boolean(loading);
+    $("#classroom-playback-rate").disabled = textOnly || sources.length === 0;
     const seek = $("#classroom-narration-seek");
-    seek.disabled = sources.length === 0;
+    seek.disabled = textOnly || sources.length === 0;
     if (queue) queue.audio.playbackRate = playbackRate;
-    global.LessonPlayback?.setRate(playbackRate);
+    if(!textOnly)global.LessonPlayback?.setRate(playbackRate);
     const durations = queue ? narrationTimelineDurations(queue) : [];
     const total = authored?.total ?? durations.reduce((sum, value) => sum + value, 0);
     const elapsed = authored?.elapsed ?? (queue ? (queue.status === "ended" ? total : narrationElapsed(queue)) : 0);
     seek.value = total ? Math.min(1000, Math.round(elapsed / total * 1000)) : 0;
     $("#classroom-narration-time").textContent = formatDuration(elapsed);
     const text = sources[queue?.index || 0]?.textContent?.trim();
-    $("#classroom-lecture-text").textContent = (authored?.warning ? `${authored.warning} ` : "")
-      + (authored?.caption || text || (sources.length ? "讲解正在加载" : "操作当前互动，观察画面和数值的变化。"));
+    $("#classroom-lecture-text").textContent = textOnly
+      ? lecturePage.dataset.openmaicPageSummary || "请阅读当前讲解页中的文字与图形。"
+      : (authored?.warning ? `${authored.warning} ` : "")
+        + (authored?.caption || text || (sources.length ? "讲解正在加载" : "操作当前互动，观察画面和数值的变化。"));
     const chapter = getChapter();
     const index = (chapter?.units || []).findIndex((entry) => entry.id === unit.id);
     $("#classroom-scene-position").textContent = `${index + 1} / ${chapter?.units?.length || 0}`;
@@ -669,7 +673,9 @@
         global.KnowledgeAssistant?.sync?.();
       }
     }
-    const action = event.target.closest("[data-classroom-action]")?.dataset.classroomAction;
+    const actionButton=event.target.closest("[data-classroom-action]");
+    if(actionButton?.disabled)return;
+    const action = actionButton?.dataset.classroomAction;
     if (action === "quote") quoteCurrentSurface();
     if (action === "note") global.KnowledgeAssistant?.editWorkspaceNote?.();
     if (action === "focus-canvas") {
@@ -742,10 +748,12 @@
     if (event.detail?.eventType === "knowledge_scene_selected") sync();
   });
   $("#classroom-playback-rate").addEventListener("change", (event) => {
+    if(event.target.disabled)return;
     playbackRate = Number(event.target.value);
     syncPlayback();
   });
   $("#classroom-narration-seek").addEventListener("input", (event) => {
+    if(event.target.disabled)return;
     seekNarration(Number(event.target.value) / 1000, activeSurface());
     syncPlayback();
   });

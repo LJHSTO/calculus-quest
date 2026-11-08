@@ -46,7 +46,7 @@ const representationChoice = require("./lib/proactive-policy/representation-choi
 const proactivity = require("./lib/proactive-policy/proactivity");
 const outcomeRegistry = process.env.PROACTIVE_EXPERIMENT_CHAPTER_ID === "V14-C3"
   ? require("./lib/proactive-outcomes/v14-c3")
-  : require("./lib/proactive-outcomes/functions-limits");
+  : require("./lib/proactive-outcomes/functions-limits-r10");
 const proactiveOutcomes = outcomeRegistry.forVersion(
   process.env.PROACTIVE_OUTCOME_INSTRUMENT_VERSION || outcomeRegistry.version
 );
@@ -84,7 +84,7 @@ function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.study
 function ordinaryPreparation(user){
   const chapterId=proactiveStudyConfig.chapterId,questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===chapterId)?.flow?.preQuiz?.questions||[];
   const run=threeArmStudy.get(user);
-  if(run){const results=db.getQuizResultsByUser(user);const complete=questions.every(q=>results.some(r=>r.phase==='pre'&&r.question_id===q.id&&r.chapter_id===chapterId));return {required:true,chapterId,stage:!run.baselineAt?'baseline':!complete?'pretest':run.configuredAt?'ready':'configuration',configured:Boolean(run.configuredAt),version:'three-arm-common-preparation-v1'};}
+  if(run){const assigned=chapterId==='V14-C1'?require('./lib/assessments/functions-limits-r10').questions('pre',(run.assessmentOrder||'XY')[0]):questions;const results=db.getQuizResultsByUser(user);const complete=assigned.every(q=>results.some(r=>r.phase==='pre'&&r.question_id===q.id&&r.chapter_id===chapterId));return {required:true,chapterId,stage:!run.baselineAt?'baseline':!complete?'pretest':run.configuredAt?'ready':'configuration',configured:Boolean(run.configuredAt),version:'three-arm-common-preparation-r7'};}
   return require('./lib/learner-journey').preparation({required:process.env.LEARNER_ONBOARDING_REQUIRED==='true'&&researchControlStore.enabled,enrollment:learnerEnrollment(user),chapterId,questionIds:questions.map(q=>q.id),results:db.getQuizResultsByUser(user),record:learnerPreferences.read(user),generation:db.currentLearningGeneration(user),entry:learnerPreferences.readEntry(user),entryRequired:true});
 }
 function pilotAdmission(user,version){
@@ -402,11 +402,17 @@ const proactiveStoppingRules = Object.freeze({
       gradingAgent: protocolSourceDigest("lib/agents/grading.js"),
       assessmentAgent: protocolSourceDigest("lib/agents/assessment.js"),
       assessmentFeedback: protocolSourceDigest("lib/assessments/v14-c3-feedback-r1.js"),
-      functionsLimitsAssessment: protocolSourceDigest("lib/assessments/functions-limits-r2.js"),
+      supportActivity: protocolSourceDigest("lib/support-activity.js"),
+      functionsLimitsAssessment: protocolSourceDigest("lib/assessments/functions-limits-r10.js"),
+      functionsLimitsProbesR6: protocolSourceDigest("lib/assessments/functions-limits-probes-r10.js"),
+      functionsLimitsDelayedR6: protocolSourceDigest("lib/assessments/functions-limits-delayed-r10.js"),
+      functionsLimitsMathR6: protocolSourceDigest("lib/courseware/functions-limits-r10/native-model.js"),
+      functionsLimitsEvidenceR6: protocolSourceDigest("lib/courseware/functions-limits-r10/native-runtime.js"),
+      functionsLimitsSupportsR6: protocolSourceDigest("lib/courseware/functions-limits-r10/supports.js"),
       functionsLimitsAssessmentArchive: protocolSourceDigest("lib/assessments/functions-limits-r1.js"),
-      functionsLimitsAdapter: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-r2.js"),
+      functionsLimitsAdapter: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-r10.js"),
       functionsLimitsAdapterArchive: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits.js"),
-      functionsLimitsOutcomes: protocolSourceDigest("lib/proactive-outcomes/functions-limits.js"),
+      functionsLimitsOutcomes: protocolSourceDigest("lib/proactive-outcomes/functions-limits-r10.js"),
       functionsLimitsTransfer: protocolSourceDigest("lib/assessments/functions-limits-transfer-r4.js"),
       functionsLimitsFormative: protocolSourceDigest("lib/assessments/functions-limits-formative-review.js"),
       functionsLimitsCheckVariants: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-check-bank.js"),
@@ -671,20 +677,18 @@ function shouldCompress(req, type, size) {
   return size > 1024 && size <= maxGzipBytes;
 }
 
-let compressedPublicLearningRoute;
 function sendPublicLearningRoute(req, res) {
-  const compressed = acceptsGzip(req);
-  if (compressed && !compressedPublicLearningRoute) {
-    compressedPublicLearningRoute = zlib.gzipSync(publicLearningRouteJson);
-  }
-  const body = compressed ? compressedPublicLearningRoute : publicLearningRouteJson;
-  const headers = {
-    "Cache-Control": "no-store, max-age=0, no-transform",
-    "Content-Length": String(Buffer.byteLength(body)),
-    Vary: "Accept-Encoding",
-    ...(compressed ? { "Content-Encoding": "gzip" } : {})
-  };
-  send(res, 200, req.method === "HEAD" ? "" : body, "application/json; charset=utf-8", headers);
+  const auth=authenticate(req),order=auth?.study?.assessmentOrder||'XY';
+  const json=JSON.stringify({...courseAssessment.buildPublicLearningRoute(proactivePolicy.projectRoute(learningRoute,proactiveStudyConfig),order),courseAssessmentFingerprint});
+  const compressed=acceptsGzip(req),body=compressed?zlib.gzipSync(json):json;
+  send(res,200,req.method==='HEAD'?'':body,'application/json; charset=utf-8',{'Cache-Control':'private, no-store, max-age=0','Content-Length':String(Buffer.byteLength(body)),Vary:'Authorization, X-Study-Arm, Accept-Encoding',...(compressed?{'Content-Encoding':'gzip'}:{})});
+}
+function assessmentReceipt(row){
+  const id=row.questionId||row.question_id||'';
+  if(!/^fl-r(?:7|10)-(pre|post)-/.test(id))return row;
+  const out={...row,status:'submitted',isCorrect:null,is_correct:-1,score:null,feedbackPolicy:'acknowledgement_only'};
+  for(const key of ['answer','answerText','analysis','commentPrompt','rubric','referenceAnswer','optionFeedback','ai_score','aiScore','ai_feedback','aiFeedback','aiReasoning','ai_reasoning','aiWeakConcepts'])delete out[key];
+  return out;
 }
 
 function cacheControlFor(filePath, url) {
@@ -1687,12 +1691,18 @@ function proactiveProtocolPayload(experimentId = proactiveStudyConfig.experiment
   };
 }
 
+function assignedAssessmentEntry(entry,userId){
+  if(!/^fl-r(?:7|10)-(pre|post)-/.test(entry.question.id))return true;
+  const order=(userId?threeArmStudy.get(userId)?.assessmentOrder:null)||'XY';
+  return entry.question.form===order[entry.phase==='pre'?0:1];
+}
 function proactiveAssessmentQuestionCount(phase = "") {
   const normalizedPhase = boundedLearningText(phase, 40).toLowerCase();
   return Array.from(assessmentIndex.values()).filter((entry) => (
     entry.chapterId === proactiveStudyConfig.chapterId
     && entry.phase === normalizedPhase
     && entry.unitId === `${proactiveStudyConfig.chapterId}-${normalizedPhase}`
+    && assignedAssessmentEntry(entry)
   )).length;
 }
 
@@ -1805,6 +1815,7 @@ function proactivePretestStratum(userId) {
       entry.chapterId === proactiveStudyConfig.chapterId
       && entry.phase === "pre"
       && entry.unitId === pretestUnitId
+      && assignedAssessmentEntry(entry,userId)
     ));
   const basis = "server_scored_objective_items";
   if (!expectedEntries.length) {
@@ -1867,6 +1878,7 @@ function proactiveAssessmentCompletion(userId, phase = "") {
       entry.chapterId === proactiveStudyConfig.chapterId
       && entry.phase === normalizedPhase
       && entry.unitId === unitId
+      && assignedAssessmentEntry(entry,userId)
     ));
   if (!expectedEntries.length) {
     return {
@@ -1979,14 +1991,15 @@ function proactiveOutcomeReview(stageId, attempt, answersReleased) {
     submittedAt: attempt.submitted_at || "",
     ...(answersReleased
       ? {
-          score: Number(attempt.score || 0),
+          score: attempt.score == null ? null : Number(attempt.score),
           maxScore: Number(attempt.max_score || 0),
-          accuracy: Number(attempt.accuracy || 0)
+          accuracy: attempt.accuracy == null ? null : Number(attempt.accuracy),
+          complete: attempt.score_complete !== 0 && attempt.score != null
         }
       : {}),
     items: stage.items.map((item) => {
       const response = String(responses[item.id] || "");
-      const responseOption = item.options.find((option) => option.value === response);
+      const responseOption = item.options.find((option) => option.value === response || (response === 'skip' && option.value === '__skip__'));
       const result = resultByItem.get(item.id) || null;
       const correctOption = answersReleased ? String(answerKey[item.id] || "") : "";
       const correctOptionEntry = answersReleased
@@ -2002,7 +2015,7 @@ function proactiveOutcomeReview(stageId, attempt, answersReleased) {
         responseLabel: responseOption?.label || "未作答",
         ...(answersReleased
           ? {
-              isCorrect: result?.correct === true,
+              isCorrect: typeof result?.correct === 'boolean' ? result.correct : null,
               correctOption,
               correctOptionLabel: correctOptionEntry?.label || ""
             }
@@ -2081,8 +2094,13 @@ function proactiveOutcomeState(
     attemptByStage.has(stageId)
     || terminalSessionStatuses.has(sessionByStage.get(stageId)?.status)
   );
-  const priorVersion = sessions[0]?.instrument_version || attempts[0]?.instrument_version;
-  const workflow = priorVersion ? outcomeRegistry.forVersion(priorVersion) || proactiveOutcomes : proactiveOutcomes;
+  const frozenOutcomeVersion=threeArmStudy.get(userId)?.runtimeManifest?.proactiveDefinition?.outcomeInstrumentVersion;
+  const priorVersion = sessions[0]?.instrument_version || attempts[0]?.instrument_version || frozenOutcomeVersion;
+  const priorWorkflow=priorVersion?outcomeRegistry.forVersion(priorVersion):null;
+  const legacyPostWithoutVersion=!priorVersion&&!posttest.ready&&proactiveOutcomes.version==='functions-limits-delayed-r10'
+    &&db.getQuizResultsByUser(userId,500).some(row=>row.chapter_id===chapterId&&row.phase==='post'&&!/^fl-r10-post-/.test(row.question_id||''));
+  const versionUnavailable=Boolean(priorVersion&&!priorWorkflow)||legacyPostWithoutVersion;
+  const workflow = priorWorkflow || proactiveOutcomes;
   const transferComplete = workflow.stageIds
     .filter((stageId) => stageId !== "retention").every(stageTerminal);
   const answerReviewReleased = workflow.stageIds.every(stageTerminal);
@@ -2196,7 +2214,7 @@ function proactiveOutcomeState(
       reason = "可独立作答；本阶段不提供知点提示、路径建议或即时反馈。"
         + (stageId === "retention" && proactiveRetentionCloseHours === null ? "开放后不设截止时间。" : "");
     }
-    if (!stageInstrument && ["active", "available"].includes(status)) {
+    if (versionUnavailable || (!stageInstrument && ["active", "available"].includes(status))) {
       status = "locked";
       reason = "该会话的题库版本暂不可用，请联系管理员恢复原版本；已有草稿不会被替换。";
     }
@@ -2231,7 +2249,8 @@ function proactiveOutcomeState(
   return {
     managed,
     chapterId,
-    instrumentVersion: workflow.version,
+    instrumentVersion: versionUnavailable ? (priorVersion || null) : workflow.version,
+    versionUnavailable,
     protocolFingerprint: proactiveProtocolFingerprint,
     retentionDelayHours: proactiveRetentionDelayHours,
     retentionCloseHours: proactiveRetentionCloseHours,
@@ -3071,6 +3090,7 @@ function publicProactivePolicyState(row = {}, options = {}) {
   // 一道题只要已经发给学生，就必须**把同一道题还给他**——中途换题会让学生答的题和
   // 判分的题不是同一道（判分是按 checkId 查题库的，换了题就等于判了另一道题）。
   const scopeKeyForCheck = row.scope_key || "";
+  const issuedChecks= row.user_id ? supportCycles.issuedChecks(row.user_id,scopeKeyForCheck,db.currentLearningGeneration(row.user_id)) : [];
   const issuedCheckId = lifecycleState.activeVerificationCheckId || "";
   const pendingCheck = studentPreference !== "off"
     && lifecycleState.phase === "awaiting_independent_attempt";
@@ -3087,7 +3107,7 @@ function publicProactivePolicyState(row = {}, options = {}) {
       : adapter?.nextVerificationCheck?.(
           scopeKeyForCheck,
           checkLevel,
-          issuedCheckId
+          issuedCheckId,issuedChecks
         );
   } else if (pendingCheck) {
     // 没有签发 id 的旧等待回合（v2 之前不落这个字段）：回放当时那张固定题。
@@ -3097,7 +3117,7 @@ function publicProactivePolicyState(row = {}, options = {}) {
       || adapter?.nextVerificationCheck?.(
           scopeKeyForCheck,
           checkLevel,
-          lifecycleState.lastVerificationCheckId
+          lifecycleState.lastVerificationCheckId,issuedChecks
         )
       || null;
   }
@@ -4629,7 +4649,7 @@ async function handleManagedProactiveIntervention({
   if(policyDecision.displayAllowed && renderedDecision.intervene) {
     const adapter=proactivePolicy.adapterForChapter(resolved.unit.chapterId);
     const check=adapter?.nextVerificationCheck?.(policyScopeKey,policyDecision.supportLevel,
-      parseStoredJson(policyState.lifecycle_json||"{}",{}).lastVerificationCheckId);
+      parseStoredJson(policyState.lifecycle_json||"{}",{}).lastVerificationCheckId,supportCycles.issuedChecks(auth.participant.id,policyScopeKey,db.currentLearningGeneration(auth.participant.id)));
     if(check) {
       const functions={L1:"self_explanation",L2:"concept_hint",L3:"subgoal_prompt",L4:"next_step_scaffold",L5:"worked_example_step"};
       const contract=new proactivePolicy.SupportAction({depth:policyDecision.supportLevel,
@@ -4649,6 +4669,9 @@ async function handleManagedProactiveIntervention({
     renderedDecision.authority={level:agentProfile.authorityLevel,autoExpanded:Boolean(receipt),
       receiptId:receipt?.id||"",permissionId:receipt?.permission_id||"",reversibleAction:"expand_hint_only"};
     evidence.authority=renderedDecision.authority;
+    if(!resolved.isQuiz&&policyDecision.action!=='switch_representation') {
+      renderedDecision.activity=require('./lib/support-activity').create({scope:policyScopeKey,plan:{primaryGoal:'cognitive',knowledgeScaffoldLevel:policyDecision.supportLevel}});
+    }
     renderedDecision.supportSpec=require('./lib/support-spec').create({id:decisionId,run:threeArmStudy.get(auth.participant.id),scope:policyScopeKey,sceneType,
       profileRevision:engineeringControl?.revision,profile:agentProfile,content:renderedDecision,supportLevel:policyDecision.supportLevel,
       expiresAt:policyDecision.expiresAt,source:'template',contentVersion:adapter?.version});
@@ -5948,11 +5971,11 @@ async function handleApi(req, res, url) {
         if(["report","advance"].includes(body.action)) {
           const pendingInquiry=supportCycles.current(user,scope,generation);
           if(body.action==="advance"&&pendingInquiry?.status==="awaiting_confirmation"){
-            const fresh=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},policyState:{},now:Date.now()});
+            const fresh=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:pendingInquiry.inquiry.basis==="repeated_task_failures"?"task_difficulty":"quiet_dwell"},policyState:{},now:Date.now()});
             const disabled=proactiveStudentPreference(user,scope)==="off"||!require('./lib/support-cycle').inquiryAllowed(profile,pendingInquiry.inquiry)
               ||proactiveStudyConfig.mode!=="active"||proactiveExperimentRuntime()?.status==="paused";
             const latestCheck=agentRuntime.state(user,generation).memory.find(r=>r.scope===scope);
-            const resolvedGap=fresh.commonProbe?.correct===true||Boolean(latestCheck?.payload.outcome.success===true&&Date.parse(latestCheck.created_at)>Date.parse(pendingInquiry.createdAt))||(pendingInquiry.inquiry.basis==="unresolved_recorded_answer"&&Number(fresh.confirmedGapCount||0)===0);
+            const resolvedGap=fresh.commonProbe?.correct===true||Boolean(latestCheck?.payload.outcome.success===true&&Date.parse(latestCheck.created_at)>Date.parse(pendingInquiry.createdAt))||(pendingInquiry.inquiry.basis==="unresolved_recorded_answer"&&Number(fresh.confirmedGapCount||0)===0)||(pendingInquiry.inquiry.basis==="repeated_task_failures"&&Number(fresh.assistedTaskFailures||0)<2);
             if(disabled||resolvedGap||revision!==pendingInquiry.profileRevision)supportCycles.retractInquiry(user,scope,generation,
               disabled?"student_or_protocol_disabled":resolvedGap?"evidence_resolved":"configuration_changed");
           }
@@ -7294,6 +7317,33 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    const activityMatch=url.pathname.match(/^\/api\/learning\/proactive\/([^/]+)\/activity$/);
+    if(req.method==='POST'&&activityMatch){
+      const body=await readJsonBody(req),auth=authenticate(req,body);
+      if(!auth){sendJson(res,401,{ok:false,message:'请先登录。'});return;}
+      const user=auth.participant.id,generation=db.currentLearningGeneration(user);
+      if(rejectUnpreparedLearner(res,user)||rejectAgentAssistanceDuringOutcome(res,user))return;
+      const decisionId=boundedLearningText(decodeURIComponent(activityMatch[1]),180),decision=db.getProactiveDecisionForUser(user,decisionId);
+      if(!decision){sendJson(res,404,{ok:false,message:'这条帮助不存在或不属于当前账号。'});return;}
+      const access=proactiveDecisionInteractionAccess(user,decision),intervention=db.getProactiveInterventionForDecision(user,decisionId),record=researchControlStore.read(user);
+      const revision=parseStoredJson(decision.evidence_snapshot_json||'{}',{}).engineeringControl?.revision||0;
+      const scope=decision.scope_key||decision.unit_id;
+      const lifecycle=parseStoredJson(db.getProactivePolicyState(user,proactiveStudyConfig.experimentId,scope)?.lifecycle_json||'{}',{});
+      const acceptedOpen=intervention?.status!=='accepted'||(lifecycle.phase==='accepted_pending_response'&&lifecycle.activeDecisionId===decisionId);
+      const snapshotRaw=db.getLearningSnapshotState(user,nowIso()).snapshot?.data;
+      const snapshot=typeof snapshotRaw==='string'?parseStoredJson(snapshotRaw,{}):snapshotRaw||{};
+      const scene=snapshot.learningSurface==='slide'?'slide':snapshot.selectedKnowledgeScenes?.[snapshot.currentUnitId]||'slide';
+      const protectedCheck=supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(row=>parseStoredJson(row.lifecycle_json||'{}',{}).phase==='awaiting_independent_attempt');
+      if(!access.ok||protectedCheck||!acceptedOpen||!intervention||!['offered','shown','accepted'].includes(intervention.status)||decision.action==='switch_representation'||revision!==(record?.revision||0)||record?.profile?.proactivity==='reactive'||!['A2','A3','A4'].includes(record?.profile?.authorityLevel)||body.unitId!==decision.unit_id||body.chapterId!==decision.chapter_id||body.sceneType!==decision.scene_type||snapshot.currentUnitId!==body.unitId||scene!==body.sceneType){
+        sendJson(res,409,{ok:false,message:'学习位置、帮助权限或本轮状态已变化，请回到当前任务。'});return;
+      }
+      const activity=require('./lib/support-activity').create({scope,plan:{primaryGoal:'cognitive',knowledgeScaffoldLevel:decision.support_level}});
+      const prior=db.recentInteractionEventsForUnit(user,body.unitId,800).filter(r=>Number(r.learning_generation||1)===generation).find(r=>r.payload?.eventType==='proactive_support_activity_interaction'&&r.payload?.data?.decisionId===decisionId);
+      let applied;try{applied=require('./lib/support-activity').apply(activity,prior?.payload?.data?.activityState,body);}catch(error){sendJson(res,400,{ok:false,message:error.message});return;}
+      if(activity.kind==='range'&&applied.state.delta!==null)applied.state.feedback=require('./lib/support-activity').rangeFeedback(applied.state.delta);
+      if(applied.changed){db.insertEvent({id:crypto.randomUUID(),user_id:user,type:'interaction',payload:{schemaVersion:1,eventType:'proactive_support_activity_interaction',source:'support_activity_server',chapterId:decision.chapter_id,unitId:decision.unit_id,sceneType:decision.scene_type,data:{decisionId,activityId:activity.id,operation:body.operation,activityState:applied.state,evidenceScope:applied.evidenceScope,independent:false}},created_at:nowIso()});await db.flush();}
+      sendJson(res,200,{ok:true,data:{activityState:applied.state}});return;
+    }
     const proactiveResolutionMatch = url.pathname.match(
       /^\/api\/learning\/proactive\/([^/]+)\/resolution$/
     );
@@ -8590,6 +8640,7 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
+      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
       // Only a complete, server-recorded pretest opens discussion before setup.
       const completedPretest = resolved.isQuiz && resolved.unit.phase === "pre"
         && resolved.unit.quizQuestions.length > 0
@@ -9056,6 +9107,10 @@ async function handleApi(req, res, url) {
         unitId,
         phase
       });
+      if(chapterId==='V14-C1'&&['pre','post'].includes(phase)){
+        const order=studyRun?.assessmentOrder||'XY',form=order[phase==='pre'?0:1];
+        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10)-/.test(e.question.id)||e.question.form===form);
+      }
       if (expectedEntries.some((entry) => entry.assessmentStatus === "archived")) {
         sendJson(res, 409, {
           ok: false,
@@ -9146,12 +9201,13 @@ async function handleApi(req, res, url) {
           sendJson(res, 400, { ok: false, message: "“我不会”不能与其他选项同时选择。" });
           return;
         }
-        if (!unknown && question.type !== "short_answer"
+        if (!unknown && response!=="__skip__" && question.type !== "short_answer"
           && (Array.isArray(response) ? response : [response]).some(value => !(question.options || []).some(option => option.value === value))) {
           sendJson(res, 400, { ok: false, message: "选择了无效选项。" });
           return;
         }
-        const scored = unknown
+        const skipped=response==='__skip__';
+        const scored = skipped ? {isCorrect:null,score:null,maxScore,status:'skipped'} : unknown
           ? { isCorrect: false, score: 0, maxScore, status: "incorrect" }
           : question.type === "short_answer"
           ? { isCorrect: null, score: 0, maxScore, status: "pending_review" }
@@ -9199,6 +9255,10 @@ async function handleApi(req, res, url) {
             protocolFingerprint: result.chapterId === proactiveStudyConfig.chapterId
               ? proactiveProtocolFingerprint : "",
             instrumentVersion: result.instrumentVersion,
+            assessmentOrder: studyRun?.assessmentOrder || "XY",
+            form: result.entry.question.form || null,
+            responseKind: result.response === "__skip__" ? "skipped" : result.response === "__unknown__" ? "dont_know" : "answer",
+            scoringPolicy: result.questionType === "short_answer" ? "blind_teacher_rubric_required" : "server_objective",
             questionDigest: crypto.createHash("sha256")
               .update(JSON.stringify(result.entry.question)).digest("hex"),
             capturedAt: result.timestamp
@@ -9216,7 +9276,7 @@ async function handleApi(req, res, url) {
           && expectedEntries[0] === coreEntry
           && prepared[0]?.isCorrect === false
         ),
-        results: prepared.map(({ entry, ...result }) => result)
+        results: prepared.map(({ entry, ...result }) => assessmentReceipt(result))
       });
       return;
     }
@@ -9232,7 +9292,7 @@ async function handleApi(req, res, url) {
           ? require("./lib/assessments/functions-limits-r1").questions(row.phase)
             .find(question => question.id === row.question_id) : null;
         const question = entry?.question || archived;
-        return question ? { ...row, ...courseAssessment.publicReviewFields(question) } : row;
+        return assessmentReceipt(question ? { ...row, ...courseAssessment.publicReviewFields(question) } : row);
       });
       sendJson(res, 200, { ok: true, data: results });
       return;

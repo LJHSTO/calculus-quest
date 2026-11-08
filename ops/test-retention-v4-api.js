@@ -174,10 +174,8 @@ async function main() {
     assert.equal(beforeSubmit.participantAnalysis[0].retention_window.close_at, "");
     assert.equal(beforeSubmit.participantAnalysis[0].retention_window.expired, false);
     assert.equal(beforeSubmit.participantAnalysis[0].retention_window.closing_soon, false);
-    const executablePath = ["C:/Program Files/Google/Chrome/Application/chrome.exe",
-      "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"].find((file) => fs.existsSync(file));
-    assert.ok(executablePath);
-    browser = await chromium.launch({ executablePath, headless: true });
+    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined;
+    browser = await chromium.launch({ executablePath, channel: executablePath ? undefined : (process.env.PLAYWRIGHT_CHROMIUM_CHANNEL || "chrome"), headless: true });
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -233,7 +231,8 @@ async function main() {
     assert.equal(adminResponse.status, 200);
     const admin = (await adminResponse.json()).data;
     assert.equal(admin.outcomes.summary[0].instrument_version, instrumentVersion);
-    assert.equal(admin.participantAnalysis[0].outcomes.near_transfer.status, "not_applicable");
+    assert.deepEqual(Object.keys(admin.participantAnalysis[0].outcomes),
+      require('../lib/proactive-outcomes/functions-limits-r10').forVersion(instrumentVersion).stageIds);
     assert.notEqual(admin.participantAnalysis[0].retention_window.status, "waiting_for_transfer");
     console.log(`${chapterId}保持测量 API：72小时前锁定、120/720/8784小时仍开放、9600小时草稿恢复与提交、${itemCount}题、后台无截止、幂等及帮助锁释放通过。`);
   } finally { await browser?.close(); await stop(); }

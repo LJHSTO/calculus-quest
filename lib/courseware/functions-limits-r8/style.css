@@ -1,0 +1,29 @@
+.r8-figure{display:flex;flex-direction:column;flex:1 1 0;min-width:0;min-height:0;width:0;height:100%;margin:0;overflow:hidden}.r8-figure.r8-column{width:100%;height:0}
+html body[data-exploration-scene] .r8-figure>.r8-graphic{position:relative!important;inset:auto!important;flex:1 1 0!important;min-width:0!important;min-height:0!important;width:100%!important;height:0!important;max-height:none!important;max-width:none!important;order:0!important}
+.r8-guidance{box-sizing:border-box;flex:0 0 auto;min-width:0;margin:0;padding:9px 14px;border-top:1px solid #7d8d9d44;font:13px/1.65 "Microsoft YaHei",sans-serif;text-align:left;overflow-wrap:anywhere}.r8-guidance p{font:inherit;margin:0}.r8-guidance p+p,.r8-guidance aside+.r7-guide{margin-top:5px}.r8-guidance .r8-current{color:#f472b6}.r8-guidance .r8-history{color:#fbbf24}.r8-guidance aside{font:inherit}.r8-actions{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:30;padding:5px 0 8px;flex:0 0 auto;background:#1e293b}.r8-actions button{flex:1;min-width:0;min-height:40px!important;margin:0!important}.r8-actions :focus-visible{outline:3px solid #f3b641;outline-offset:2px}
+html body[data-exploration-scene="visualization3d"] #info.r8-space-caption{display:block!important;position:relative!important;inset:auto!important;transform:none!important;order:1!important;flex:0 0 auto!important;width:100%!important;max-width:none!important;max-height:none!important;height:auto!important;margin:0!important;padding:7px 14px!important;border-radius:0!important;box-sizing:border-box;overflow:visible!important}
+html body[data-exploration-scene="visualization3d"] #info.r8-space-caption>[hidden]{display:none!important}html body[data-exploration-scene="visualization3d"] #info.r8-space-caption h2{font-size:13px!important;line-height:1.5!important;margin:0 0 3px!important}.r8-space-caption .r8-guidance{padding:0;border:0}.r8-space-caption .value-display{margin-top:3px!important;padding:3px!important}
+.r7-marker label{display:block;margin:4px 0;font-size:13px}.r7-marker input{width:100%}.r7-marker output{display:block;white-space:normal;font-size:13px;line-height:1.6}.r7-continue{display:block;margin:12px 0 0;padding:8px 16px;cursor:pointer}
+html body[data-activity-point="GH-02-K03"] #canvas-container canvas[id="2d-fallback"]{position:absolute!important;left:12px!important;top:auto!important;bottom:12px!important;width:min(320px,calc(100% - 24px))!important;height:120px!important;max-height:120px!important;z-index:10}
+body[data-activity-revision] #game-container>.r8-guidance{margin:12px 0 0;color:inherit;background:transparent}body[data-activity-revision] #cq-record{max-width:min(300px,60vw)!important}
+@media(max-width:700px){.r8-guidance{font-size:12px;padding:7px 10px}.r8-figure.r8-column{flex:1 1 auto;height:460px;min-height:320px}html body[data-exploration-scene="visualization3d"] #info.r8-space-caption{padding:6px 10px!important}html body[data-exploration-scene="visualization3d"] #controls{max-height:44vh!important}}
+@media(prefers-reduced-motion:reduce){.r8-actions button{transition:none!important}}
+@media(max-width:700px){
+ html body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #app-container{flex-direction:column!important}
+ html body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] .r8-figure{flex:0 0 48dvh!important;width:100%!important;height:48dvh!important;min-height:0!important}
+ html body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #controls{flex:1 1 0!important;height:0!important;width:100%!important;min-height:0!important}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .point-card{padding:8px!important;display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .coord-text{margin:0!important}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .input-group{display:grid!important;grid-template-columns:minmax(0,1fr) 70px;gap:5px!important;align-items:center}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .input-group input{width:100%!important;min-height:40px;box-sizing:border-box}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .toggle-btn{grid-column:1/-1}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .toggle-btn button{min-height:40px!important}
+ body[data-activity-point="GH-02-K01"][data-activity-type="game"] #candidate-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin:10px 0!important}
+ body[data-activity-point="GH-02-K01"][data-activity-type="game"] .candidate-btn{width:100%!important;min-width:0!important;min-height:44px!important;padding:8px!important;margin:0!important}
+ body[data-activity-point="GH-02-K01"][data-activity-type="game"] .rule-box{margin-bottom:12px!important}
+ html:has(body[data-activity-type="mindMap"]){overflow-x:clip}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar:not(.open){display:none!important}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar.open{display:flex!important;padding-bottom:70px}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar-toggle{right:10px!important;left:auto!important;transform:none!important;z-index:45;min-width:40px}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #controls{z-index:40}
+}

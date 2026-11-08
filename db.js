@@ -935,10 +935,14 @@ function initSchema() {
       learning_generation INTEGER NOT NULL DEFAULT 1,
       started_at TEXT DEFAULT '',
       submitted_at TEXT NOT NULL,
+      score_complete INTEGER NOT NULL DEFAULT 1,
       UNIQUE (user_id, experiment_id, stage)
     )
   `);
   try { d.run("ALTER TABLE proactive_outcome_attempts ADD COLUMN session_id TEXT DEFAULT ''"); } catch {}
+  if (!queryAll("PRAGMA table_info(proactive_outcome_attempts)").some(column => column.name === "score_complete")) {
+    d.run("ALTER TABLE proactive_outcome_attempts ADD COLUMN score_complete INTEGER NOT NULL DEFAULT 1");
+  }
   d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcomes_experiment ON proactive_outcome_attempts(experiment_id, condition, stage, submitted_at)");
   d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcomes_user ON proactive_outcome_attempts(user_id, experiment_id, submitted_at)");
   d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_proactive_outcomes_session ON proactive_outcome_attempts(session_id) WHERE session_id <> ''");
@@ -3712,13 +3716,30 @@ function withdrawActiveProactiveOutcomeSessionsForUser({
   return result.ok && result.session ? [result.session] : [];
 }
 
+function proactiveOutcomeScoreComplete(record) {
+  const items = typeof record.item_results_json === "string"
+    ? parseJsonField(record.item_results_json) : record.item_results || [];
+  return !(Number(record.score_complete) === 0 || record.complete === false
+    || record.score === null || record.accuracy === null
+    || (Array.isArray(items) && items.some(item => item.score === null
+      || item.responseKind === "skipped" || ["skip", "__skip__"].includes(item.response)))) ? 1 : 0;
+}
+
+function normalizeProactiveOutcomeAttempt(row) {
+  if (!row) return row;
+  const complete = Number(row.score_complete ?? 1) === 1;
+  // Older schemas require numeric storage; incomplete totals are missing at every read boundary.
+  return { ...row, score_complete: complete ? 1 : 0,
+    score: complete ? row.score : null, accuracy: complete ? row.accuracy : null };
+}
+
 function getProactiveOutcomeAttempt(userId, experimentId, stage) {
-  return queryOne(
+  return normalizeProactiveOutcomeAttempt(queryOne(
     `SELECT *
      FROM proactive_outcome_attempts
      WHERE user_id = ? AND experiment_id = ? AND stage = ?`,
     [userId, experimentId, stage]
-  );
+  ));
 }
 
 function listProactiveOutcomeAttempts(userId, experimentId) {
@@ -3728,7 +3749,7 @@ function listProactiveOutcomeAttempts(userId, experimentId) {
      WHERE user_id = ? AND experiment_id = ?
      ORDER BY submitted_at, stage`,
     [userId, experimentId]
-  );
+  ).map(normalizeProactiveOutcomeAttempt);
 }
 
 function insertProactiveOutcomeAttempt(record) {
@@ -3736,8 +3757,8 @@ function insertProactiveOutcomeAttempt(record) {
     `INSERT INTO proactive_outcome_attempts
       (id, session_id, user_id, experiment_id, condition, cohort, chapter_id, stage,
        instrument_version, response_json, item_results_json, score, max_score,
-       accuracy, duration_ms, learning_generation, started_at, submitted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       accuracy, duration_ms, learning_generation, started_at, submitted_at, score_complete)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       record.id,
       record.session_id || "",
@@ -3760,7 +3781,8 @@ function insertProactiveOutcomeAttempt(record) {
       Math.max(0, Math.trunc(Number(record.duration_ms || 0))),
       Math.max(1, Math.trunc(Number(record.learning_generation || 1))),
       record.started_at || "",
-      record.submitted_at
+      record.submitted_at,
+      proactiveOutcomeScoreComplete(record)
     ]
   );
   return getProactiveOutcomeAttempt(
@@ -3844,8 +3866,8 @@ function submitProactiveOutcomeSession({
         (id, session_id, user_id, experiment_id, condition, cohort, chapter_id,
          stage, instrument_version, response_json, item_results_json, score,
          max_score, accuracy, duration_ms, learning_generation, started_at,
-         submitted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         submitted_at, score_complete)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         attempt.id,
         session.id,
@@ -3868,7 +3890,8 @@ function submitProactiveOutcomeSession({
         Math.max(0, Math.trunc(Number(attempt.duration_ms || 0))),
         Math.max(1, Math.trunc(Number(attempt.learning_generation || 1))),
         session.started_at,
-        submittedAt
+        submittedAt,
+        proactiveOutcomeScoreComplete(attempt)
       ]
     );
     d.run(
@@ -4027,7 +4050,7 @@ function proactiveOutcomeRows({
      ORDER BY poa.submitted_at DESC, poa.id DESC
      LIMIT ? OFFSET ?`,
     [...params, safeLimit, safeOffset]
-  );
+  ).map(normalizeProactiveOutcomeAttempt);
   return { rows, total, limit: safeLimit, offset: safeOffset };
 }
 
@@ -4038,7 +4061,9 @@ function proactiveOutcomeSummary(experimentId = "") {
     `SELECT experiment_id, condition, stage, instrument_version,
             COUNT(*) AS submissions,
             COUNT(DISTINCT user_id) AS participants,
-            AVG(accuracy) AS mean_accuracy,
+            SUM(CASE WHEN score_complete = 1 THEN 1 ELSE 0 END) AS scored_submissions,
+            SUM(CASE WHEN score_complete = 0 THEN 1 ELSE 0 END) AS incomplete_submissions,
+            AVG(CASE WHEN score_complete = 1 THEN accuracy END) AS mean_accuracy,
             AVG(duration_ms) AS mean_duration_ms,
             MIN(submitted_at) AS first_submitted_at,
             MAX(submitted_at) AS last_submitted_at
@@ -4149,6 +4174,10 @@ function proactiveParticipantFlow({
         representationSubmitted: new Set(),
         representationSkipped: new Set(),
         representationWithdrawn: new Set(),
+        transferStarted: new Set(),
+        transferSubmitted: new Set(),
+        transferSkipped: new Set(),
+        transferWithdrawn: new Set(),
         retentionStarted: new Set(),
         retentionSubmitted: new Set(),
         retentionSkipped: new Set(),
@@ -4198,6 +4227,8 @@ function proactiveParticipantFlow({
         ? "representation"
         : row.stage === "retention"
           ? "retention"
+          : row.stage === "transfer"
+            ? "transfer"
           : "";
     if (!prefix) return;
     current[`${prefix}Started`].add(row.user_id);
@@ -4220,6 +4251,8 @@ function proactiveParticipantFlow({
         ? "representation"
         : row.stage === "retention"
           ? "retention"
+          : row.stage === "transfer"
+            ? "transfer"
           : "";
     if (!prefix) return;
     current[`${prefix}Submitted`].add(row.user_id);
@@ -4249,8 +4282,12 @@ function proactiveParticipantFlow({
       representationSubmitted: count("representationSubmitted"),
       representationSkipped: count("representationSkipped"),
       representationWithdrawn: count("representationWithdrawn"),
-      transferCompleted: Array.from(current.nearSubmitted)
-        .filter((userId) => current.representationSubmitted.has(userId)).length,
+      transferStarted: count("transferStarted"),
+      transferSubmitted: count("transferSubmitted"),
+      transferSkipped: count("transferSkipped"),
+      transferWithdrawn: count("transferWithdrawn"),
+      transferCompleted: new Set([...current.transferSubmitted, ...Array.from(current.nearSubmitted)
+        .filter((userId) => current.representationSubmitted.has(userId))]).size,
       retentionStarted: count("retentionStarted"),
       retentionSubmitted: count("retentionSubmitted"),
       retentionSkipped: count("retentionSkipped"),
@@ -4357,7 +4394,7 @@ function researchAnalysisSource({ experimentId, chapterId, rowLimit = 50000 }) {
        WHERE qr.chapter_id = ? AND qr.user_id IN (${members}) ORDER BY gra.created_at, gra.id`,
       [chapterId, ...memberParams]),
     outcomes: read(
-      "SELECT * FROM proactive_outcome_attempts WHERE experiment_id = ? ORDER BY submitted_at, id", [experimentId]),
+      "SELECT * FROM proactive_outcome_attempts WHERE experiment_id = ? ORDER BY submitted_at, id", [experimentId]).map(normalizeProactiveOutcomeAttempt),
     sessions: read(
       "SELECT * FROM proactive_outcome_sessions WHERE experiment_id = ? ORDER BY started_at, id", [experimentId]),
     decisions: read(
@@ -4720,7 +4757,7 @@ function proactiveExperimentAnalysis({
      WHERE experiment_id = ?
      ORDER BY julianday(submitted_at), id`,
     [experimentId]
-  );
+  ).map(normalizeProactiveOutcomeAttempt);
   outcomeRows.forEach((row) => {
     const participant = participants.get(row.user_id);
     if (!participant) return;
@@ -4750,9 +4787,10 @@ function proactiveExperimentAnalysis({
     if (attempt) {
       return {
         status: "submitted",
-        score: Number(attempt.score || 0),
+        score_complete: attempt.score_complete,
+        score: attempt.score,
         max_score: Number(attempt.max_score || 0),
-        accuracy: Math.round(Number(attempt.accuracy || 0) * 1000) / 10,
+        accuracy: attempt.accuracy === null ? null : Math.round(Number(attempt.accuracy) * 1000) / 10,
         duration_ms: Number(attempt.duration_ms || 0),
         started_at: attempt.started_at || session?.started_at || "",
         ended_at: attempt.submitted_at || "",
@@ -4764,6 +4802,7 @@ function proactiveExperimentAnalysis({
     if (session) {
       return {
         status: session.status === "active" && session.paused_at ? "paused" : session.status,
+        score_complete: null,
         score: null,
         max_score: null,
         accuracy: null,
@@ -4777,6 +4816,7 @@ function proactiveExperimentAnalysis({
     }
     return {
       status: "not_started",
+      score_complete: null,
       score: null,
       max_score: null,
       accuracy: null,
@@ -4957,13 +4997,13 @@ function proactiveExperimentAnalysis({
     const scopeEvents = participant._scopeEvents.filter(
       (row) => row.learning_generation === analysisGeneration
     );
-    const near = outcomeForStage(participant, "near_transfer", analysisGeneration);
-    const representation = outcomeForStage(
-      participant,
-      "representation_transfer",
-      analysisGeneration
-    );
-    const retention = outcomeForStage(participant, "retention", analysisGeneration);
+    const participantOutcomeVersion = participant._sessions[0]?.instrument_version
+      || participant._attempts[0]?.instrument_version || outcomeInstrumentVersion;
+    const instrument = require("./lib/proactive-outcomes/functions-limits-r10").forVersion(participantOutcomeVersion);
+    if (!instrument) addIssue(participant, "outcome_instrument_version_unavailable");
+    const stageIds = instrument?.stageIds || [];
+    const outcomes = Object.fromEntries(stageIds.map(stage => [stage, outcomeForStage(participant, stage, analysisGeneration)]));
+    const retention = outcomes.retention || { status: "not_applicable" };
     const postCompletedMs = Date.parse(posttest.completed_at || "");
     const unlockAtMs = Number.isFinite(postCompletedMs)
       ? postCompletedMs + delayHours * 60 * 60 * 1000
@@ -4980,14 +5020,9 @@ function proactiveExperimentAnalysis({
     const elapsedHours = Number.isFinite(postCompletedMs) && Number.isFinite(nowMs)
       ? Math.max(0, (nowMs - postCompletedMs) / (60 * 60 * 1000))
       : 0;
-    const participantOutcomeVersion = participant._sessions[0]?.instrument_version
-      || participant._attempts[0]?.instrument_version || outcomeInstrumentVersion;
-    const retentionOnly = ["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3", "functions-limits-retention-r4"].includes(participantOutcomeVersion);
-    if (retentionOnly) {
-      near.status = "not_applicable";
-      representation.status = "not_applicable";
-    }
-    const transferTerminal = retentionOnly || (terminalOutcome(near) && terminalOutcome(representation));
+    const retentionIndex = stageIds.indexOf("retention");
+    const transferTerminal = retentionIndex >= 0
+      && stageIds.slice(0, retentionIndex).every(stage => terminalOutcome(outcomes[stage]));
     const dueReminderHours = transferTerminal
       && retention.status === "not_started"
       && Number.isFinite(nowMs)
@@ -5097,11 +5132,8 @@ function proactiveExperimentAnalysis({
         l4: decisions.filter((row) => row.support_level === "L4").length,
         l5: decisions.filter((row) => row.support_level === "L5").length
       },
-      outcomes: {
-        near_transfer: near,
-        representation_transfer: representation,
-        retention
-      },
+      outcome_instrument_version: participantOutcomeVersion,
+      outcomes,
       retention_window: {
         status: retentionWindowStatus,
         unlock_at: Number.isFinite(unlockAtMs) ? new Date(unlockAtMs).toISOString() : "",
@@ -7863,6 +7895,7 @@ module.exports = {
   withdrawProactiveOutcomeSession,
   withdrawActiveProactiveOutcomeSessionsForUser,
   getProactiveOutcomeAttempt,
+  normalizeProactiveOutcomeAttempt,
   listProactiveOutcomeAttempts,
   insertProactiveOutcomeAttempt,
   submitProactiveOutcomeSession,

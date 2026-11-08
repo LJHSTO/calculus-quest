@@ -14,6 +14,11 @@ const COURSEWARE_BRIDGE_INTERACTION_EVENTS = new Set([
   "parameter_commit"
 ]);
 const COURSEWARE_LEARNING_EVENT_TYPES = Object.freeze({
+  parameter_commit: "parameter_commit",
+  solution_viewed: "courseware_solution_viewed",
+  authored_feedback_exposed: "courseware_authored_feedback_exposed",
+  scene_hidden: "courseware_scene_hidden",
+  scene_visible: "courseware_scene_visible",
   exploration_observed: "courseware_exploration_observed",
   scene_entered: "courseware_page_loaded",
   page_loaded: "courseware_page_loaded",
@@ -41,6 +46,7 @@ const COURSEWARE_LEARNING_EVENT_TYPES = Object.freeze({
   page_summary_shown: "courseware_page_summary_shown"
 });
 const COURSEWARE_LEARNING_EVENT_KEYS = new Set([
+  "emission_source",
   "schema_version",
   "scene_id",
   "task_id",
@@ -241,6 +247,7 @@ function scheduleLearningCanvasLayoutSync(reason = "layout-change") {
 
 function trackCoursewareBridgeInteraction(frame, message = {}) {
   const eventType = String(message.eventType || "");
+  if(eventType==='parameter_commit'&&decodeURI(frame.src||'').includes('函数极限研究版-r7'))return false;
   if (!COURSEWARE_BRIDGE_INTERACTION_EVENTS.has(eventType)) return false;
   const unitId = frame.closest?.("[data-resource-unit]")?.dataset?.resourceUnit || currentUnitId || "";
   const unit = getUnit(unitId);
@@ -1079,6 +1086,7 @@ function renderQuiz(unit) {
     }
   });
   let questions = unit.scene.content?.questions || [];
+  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r(?:7|10)-/.test(q.id));
   let submitted = (state.submittedQuizzes || []).includes(unit.id);
   const unitResults = quizRecordsForUnit(unit.id);
   const archivedQuestions = unit.scene.content?.quizConfig?.archivedQuestions || [];
@@ -1131,7 +1139,7 @@ function renderQuiz(unit) {
   if (submitted) {
     const summaryQuestions = unit.adaptiveFormative ? visibleQuestions : questions;
     const summary = summarizeQuizAttempt(unitResults, summaryQuestions);
-    const outcomeHtml = quizOutcomeHtml(summary);
+    const outcomeHtml = researchReceipt?'回答已保存；本阶段不显示分数或答案':quizOutcomeHtml(summary);
     if (isPre) {
       quizTopBanner = `
         <div class="quiz-encouragement-banner" id="quiz-top-banner-${unit.id}">
@@ -1176,6 +1184,7 @@ function renderQuiz(unit) {
         ${submitted ? '' : renderAssessmentBanner(unit)}
         <div class="quiz-card" data-context-id="quiz:${escapeHtml(unit.id)}:page" data-context-kind="quiz" data-context-scope="quiz" data-context-confidence="medium" data-context-label="${escapeHtml(unit.label)}">
           ${quizTopBanner}
+          ${researchReceipt?'<p class="quiz-version-notice">符号说明：f(a)是输入恰好为a时的输出；x→a表示x接近a。请根据题目给出的条件独立推理，可用自然语言作答。不熟悉或不会可选“我不会”，不愿作答可选“跳过”；两种情况分别记录。前后测都使用相同说明。</p>':''}
           <div data-quiz-support-host></div>
           ${reviewingArchive ? '<p class="quiz-version-notice">这是此前已提交的旧版测验，保留原题和原成绩；新版题目不会覆盖这份记录。</p>' : ""}
           ${visibleQuestions
@@ -1185,7 +1194,7 @@ function renderQuiz(unit) {
               const reviewResult = result || restoredResult;
               const questionSubmitted = submitted || Boolean(result);
               const review = reviewResult ? renderQuestionReview({ question, result: reviewResult, index, unit }) : "";
-              const scoreLabel = quizQuestionScoreLabel(question, reviewResult || null);
+              const scoreLabel = researchReceipt?(questionSubmitted?'已记录':`${question.points} 分`):quizQuestionScoreLabel(question, reviewResult || null);
               return `
               <article class="question-card" data-question="${question.id}" data-context-id="quiz:${escapeHtml(question.id)}" data-context-kind="quiz" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-confidence="high" data-context-label="${escapeHtml(displayQuestionText(question))}">
                 <div class="question-title-row">
@@ -1200,7 +1209,7 @@ function renderQuiz(unit) {
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
             <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : adaptiveState?.needsDiagnostic ? '提交诊断题' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
-            <p>${submitted ? '可在题目下方查看解析，或选择一道题和知点讨论。' : adaptiveState?.needsDiagnostic ? '再完成一道诊断题，看看哪一步需要回顾。' : completionAllowed ? adaptiveState ? '先完成核心题；答错时会出现一道诊断题。' : '请独立完成本次测验。不确定时可以选择“我不会”，完成后统一提交。' : '接受学习建议后，即可提交本节测验。'}</p>
+            <p>${researchReceipt?(submitted?'作答已保存，请继续下一步；研究测验暂不提供逐题讲解。':'请独立作答，完成或明确跳过各题后统一提交。'):submitted ? '可在题目下方查看解析，或选择一道题和知点讨论。' : adaptiveState?.needsDiagnostic ? '再完成一道诊断题，看看哪一步需要回顾。' : completionAllowed ? adaptiveState ? '先完成核心题；答错时会出现一道诊断题。' : '请独立完成本次测验。不确定时可以选择“我不会”，完成后统一提交。' : '接受学习建议后，即可提交本节测验。'}</p>
             <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>
@@ -1261,12 +1270,13 @@ function renderQuestionInput(unit, question, submitted, result = null) {
           data-short-answer
           data-unit-id="${unit.id}"
          data-question-id="${question.id}"
-          ${submitted || draft === "__unknown__" ? "disabled" : ""}
+          ${submitted || ["__unknown__","__skip__"].includes(draft) ? "disabled" : ""}
          placeholder="例如：先写出计算步骤，再解释几何或物理意义。"
-        >${escapeHtml(draft === "__unknown__" ? "" : draft)}</textarea>
+        >${escapeHtml(["__unknown__","__skip__"].includes(draft) ? "" : draft)}</textarea>
         <label class="quiz-unknown-choice"><input type="checkbox" data-short-unknown
           data-unit-id="${unit.id}" data-question-id="${question.id}"
           ${draft === "__unknown__" ? "checked" : ""} ${submitted ? "disabled" : ""}>我不会</label>
+        <label class="quiz-unknown-choice"><input type="checkbox" data-short-skip data-unit-id="${unit.id}" data-question-id="${question.id}" ${draft === "__skip__" ? "checked" : ""} ${submitted ? "disabled" : ""}>跳过本题（不作答）</label>
         <div class="draft-status">本题草稿会自动保存在本地记录中</div>
       </div>
     `;
@@ -1290,7 +1300,7 @@ function renderQuestionInput(unit, question, submitted, result = null) {
               ${selected ? "checked" : ""}
               ${submitted ? "disabled" : ""}
             />
-            <span>${option.value === "__unknown__" ? "我不会" : `${option.value}. ${renderQuestionMath(displayOptionLabel(option))}`}</span>
+            <span>${option.value === "__unknown__" ? "我不会" : option.value === "__skip__" ? "跳过本题（不作答）" : `${option.value}. ${renderQuestionMath(displayOptionLabel(option))}`}</span>
           </label>
         `;
         })

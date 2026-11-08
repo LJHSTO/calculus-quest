@@ -666,3 +666,24 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
 #learn-view .question-task-review{margin-top:12px;padding-top:0;border:0;}
 #learn-view .quiz-resource .quiz-coverage{display:flex;align-items:baseline;gap:8px;margin:10px 0 0;padding:0;border:0;background:none;font-size:12px;color:#687382;}
 #learn-view .question-task-review button{min-height:36px;padding:5px 10px;border:1px solid #dcd6ed;border-radius:7px;background:white;color:#5b45b7;font:13px/1.5 'Microsoft YaHei',sans-serif;cursor:pointer;}
+/* A new question is unaided only when the teaching material is also hidden. */
+body:has([data-independent-check="true"]) #lesson-player iframe,
+body:has([data-independent-check="true"]) .multi-scene-slide-fullscreen-stage,
+body:has([data-independent-check="true"]) [data-knowledge-scene-stage] { display: none !important; }
+body:has([data-independent-check="true"]) #lesson-rail,
+body:has([data-independent-check="true"]) #learning-action-dock,
+body:has([data-independent-check="true"]) [data-knowledge-scene],
+body:has([data-independent-check="true"]) [role="tablist"],
+body:has([data-independent-check="true"]) .textbook-reading-link { visibility: hidden !important; }
+
+/* Guided support stays inside its existing D4 surface; controls never cover the course canvas. */
+.support-activity{margin:12px 0;padding:12px;border:1px solid #d9d7ef;border-radius:10px;background:#f8f8fd;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere}
+.support-activity h5{font:600 14px/1.5 "Microsoft YaHei",sans-serif;margin:0 0 7px;color:#3d3572}
+.support-activity p{margin:7px 0;font-size:13px;line-height:1.7}
+.support-activity-options{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.support-activity button{max-width:100%;min-height:36px;white-space:normal;overflow-wrap:anywhere;font:inherit;line-height:1.5;padding:6px 9px;border:1px solid #cbc6e8;border-radius:7px;background:#fff;color:#493a88;cursor:pointer}
+.support-activity button[aria-pressed=true]{background:#e8e4ff;border-color:#7562c6;color:#352366}
+.support-activity button:focus-visible,.support-activity input:focus-visible{outline:3px solid #b29637;outline-offset:2px}
+.support-activity-detail{padding:8px 10px;border-left:3px solid #8d80bd;background:white}
+.support-activity label{display:block;font-size:13px;line-height:1.6}.support-activity input[type=range]{display:block;width:100%;margin:10px 0;accent-color:#7562c6}.support-activity output{display:block;font-size:13px}
+@media(max-width:700px){.support-activity{padding:9px}.support-activity button{min-height:40px}.support-activity-options>button{flex:1 1 120px}}

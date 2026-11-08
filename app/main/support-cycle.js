@@ -73,14 +73,36 @@
     const submit=el("button","保存反馈");submit.type="submit";submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.result){error="请选择反馈。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"feedback",id:c.id,...d});};details.append(form);return details;
   }
+  function activity(c,onCommand){
+    const a=c.content.activity;if(!a||a.version!=="support-activity-r10-v1")return null;
+    const state=c.activityState?.activityId===a.id?c.activityState:{viewed:[],checked:[],selected:null,delta:null,skipped:false};
+    const box=el('section');box.className='support-activity';box.dataset.supportActivity=a.kind;box.setAttribute('aria-label',a.title);
+    const heading=el('h5',a.title);box.append(heading,el('p',a.intro));
+    const send=command=>onCommand?onCommand({activityId:a.id,...command}):request({action:'activity',id:c.id,round:c.rounds,activityId:a.id,...command});
+    if(state.skipped){box.append(el('p','已保留文字说明，你可以回到课件继续。'));return box;}
+    if(a.kind==='range'){
+      const label=el('label','本例输入范围半径δ'),slider=el('input'),read=el('output');slider.type='range';slider.min=a.range.min;slider.max=a.range.max;slider.step=a.range.step;slider.value=state.delta??a.range.initial;slider.setAttribute('aria-label','帮助例子的输入范围半径');
+      const show=()=>{read.textContent=`δ=${Number(slider.value)}，范围内输出误差小于${Number((Number(slider.value)*a.range.multiplier).toFixed(4))}。目标是小于${a.range.epsilon}。`;};
+      slider.oninput=show;slider.onchange=()=>send({operation:'range',value:Number(slider.value)});label.append(slider,read);box.append(label);show();
+      if(state.feedback){const p=el('p',state.feedback);p.setAttribute('role','status');box.append(p);}
+    }else{
+      const controls=el('div');controls.className='support-activity-options';
+      for(const item of a.items){const selected=a.kind==='checklist'?state.checked.includes(item.id):state.selected===item.id;
+        const b=button(item.label,()=>send({operation:a.kind==='checklist'?'toggle':'select',itemId:item.id}));b.setAttribute('aria-pressed',String(selected));controls.append(b);
+      }box.append(controls);
+      const item=a.items.find(item=>item.id===state.selected);if(item){const p=el('p',item.body);p.className='support-activity-detail';p.setAttribute('role','status');box.append(p);}
+      if(a.kind==='checklist'&&state.checked.length)box.append(el('p',`你已标记${state.checked.length}项。这记录的是你的检查步骤，不表示系统已经判定答案正确。`));
+    }
+    box.append(button('暂不操作，保留文字说明',()=>send({operation:'skip'})));return box;
+  }
   function content(next,c){
     const section=el("section");section.className="support-goal-message";section.dataset.supportCycleId=c.id;
     const header=el("header");header.append(el("strong","先试这一步"));section.append(header);
-    const body=el("div");body.dataset.supportBody=c.id;body.append(el("p",c.content.message),el("p",c.content.nextStep));
+    const body=el("div");body.dataset.supportBody=c.id;body.append(el("p",c.content.message),el("p",c.content.nextStep));const interactive=activity(c);if(interactive)body.append(interactive);
     // This content exists only after the learner has confirmed a need. A1 has
     // already been satisfied; D4 alone controls whether this body is folded.
     if(c.status==="engaged"||next.view.format==="disclosure") {const details=el("details");details.append(el("summary",c.status==="engaged"?"再看这条帮助":"查看这条帮助"),body);section.append(details);}
-    else if(next.view.format==="steps") {const parts=c.content.message.split(/(?<=[。！？])\s*/).filter(Boolean);let index=0;const p=el("p",parts[0]||c.content.message);p.dataset.supportBody=c.id;const more=button("继续阅读",()=>{index++;p.textContent=parts.slice(0,index+1).join("");if(index>=parts.length-1){more.hidden=true;section.append(el("p",c.content.nextStep));}});section.append(p,more);}
+    else if(next.view.format==="steps") {const parts=c.content.message.split(/(?<=[。！？])\s*/).filter(Boolean),reading=draft(`${owner}:${c.id}:${c.rounds}:reading`);let index=Math.min(reading.index||0,Math.max(0,parts.length-1));const p=el("p",parts.slice(0,index+1).join("")||c.content.message);p.dataset.supportBody=c.id;const reveal=()=>{section.append(el("p",c.content.nextStep));if(interactive)section.append(interactive);};const more=button("继续阅读",()=>{index++;reading.index=index;p.textContent=parts.slice(0,index+1).join("");if(index>=parts.length-1){more.hidden=true;reveal();}});section.append(p,more);if(index>=parts.length-1){more.hidden=true;reveal();}}
     else{if(next.view.format==="bubble")body.setAttribute("role","note");section.append(body);}
     section.append(el("small",c.content.audit.fallback?"课程提示":"知点 · 智能体老师"));
     const actions=el("footer");if(c.status==="offered")actions.append(button("我先试一试",()=>request({action:"accept",id:c.id})));
@@ -109,6 +131,7 @@
       more.append(button('两分钟后再提醒',()=>request({action:'postpone',id:c.id})));
       card.append(body,actions,more);root.append(card);
     }else if(c?.status==="awaiting_check"){
+      root.dataset.independentCheck='true';
       root.append(el("h4","独立检查"),el("p","提示和对话已暂停。也可以跳过，不会把跳过记成答错。"),el("p",c.check.prompt));
       const d=draft(`${owner}:${c.id}:check`),list=el("div");choices(list,Object.fromEntries(c.check.options.map(o=>[o.value,o.label])),d.response,v=>d.response=v);root.append(list);
       root.append(button("提交独立检查",()=>request({action:"submit_check",id:c.id,checkId:c.check.id,response:d.response})),button("跳过检查",()=>request({action:"skip_check",id:c.id,checkId:c.check.id})));
@@ -151,6 +174,7 @@
     exposureMonitor.watch(n,{key:`${c.id}:${c.rounds}`,valid:()=>!busy&&snapshot?.active&&!snapshot.locked&&!snapshot.check&&snapshot.supportCycle?.id===c.id&&snapshot.supportCycle.rounds===c.rounds&&!n.closest('details:not([open])')});
   }
   global.SupportCycleUI=Object.freeze({render,sync,active,deferInquiry,goalNames,strategyNames,needs,statuses,expose,
+    renderActivity:(descriptor,state,send)=>activity({content:{activity:descriptor},activityState:state},send),
     manualOpen:next=>manualScope===next.scopeKey,
     openManual(){if(!snapshot||snapshot.locked||snapshot.check||global.LearnerSetup?.enrollment?.experiencePolicy)return;manualScope=snapshot.scopeKey;global.KnowledgeAssistant.refreshSupportSurface();global.TaskSupport?.locate?.();},
     get busy(){return busy;},get interactionBusy(){return interactionBusy();}});

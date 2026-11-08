@@ -97,6 +97,7 @@
   });
   let proactiveTickTimer = null;
   let proactiveDecision = null;
+  let proactiveReading = { key:"", shown:1, expanded:null };
   let proactiveDecisionRequest = null;
   let proactiveCandidateId = "";
   let proactiveStudyRequestId = 0;
@@ -1730,10 +1731,15 @@ const proactiveJustificationDrafts = new Map();
     const label = document.createElement("strong");
     label.textContent = `${stage?.label || "独立测量"}作答回看`;
     const policy = document.createElement("small");
+    const scoreComplete = review?.complete !== false && review?.complete !== 0
+      && review?.score_complete !== false && review?.score_complete !== 0
+      && review?.score != null && review.score !== "" && Number.isFinite(Number(review.score));
     policy.textContent = review?.unavailable
       ? review.reason
       : review?.answersReleased
-      ? `已统一开放结果：${Number(review.score || 0)}/${Number(review.maxScore || 0)} 题正确。`
+      ? scoreComplete
+        ? `已统一开放结果：${Number(review.score)}/${Number(review.maxScore || 0)} 题正确。`
+        : "已统一开放逐题结果；本次未完整计分，请结合每题记录回看。"
       : "当前只显示你的作答；完成全部独立测量后统一开放对错和正确答案。";
     copy.append(label, policy);
     const back = document.createElement("button");
@@ -1749,7 +1755,8 @@ const proactiveJustificationDrafts = new Map();
     (review?.items || []).forEach((item, index) => {
       const article = document.createElement("article");
       article.className = "knowledge-outcome-review-item";
-      if (review.answersReleased) {
+      const itemScored = typeof item.isCorrect === "boolean";
+      if (review.answersReleased && itemScored) {
         article.classList.add(item.isCorrect ? "is-correct" : "is-incorrect");
       }
       const itemHeading = document.createElement("div");
@@ -1757,7 +1764,8 @@ const proactiveJustificationDrafts = new Map();
       number.textContent = `第 ${index + 1} 题`;
       const result = document.createElement("strong");
       result.textContent = review.answersReleased
-        ? item.isCorrect ? "回答正确" : "需要复盘"
+        ? itemScored ? item.isCorrect ? "回答正确" : "需要复盘"
+          : item.responseKind === "skipped" || item.response === "skip" ? "已跳过，未计分" : "暂未计分"
         : "作答已记录";
       itemHeading.append(number, result);
       const prompt = document.createElement("p");
@@ -1772,9 +1780,9 @@ const proactiveJustificationDrafts = new Map();
           && option.value === item.correctOption;
         row.classList.toggle("is-selected", selected);
         row.classList.toggle("is-correct", correct);
-        row.classList.toggle("is-wrong", selected && review.answersReleased && !correct);
+        row.classList.toggle("is-wrong", selected && review.answersReleased && itemScored && !correct);
         const marker = document.createElement("span");
-        marker.textContent = option.value === "__unknown__" ? "?" : String(option.value || "").toUpperCase();
+        marker.textContent = option.value === "__unknown__" ? "?" : option.value === '__skip__' ? '—' : String(option.value || "").toUpperCase();
         const text = document.createElement("span");
         setQuestionMathContent(text, option.label || "");
         const note = document.createElement("small");
@@ -1832,7 +1840,8 @@ const proactiveJustificationDrafts = new Map();
         input.type = "radio";
         input.name = `outcome-${stage.id}-${item.id}`;
         input.value = option.value;
-        input.checked = proactiveOutcomeResponses[item.id] === option.value;
+        input.checked = proactiveOutcomeResponses[item.id] === option.value
+          || (proactiveOutcomeResponses[item.id] === 'skip' && option.value === '__skip__');
         input.disabled = proactiveOutcomesSubmitting
           || proactiveOutcomeWithdrawing
           || proactiveOutcomeSkipConfirming;
@@ -1846,7 +1855,7 @@ const proactiveJustificationDrafts = new Map();
           saveProactiveOutcomeDraft();
         });
         const text = document.createElement("span");
-        setQuestionMathContent(text, option.value === "__unknown__" ? "我不会" : `${option.value}. ${option.label || ""}`);
+        setQuestionMathContent(text, option.value === "__unknown__" ? "我不会" : option.value === '__skip__' ? option.label : `${option.value}. ${option.label || ""}`);
         labelNode.append(input, text);
         fieldset.appendChild(labelNode);
       });
@@ -4212,25 +4221,42 @@ const proactiveJustificationDrafts = new Map();
     setQuestionMathContent(detail, suggestion.body || "");
     const format=suggestion.presentationFormat || supportView.format || "plain";
     article.dataset.presentationFormat=format;
+    const readingKey=`${state.participant?.participantId || ''}:${exposureGeneration}:${suggestion.decisionId || ''}`;
+    if(proactiveReading.key!==readingKey)proactiveReading={key:readingKey,shown:1,expanded:null};
+    const activityHost=document.createElement('div');activityHost.className='proactive-support-activity';
+    function drawActivity(){
+      activityHost.replaceChildren();
+      const widget=global.SupportCycleUI?.renderActivity?.(suggestion.activity,suggestion.activityState,async command=>{
+        const status=document.createElement('p');status.setAttribute('role','status');status.textContent='正在保存操作…';activityHost.append(status);
+        activityHost.querySelectorAll('button,input').forEach(n=>n.disabled=true);
+        try{const result=await global.KnowledgeAssistant.proactiveActivityRequest({decisionId:suggestion.decisionId,...command});suggestion.activityState=result.activityState;drawActivity();}
+        catch(error){status.textContent=error.message||'操作未保存，请重试。';activityHost.querySelectorAll('button,input').forEach(n=>n.disabled=false);}
+      });if(widget)activityHost.append(widget);
+    }
+    if(suggestion.activity&&suggestion.serverIssued)drawActivity();
     let content=detail;
     if(format==="steps") {
       detail.replaceChildren();
       const parts=String(suggestion.body||"").match(/[^。！？\n]+[。！？]?|\n/g)||[String(suggestion.body||"")];
-      const lines=parts.map((text,i)=>{const p=document.createElement("p");setQuestionMathContent(p,text);p.hidden=i>0;detail.append(p);return p;});
-      let shown=1;
-      const more=document.createElement("button");more.type="button";more.textContent="继续显示线索";more.hidden=lines.length<=1;
-      more.addEventListener("click",()=>{if(lines[shown])lines[shown++].hidden=false;more.hidden=shown>=lines.length;
+      let shown=Math.min(parts.length,proactiveReading.shown);
+      const lines=parts.map((text,i)=>{const p=document.createElement("p");setQuestionMathContent(p,text);p.hidden=i>=shown;detail.append(p);return p;});
+      const more=document.createElement("button");more.type="button";more.textContent="继续显示线索";more.hidden=shown>=lines.length;
+      more.addEventListener("click",()=>{if(lines[shown])lines[shown++].hidden=false;proactiveReading.shown=shown;more.hidden=shown>=lines.length;
+        activityHost.hidden=shown<lines.length;
         track("proactive_content_step",{decisionId:suggestion.decisionId,shown,total:lines.length});});
+      activityHost.hidden=shown<lines.length;
       detail.append(more);
     }else if(format==="bubble") {
       detail.setAttribute("role","note");detail.setAttribute("aria-label","知点的学习线索");
     }
+    if(activityHost.childNodes.length)detail.append(activityHost);
     if(format==="disclosure" || suggestion.authority?.level==="A1" || suggestion.authority?.level==="A4") {
       const wrapper=document.createElement("div"), toggle=document.createElement("button");
       toggle.type="button";
-      detail.hidden=!(suggestion.authority?.autoExpanded && suggestion.authority?.receiptId);
+      if(proactiveReading.expanded===null)proactiveReading.expanded=Boolean(suggestion.authority?.autoExpanded && suggestion.authority?.receiptId);
+      detail.hidden=!proactiveReading.expanded;
       const update=()=>{toggle.textContent=detail.hidden?"查看简短提示":"收起简短提示";toggle.setAttribute("aria-expanded",String(!detail.hidden));};
-      toggle.addEventListener("click",()=>{detail.hidden=!detail.hidden;update();
+      toggle.addEventListener("click",()=>{detail.hidden=!detail.hidden;proactiveReading.expanded=!detail.hidden;update();
         track("proactive_content_toggled",{decisionId:suggestion.decisionId,expanded:!detail.hidden,format});});
       update();wrapper.append(toggle,detail);content=wrapper;
     }
@@ -4449,18 +4475,13 @@ const proactiveJustificationDrafts = new Map();
   function proactiveVerificationNode(check) {
     const article = document.createElement("article");
     article.className = "knowledge-message assistant knowledge-proactive-verification";
+    article.dataset.independentCheck = 'true';
     article.dataset.proactiveCheckId = check.id || "";
     const heading = document.createElement("div");
     const label = document.createElement("strong");
     label.textContent = "支架后检查";
     const badge = document.createElement("small");
-    badge.textContent = {
-      L1: "第 1 次检查",
-      L2: "第 2 次检查",
-      L3: "第 3 次检查",
-      L4: "第 4 次检查",
-      L5: "第 5 次检查"
-    }[check.supportLevel] || "本轮检查";
+    badge.textContent = "本轮新题";
     heading.append(label, badge);
     const prompt = document.createElement("p");
     setQuestionMathContent(prompt, check.prompt || "");
@@ -6123,6 +6144,20 @@ const proactiveJustificationDrafts = new Map();
       proactiveStudy.supportCycles=result.data.cycles.map(c=>known.get(c.id)?.revision>c.revision?known.get(c.id):c);
       if(["report","start_check"].includes(action.action)){proactiveDecision=null;pendingProactivePrompt=null;}
       render();scheduleDesignSpaceSync();return result.data;
+    },
+    async proactiveActivityRequest(command) {
+      const s=designSpaceSnapshot(),owner=state.authToken,decision=proactiveDecision;
+      if(!s.signedIn||!s.active||s.locked||s.check||s.unitType!=="knowledge"||!decision?.serverIssued||decision.decisionId!==command.decisionId)throw new Error('当前提示已经结束或学习位置改变。');
+      // The server checks the saved scene; finish its pending sync before an immediate activity click.
+      if(typeof syncLearningSnapshot==='function')await syncLearningSnapshot('proactive_support_activity');
+      const ready=designSpaceSnapshot();
+      if(owner!==state.authToken||s.generation!==ready.generation||s.scopeKey!==ready.scopeKey||s.sceneType!==ready.sceneType||!ready.active||ready.locked||ready.check||proactiveDecision?.decisionId!==command.decisionId)throw new Error('学习位置已改变，旧提示不会继续显示。');
+      const response=await fetch(`api/learning/proactive/${encodeURIComponent(command.decisionId)}/activity`,{method:'POST',headers:{Authorization:`Bearer ${owner}`,'Content-Type':'application/json'},body:JSON.stringify({...command,chapterId:courseMeta().chapterId,unitId:s.unitId,sceneType:s.sceneType})});
+      const result=await response.json();
+      const current=designSpaceSnapshot();
+      if(owner!==state.authToken||s.generation!==current.generation||s.scopeKey!==current.scopeKey||s.sceneType!==current.sceneType||!current.active||current.locked||current.check||proactiveDecision?.decisionId!==command.decisionId)throw new Error('学习位置已改变，旧提示不会继续显示。');
+      if(!response.ok||!result.ok)throw new Error(result.message||'操作未保存，请重试。');
+      proactiveDecision.activityState=result.data.activityState;scheduleDesignSpaceSync();return result.data;
     },
     async agentRuntimeRequest(action) {
       if(!isSignedInNow())throw new Error("请先登录。");

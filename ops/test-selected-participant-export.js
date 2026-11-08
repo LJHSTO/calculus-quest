@@ -124,7 +124,8 @@ async function main() {
   assert.equal(data.tables.study_workbench_protocols.length, 1);
   const archive = JSON.parse(data.tables.study_workbench_protocols[0].protocol_json);
   assert.equal(archive.instruments.flatMap(x => x.probes).length, 18);
-  assert.equal(archive.instruments[0].probes[0].answerKey, "1");
+  assert.equal(archive.instruments[0].probes[0].answerKey,
+    require('../lib/assessments/functions-limits-probes-r10').raw(0,0).answer);
   assert.equal(archive.instruments[0].resource.revision, "fixture-only");
   assert.deepEqual(data.collection_coverage.unavailable_tables, []);
   // Reopen serialized SQLite bytes: this checks durable representation, not

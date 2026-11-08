@@ -2983,6 +2983,12 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
 }
 
 async function agenticAfterQuizSubmit(unit, records) {
+  if(['pre','post'].includes(unit.assessmentPhase)&&records.some(r=>/^fl-r(?:7|10)-/.test(r.question?.id||''))){
+    const path=ensureAgenticPath();path.pendingPlan=null;path.pendingAt='';
+    if(unit.assessmentPhase==='pre')agenticUnlockDefaultNext(unit.id,'independent_pretest_recorded');
+    else globalThis.LearnerSetup?.afterPosttest?.(unit);
+    saveState();return;
+  }
   ensureAgenticPath();
   if(globalThis.StudyEntry&&unit.assessmentPhase==='formative'&&!agenticQuizHasPendingShortAnswer(records)){
     await agenticBuildRecommendationAfterGrading(unit,records);return;

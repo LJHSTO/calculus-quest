@@ -290,7 +290,7 @@ function saveState() {
   queueLearningSnapshot("state_change");
 }
 
-const COURSEWARE_RESOURCE_VERSION = "20260727-courseware-interaction-v4";
+const COURSEWARE_RESOURCE_VERSION = "functions-limits-exploration-r8-20261106";
 
 function appRelativeUrl(path = "") {
   const value = String(path || "");
@@ -420,7 +420,9 @@ function applyMultiSceneLearningRoute(route) {
 
 async function loadMultiSceneLearningRoute() {
   if (multiSceneLearningRoute) return multiSceneLearningRoute;
-  multiSceneLearningRoute = await fetchJson(MULTI_SCENE_ROUTE_PATH, "多场景自适应学习路线加载失败");
+  const response=await fetch(appRelativeUrl('api/course/multi-scene-learning-route'),{headers:state.authToken?{Authorization:'Bearer '+state.authToken}:{}});
+  if(!response.ok)throw new Error('多场景学习路线加载失败');
+  multiSceneLearningRoute=await response.json();
   applyMultiSceneLearningRoute(multiSceneLearningRoute);
   return multiSceneLearningRoute;
 }
@@ -1413,6 +1415,8 @@ async function loginParticipant(credentials = {}) {
 
     state.participant = payload.participant;
     state.authToken = payload.token;
+    multiSceneLearningRoute=null;courseIndex=null;
+    await loadMultiSceneLearningRoute();buildCurriculum();
     sessionStorage.setItem(AUTH_TOKEN_KEY, payload.token);
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.setItem(LAST_PARTICIPANT_KEY, newPid);

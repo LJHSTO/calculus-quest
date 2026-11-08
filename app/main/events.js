@@ -391,14 +391,17 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
-  const unknown = event.target.closest("[data-short-unknown]");
+  const unknown = event.target.closest("[data-short-unknown],[data-short-skip]");
   if (unknown) {
+    const isSkip=unknown.hasAttribute('data-short-skip'),marker=isSkip?'__skip__':'__unknown__';
+    const other=document.querySelector('['+(isSkip?'data-short-unknown':'data-short-skip')+'][data-question-id="'+unknown.dataset.questionId+'"]');
+    if(unknown.checked&&other)other.checked=false;
     const input = document.getElementById(`answer-${unknown.dataset.unitId}-${unknown.dataset.questionId}`);
     if (input) input.disabled = unknown.checked;
-    rememberQuizDraft(unknown.dataset.unitId, unknown.dataset.questionId, unknown.checked ? "__unknown__" : (input?.value || ""));
+    rememberQuizDraft(unknown.dataset.unitId, unknown.dataset.questionId, unknown.checked ? marker : (input?.value || ""));
     analyticsTrack("answer_select", { source: "quiz", data: {
       unitId: unknown.dataset.unitId, questionId: unknown.dataset.questionId,
-      values: unknown.checked ? ["__unknown__"] : [], responseKind: unknown.checked ? "dont_know" : "answer"
+      values: unknown.checked ? [marker] : [], responseKind: unknown.checked ? (isSkip?"skipped":"dont_know") : "answer"
     } });
     return;
   }

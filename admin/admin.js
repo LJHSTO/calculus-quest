@@ -4462,14 +4462,22 @@ function selectProactiveDecision(decisionId) {
 const proactiveOutcomeStageLabels = {
   near_transfer: "近迁移",
   representation_transfer: "跨表征迁移",
-  retention: "延迟保持"
+  retention: "延迟保持",
+  transfer: "新情境应用"
 };
 
 function proactiveOutcomeStageLabel(value = "") {
   return proactiveOutcomeStageLabels[value] || value || "未标记阶段";
 }
 
+function proactiveOutcomeScoreComplete(outcome = {}) {
+  return outcome.complete !== false && outcome.complete !== 0
+    && outcome.score_complete !== false && outcome.score_complete !== 0
+    && outcome.score != null && outcome.score !== "" && Number.isFinite(Number(outcome.score));
+}
+
 function proactiveOutcomePercent(value) {
+  if (value == null || value === "") return "—";
   const number = Number(value);
   if (!Number.isFinite(number)) return "-";
   return `${(number * 100).toFixed(1).replace(/\.0$/, "")}%`;
@@ -4583,7 +4591,7 @@ function renderProactiveOutcomes(outcomes = {}, policy = {}) {
           <td><strong>${esc(row.nickname || "")}</strong><br><span class="muted">${esc(row.user_id || "")}</span></td>
           <td><span class="badge ${proactiveConditionBadgeClass(policy, row.condition)}">${esc(proactiveConditionLabel(row.condition))}</span></td>
           <td>${esc(proactiveOutcomeStageLabel(row.stage))}</td>
-          <td>${Number(row.score || 0)} / ${Number(row.max_score || 0)}</td>
+          <td>${proactiveOutcomeScoreComplete(row) ? `${Number(row.score)} / ${Number(row.max_score || 0)}` : "未完整计分"}</td>
           <td>${esc(proactiveOutcomePercent(row.accuracy))}</td>
           <td>${esc(proactiveDuration(row.duration_ms))}</td>
           <td>第 ${Math.max(1, Number(row.learning_generation || 1))} 次</td>
@@ -4641,7 +4649,9 @@ function proactiveOutcomeAnalysisCell(outcome = {}) {
   };
   const label = labels[outcome.status] || outcome.status || "未开始";
   const score = outcome.status === "submitted"
-    ? `${Number(outcome.score || 0)} / ${Number(outcome.max_score || 0)} · ${Number(outcome.accuracy || 0)}%`
+    ? proactiveOutcomeScoreComplete(outcome)
+      ? `${Number(outcome.score)} / ${Number(outcome.max_score || 0)}${outcome.accuracy == null ? "" : ` · ${Number(outcome.accuracy)}%`}`
+      : "未完整计分"
     : outcome.withdrawal_reason || "";
   return `${esc(label)}${score ? `<br><span class="muted">${esc(score)}</span>` : ""}`;
 }
@@ -4724,6 +4734,7 @@ function renderProactiveExperimentAnalysis(data = {}, policy = {}) {
       ? rows.map((row) => {
           const courseware = row.courseware || {};
           const proactive = row.proactive || {};
+          const outcome = stage => row.outcomes?.[stage] || {status:Object.keys(row.outcomes || {}).length ? "not_applicable" : "not_started"};
           const flags = safeRows(row.data_quality?.flags);
           const qualityLabel = row.data_quality?.status === "complete"
             ? "完整"
@@ -4738,13 +4749,14 @@ function renderProactiveExperimentAnalysis(data = {}, policy = {}) {
             <td>${proactivePhaseAnalysisCell(row.posttest)}</td>
             <td>首次独立 ${Number(courseware.first_independent_correct || 0)} / ${Number(courseware.challenge_count || 0)}<br><span class="muted">总尝试 ${Number(courseware.challenge_attempt_accuracy || 0)}% · 重试 ${Number(courseware.retry_challenges || 0)} · 重置 ${Number(courseware.reset_events || 0)}</span></td>
             <td>展示 ${Number(proactive.shown || 0)} · 接受 ${Number(proactive.accepted || 0)}<br><span class="muted">稍后 ${Number(proactive.snoozed || 0)} · 换帮助 ${Number(proactive.alternative_requested || 0)} · 关闭知识点 ${Number(proactive.scope_mutes || 0)}</span></td>
-            <td>${proactiveOutcomeAnalysisCell(row.outcomes?.near_transfer)}</td>
-            <td>${proactiveOutcomeAnalysisCell(row.outcomes?.representation_transfer)}</td>
-            <td>${proactiveOutcomeAnalysisCell(row.outcomes?.retention)}<br><span class="muted">${esc(proactiveRetentionWindowLabel(row.retention_window))}</span></td>
+            <td>${proactiveOutcomeAnalysisCell(outcome('near_transfer'))}</td>
+            <td>${proactiveOutcomeAnalysisCell(outcome('representation_transfer'))}</td>
+            <td>${proactiveOutcomeAnalysisCell(outcome('retention'))}<br><span class="muted">${esc(proactiveRetentionWindowLabel(row.retention_window))}</span></td>
+            <td>${proactiveOutcomeAnalysisCell(outcome('transfer'))}</td>
             <td><strong>${esc(qualityLabel)}</strong>${flags.length ? `<br><span class="muted">${esc(flags.map((flag) => proactiveDataQualityLabels[flag] || flag).join("；"))}</span>` : ""}</td>
           </tr>`;
         }).join("")
-      : "<tr><td colspan='11'>尚无已固定分组的参与者。</td></tr>";
+      : "<tr><td colspan='12'>尚无已固定分组的参与者。</td></tr>";
     syncTableDensity(participantBody.closest("table"));
   }
 
@@ -5585,7 +5597,7 @@ function proactiveOutcomeCsvRows(data) {
     "测量ID", "提交时间", "开始时间", "用时毫秒", "学生", "用户ID",
     "实验", "实验臂", "队列", "研究参与状态", "同意版本", "同意时间", "退出时间", "退出原因",
     "章节", "测量阶段", "量表版本",
-    "得分", "满分", "正确率", "学习代次", "逐题结果", "原始作答"
+    "得分", "满分", "正确率", "完整计分", "学习代次", "逐题结果", "原始作答"
   ]];
   safeRows(data).forEach((row) => {
     rows.push([
@@ -5606,9 +5618,10 @@ function proactiveOutcomeCsvRows(data) {
       row.chapter_id || "",
       row.stage || "",
       row.instrument_version || "",
-      Number(row.score || 0),
-      Number(row.max_score || 0),
-      Number(row.accuracy || 0),
+      proactiveOutcomeScoreComplete(row) ? Number(row.score) : "",
+      row.max_score ?? "",
+      proactiveOutcomeScoreComplete(row) ? row.accuracy ?? "" : "",
+      row.score_complete ?? (row.score != null ? Number(proactiveOutcomeScoreComplete(row)) : ""),
       Math.max(1, Number(row.learning_generation || 1)),
       JSON.stringify(row.item_results || []),
       JSON.stringify(row.responses || {})
@@ -5665,9 +5678,10 @@ function proactiveParticipantAnalysisCsvRows(data, protocol = null) {
     "提示或重置后尝试", "提示或重置后正确", "提示或重置后正确率%", "重试挑战", "重试率%", "提示事件", "重置事件", "课件时长毫秒",
     "政策决策", "政策判断应介入", "实际签发", "实际展示", "接受", "关闭", "忽略", "稍后", "换帮助", "关闭知识点", "恢复知识点",
     "L1", "L2", "L3", "L4", "L5",
-    "近迁移状态", "近迁移得分", "近迁移满分", "近迁移正确率%", "近迁移暂停次数", "近迁移暂停毫秒",
-    "跨表征状态", "跨表征得分", "跨表征满分", "跨表征正确率%", "跨表征暂停次数", "跨表征暂停毫秒",
-    "保持测状态", "保持测得分", "保持测满分", "保持测正确率%", "保持测暂停次数", "保持测暂停毫秒",
+    "近迁移状态", "近迁移得分", "近迁移满分", "近迁移正确率%", "近迁移完整计分", "近迁移暂停次数", "近迁移暂停毫秒",
+    "跨表征状态", "跨表征得分", "跨表征满分", "跨表征正确率%", "跨表征完整计分", "跨表征暂停次数", "跨表征暂停毫秒",
+    "保持测状态", "保持测得分", "保持测满分", "保持测正确率%", "保持测完整计分", "保持测暂停次数", "保持测暂停毫秒",
+    "新情境应用状态", "新情境应用得分", "新情境应用满分", "新情境应用正确率%", "新情境应用完整计分", "新情境应用暂停次数", "新情境应用暂停毫秒",
     "保持窗口状态", "保持测开放时间", "保持测关闭时间", "章后经过小时", "已提醒节点", "待提醒节点", "即将超窗", "已超窗",
     "数据质量状态", "数据质量问题数", "数据质量标记", "学习代次列表",
     "前测状态", "前测待评分", "形成测状态", "后测状态",
@@ -5675,9 +5689,10 @@ function proactiveParticipantAnalysisCsvRows(data, protocol = null) {
   ]];
   const stageValues = (stage = {}) => [
     stage.status || "",
-    stage.score ?? "",
+    proactiveOutcomeScoreComplete(stage) ? stage.score : "",
     stage.max_score ?? "",
-    stage.accuracy ?? "",
+    proactiveOutcomeScoreComplete(stage) ? stage.accuracy ?? "" : "",
+    stage.score_complete ?? (stage.score != null ? Number(proactiveOutcomeScoreComplete(stage)) : ""),
     Number(stage.pause_count || 0),
     Number(stage.paused_duration_ms || 0)
   ];
@@ -5724,6 +5739,7 @@ function proactiveParticipantAnalysisCsvRows(data, protocol = null) {
       ...stageValues(row.outcomes?.near_transfer),
       ...stageValues(row.outcomes?.representation_transfer),
       ...stageValues(row.outcomes?.retention),
+      ...stageValues(row.outcomes?.transfer),
       retentionWindow.status || "", retentionWindow.unlock_at || "", retentionWindow.close_at || "",
       retentionWindow.elapsed_hours ?? "",
       safeRows(retentionWindow.shown_reminder_hours).join("|"),

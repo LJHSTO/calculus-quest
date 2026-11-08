@@ -157,6 +157,8 @@ function shortAnswerReferenceText(question, result = {}) {
 }
 
 function renderQuestionReview({ question, result, index, unit }) {
+  if(/^fl-r(?:7|10)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
+  if(result.response==='__skip__')return '<div class="question-review" data-question-review>本题已跳过，记为缺失作答。</div>';
   if (question.type === "short_answer" && result.response === "__unknown__") {
     return renderReviewBlock("你的回答", "我不会（0 分）") + renderAnalysisBlock(shortAnswerReferenceText(question, result));
   }
@@ -454,7 +456,7 @@ async function submitQuiz(unitId) {
     if (question.type === "short_answer") {
       const textarea = document.querySelector(`textarea[name="${unit.id}-${question.id}"]`);
       const unknown = document.querySelector(`[data-short-unknown][data-question-id="${question.id}"]`)?.checked;
-      const response = unknown ? "__unknown__" : (textarea?.value || readQuizDraft(unit.id, question.id, "")).trim();
+      const response = document.querySelector(`[data-short-skip][data-question-id="${question.id}"]`)?.checked ? "__skip__" : unknown ? "__unknown__" : (textarea?.value || readQuizDraft(unit.id, question.id, "")).trim();
 
       if (!response) {
         missing.push(index + 1);
@@ -581,7 +583,7 @@ async function submitQuiz(unitId) {
     }
   });
   const needsDiagnostic = submitted.requiresDiagnostic === true || Boolean(
-    unit.assessmentPhase === "formative"
+    unit.adaptiveFormative && unit.assessmentPhase === "formative"
     && (submitted.results || []).some((result) => (
       result.questionType !== "multiple" && result.status === "incorrect"
     ))
@@ -632,7 +634,7 @@ async function submitQuiz(unitId) {
     if (existingHint) existingHint.remove();
     const summaryQuestions = unit.adaptiveFormative ? questions : allQuestions;
     const summary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
-    const outcomeHtml = quizOutcomeHtml(summary);
+    const outcomeHtml = /^fl-r(?:7|10)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
       quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测已提交：${outcomeHtml}。</div>`);

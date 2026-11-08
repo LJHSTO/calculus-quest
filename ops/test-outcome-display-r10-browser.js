@@ -1,0 +1,40 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{chromium}=require('playwright-core'),csv=require('../admin/csv');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'output/综合课程-r10-20261106/测量显示验收');fs.mkdirSync(out,{recursive:true});
+const read=file=>fs.readFileSync(path.join(root,file),'utf8'),admin=read('admin/admin.js'),assistant=read('app/main/knowledge-assistant.js'),html=read('admin.html');
+const cut=(source,start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a);assert.ok(a>=0&&b>a);return source.slice(a,b);};
+async function main(){
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,channel:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?undefined:(process.env.PLAYWRIGHT_CHROMIUM_CHANNEL||'chrome'),headless:true}),page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));
+ try{
+  const table=html.match(/<table id="table-proactive-participant-analysis">[\s\S]*?<\/table>/)[0];
+  await page.setContent('<html lang="zh-CN"><meta charset="utf-8"><body><main style="padding:24px"><h1>测量显示合成验收</h1><div id="reviews" style="display:flex;gap:24px"></div><h2>参与者汇总</h2><div class="table-wrap" style="overflow:auto">'+table+'</div><button id="export">导出参与者验收数据</button><table id="table-proactive-outcome-attempts"><tbody></tbody></table></main></body></html>');
+  await page.addStyleTag({path:path.join(root,'assets/learning-runtime.css')});await page.addStyleTag({path:path.join(root,'admin/admin.css')});await page.addStyleTag({content:'.knowledge-outcome-review{width:560px;max-width:100%;background:#fff;padding:20px;border:1px solid #ddd;border-radius:12px}'});
+  await page.addScriptTag({path:path.join(root,'admin/presentation.js')});await page.addScriptTag({path:path.join(root,'admin/csv.js')});
+  await page.addScriptTag({content:`const safeRows=x=>Array.isArray(x)?x:[],esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'),syncTableDensity=()=>{},proactiveConditionLabel=s=>s||'未分组',proactiveStratumLabel=s=>s||'未分层',setQuestionMathContent=(node,text)=>node.textContent=text;let proactiveOutcomeReviewStageId='';
+  ${cut(admin,'const proactiveOutcomeStageLabels =','function renderProactiveStudy(')}
+  ${cut(admin,'function csvCell(','function exportDateStamp(')}
+  ${cut(admin,'function proactiveOutcomeCsvRows(','function shortAnswerCsvRows(')}
+  ${cut(assistant,'  function proactiveOutcomeFigureNode(','  function activeProactiveOutcomeNode(')}`});
+  await page.evaluate(()=>{
+   const options=[{value:'a',label:'甲'},{value:'b',label:'乙'}],item=(isCorrect,response='a')=>({prompt:'合成验收题：选择与规则相符的一项。',options,response,isCorrect,correctOption:'a',responseKind:response==='skip'?'skipped':'answer'});
+   document.getElementById('reviews').append(proactiveOutcomeReviewNode({label:'含跳过的作答',review:{answersReleased:true,complete:false,score:null,maxScore:3,items:[item(true),item(false,'b'),item(null,'skip')]}}),proactiveOutcomeReviewNode({label:'完整零分作答',review:{answersReleased:true,complete:true,score:0,maxScore:6,items:[item(false,'b')]}}));
+   window.fixtureRows=[
+    {nickname:'部分计分',user_id:'synthetic-partial',outcome_instrument_version:'functions-limits-delayed-r10',outcomes:{retention:{status:'submitted',score:null,max_score:8,accuracy:null,score_complete:0},transfer:{status:'submitted',score:4,max_score:6,accuracy:66.67,score_complete:1}}},
+    {nickname:'真实零分',user_id:'synthetic-zero',outcome_instrument_version:'functions-limits-delayed-r10',outcomes:{retention:{status:'submitted',score:0,max_score:8,accuracy:0,score_complete:1},transfer:{status:'submitted',score:0,max_score:6,accuracy:0,score_complete:1}}},
+    {nickname:'旧C3记录',user_id:'synthetic-legacy',outcome_instrument_version:'v14-c3-outcomes-v3',outcomes:{near_transfer:{status:'submitted',score:2,max_score:5,accuracy:40},representation_transfer:{status:'submitted',score:3,max_score:5,accuracy:60},retention:{status:'submitted',score:1,max_score:5,accuracy:20}}}
+   ];
+   renderProactiveExperimentAnalysis({participantAnalysis:fixtureRows});
+   window.attemptRows=[{nickname:'部分计分',stage:'transfer',score:null,max_score:6,accuracy:null,score_complete:0},{nickname:'真实零分',stage:'transfer',score:0,max_score:6,accuracy:0,score_complete:1}];renderProactiveOutcomes({rows:attemptRows});
+   document.getElementById('export').onclick=()=>downloadCsv('迁移与缺失分数验收.csv',proactiveParticipantAnalysisCsvRows(fixtureRows));
+  });
+  const reviews=page.locator('.knowledge-outcome-review');assert.match(await reviews.nth(0).locator('header small').innerText(),/未完整计分/);assert.doesNotMatch(await reviews.nth(0).locator('header small').innerText(),/0\//);assert.match(await reviews.nth(1).locator('header small').innerText(),/0\/6/);assert.equal(await reviews.nth(0).locator('.knowledge-outcome-review-item.is-incorrect').count(),1);assert.match(await reviews.nth(0).locator('.knowledge-outcome-review-item').nth(2).innerText(),/已跳过，未计分/);checks.push('学生回看区区分未完整计分与完整0分，保留逐题正确、错误和跳过记录');
+  const tableRows=page.locator('#table-proactive-participant-analysis tbody tr'),headers=await page.locator('#table-proactive-participant-analysis th').allTextContents();assert.equal(headers.length,12);assert.equal(headers[10],'新情境应用');for(let i=0;i<3;i++)assert.equal(await tableRows.nth(i).locator('td').count(),headers.length);
+  assert.match(await tableRows.nth(0).locator('td').nth(9).innerText(),/未完整计分/);assert.match(await tableRows.nth(0).locator('td').nth(10).innerText(),/4 \/ 6/);assert.match(await tableRows.nth(1).locator('td').nth(10).innerText(),/0 \/ 6/);assert.match(await tableRows.nth(2).locator('td').nth(7).innerText(),/2 \/ 5/);assert.match(await tableRows.nth(2).locator('td').nth(8).innerText(),/3 \/ 5/);assert.match(await tableRows.nth(2).locator('td').nth(10).innerText(),/本版本不适用/);checks.push('参与者表展示r10六题transfer，并保留旧C3两类迁移，12列表头与数据对齐');
+  assert.match(await page.locator('#table-proactive-outcome-attempts tr').nth(0).innerText(),/未完整计分.*—/s);assert.match(await page.locator('#table-proactive-outcome-attempts tr').nth(1).innerText(),/0 \/ 6.*0%/s);checks.push('独立测量明细中的缺失得分和缺失正确率不转成0');
+  const exported=await page.evaluate(()=>({participant:proactiveParticipantAnalysisCsvRows(fixtureRows),attempt:proactiveOutcomeCsvRows(attemptRows)}));for(const rows of Object.values(exported))for(const row of rows.slice(1))assert.equal(row.length,rows[0].length);
+  const cell=(rows,row,name)=>rows[row][rows[0].indexOf(name)];assert.equal(cell(exported.participant,1,'保持测得分'),'');assert.equal(cell(exported.participant,1,'保持测完整计分'),0);assert.equal(cell(exported.participant,1,'新情境应用得分'),4);assert.equal(cell(exported.participant,2,'新情境应用得分'),0);assert.equal(cell(exported.participant,3,'近迁移得分'),2);assert.equal(cell(exported.participant,3,'跨表征得分'),3);assert.equal(cell(exported.attempt,1,'得分'),'');assert.equal(cell(exported.attempt,1,'正确率'),'');assert.equal(cell(exported.attempt,2,'得分'),0);checks.push('两种CSV保留null为空、完整0为0，并导出完整计分标记与transfer');
+  const downloadPromise=page.waitForEvent('download');await page.locator('#export').click();const download=await downloadPromise,file=path.join(out,download.suggestedFilename());await download.saveAs(file);assert.equal(fs.readFileSync(file,'utf8'),'\uFEFF'+exported.participant.map(row=>row.map(csv.csvCell).join(',')).join('\n'));checks.push('浏览器实际下载CSV与已核对的列和值逐字一致');
+  await page.screenshot({path:path.join(out,'缺失与完整零分显示.png'),fullPage:true});await page.locator('.table-wrap').evaluate(node=>node.scrollLeft=node.scrollWidth);await page.screenshot({path:path.join(out,'迁移阶段与历史兼容.png'),fullPage:true});assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'测量显示检查.json'),JSON.stringify({passed:true,synthetic:true,boundary:'真实浏览器执行实际展示/CSV函数与页面表头；数据为受控fixture，未启动或修改服务。',checks,errors},null,2));console.log(JSON.stringify({passed:true,checks}));
+ }finally{await browser.close();}
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

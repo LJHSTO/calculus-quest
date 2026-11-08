@@ -93,7 +93,7 @@
   function quizReview(next){
     for(const card of document.querySelectorAll(".question-card[data-question]")){
       const existing=card.querySelector(".question-task-review");
-      if(next.locked || next.check || !next.quizSubmitted){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
+      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
       card.querySelector(".task-assessment-note")?.remove();if(existing)continue;
       const questionId=card.dataset.question, details=el("div",null,"question-task-review");
       const button=el('button','和知点讨论这道题');button.type='button';
@@ -144,7 +144,7 @@
     const helpKey=next.supportCycle?.id||next.offer?.id||next.prompt?.id||next.scopeKey;
     if(helpKey!==workspaceHelpKey){workspaceHelpKey=helpKey;focusHelp=false;}
     const nextFrame=null;
-    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.muted,next.busy,next.reply,next.taskError,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
+    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.muted,next.busy,next.reply,next.taskError,next.supportCycle,next.policyState?.lifecycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
       const previousHistory=source?.querySelector('.task-conversation-scroll');

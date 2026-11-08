@@ -32,64 +32,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>图像上的左右极限：关系图</title>
-<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
-{
-  "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "free-observation-no-injected-support-20261102-v1",
-  "course_version": "multi-scene-functions-limits-20260917-r2",
-  "chapter_id": "V14-C1",
-  "chapter_title": "函数与极限",
-  "module_id": "GH-02",
-  "module_title": "极限与连续：直觉探索",
-  "knowledge_point_id": "GH-02-K02",
-  "concept_tag": "图像上的左右极限",
-  "scene_type": "mindMap",
-  "resource_id": "GH-02-K02:mindMap",
-  "resource_title": "图像上的左右极限：关系图",
-  "learning_objective": "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。",
-  "misconception": "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。",
-  "observable_evidence": "刚才我们在图像上用手指拖出了蚂蚁的路径，直观感受了左右极限。现在我想请思思用她最擅长的方式，帮我梳理一下——判定一个极限到底存不存在，我们脑子里需要跑完一整套怎样的流程图？ 我们一起看这张图。一切判断的出发点，是我们选定了一个函数和它趋近的点。就像我们刚拖动的那个‘断崖’图像。选中之后，我们的思维会自动兵分两路。",
-  "evidence_events": [
-    "scene_entered",
-    "scene_completed",
-    "exploration_observed"
-  ],
-  "capabilities": {
-    "widget_type": "mindMap",
-    "controls": [
-      "button"
-    ],
-    "reports_attempt": false,
-    "reports_challenge": false,
-    "reports_hint": false,
-    "reports_reset": false,
-    "judges_correctness": false,
-    "requires_webgl": false,
-    "requires_network": false,
-    "keeps_local_state": true
-  },
-  "safe_entry_points": {
-    "open_at_start": true,
-    "deep_link_supported": false,
-    "resume_supported": true,
-    "reentry_after_help": "resume_or_restart"
-  },
-  "assessment_restrictions": {
-    "independent_evidence_allowed": false,
-    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
-    "counts_toward_mastery": false,
-    "mastery_source": "platform_verification_items"
-  },
-  "completion_semantics": {
-    "success_requires": "产生与本知识点目标一致的可观察交互变化",
-    "failure_is_evidence": false
-  },
-  "free_exploration": {
-    "version": "free-exploration-20261027-v1",
-    "role": "observation_not_need_or_mastery"
-  }
-}
-</script>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">{"schema_version":"openmaic.semantic-contract.v1","contract_revision":"functions-limits-integrated-r10-20261106","course_version":"functions-limits-integrated-r10-20261106","chapter_id":"V14-C1","chapter_title":"函数与极限","module_id":"GH-02","module_title":"极限与连续：直觉探索","knowledge_point_id":"GH-02-K02","concept_tag":"图像上的左右极限","scene_type":"mindMap","resource_id":"GH-02-K02:mindMap","resource_title":"图像上的左右极限：关系图","learning_objective":"分别使用两侧规则，先检查各侧有限趋近，再比较共同值；区分跳跃、无界与不收敛。","misconception":"左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。","observable_evidence":"用右侧原有的左右极限输入框，比较相等、不相等和负数情形。运行判定后，沿高亮路径看结论来自哪一个条件。","evidence_events":["scene_entered","scene_completed","exploration_observed"],"capabilities":{"widget_type":"mindMap","controls":["button"],"reports_attempt":false,"reports_challenge":false,"reports_hint":false,"reports_reset":false,"judges_correctness":false,"requires_webgl":false,"requires_network":false,"keeps_local_state":true},"safe_entry_points":{"open_at_start":true,"deep_link_supported":false,"resume_supported":true,"reentry_after_help":"resume_or_restart"},"assessment_restrictions":{"independent_evidence_allowed":false,"independent_requires":"该场景不判定对错，不能作为独立掌握证据","counts_toward_mastery":false,"mastery_source":"platform_verification_items"},"completion_semantics":{"success_requires":"产生与本知识点目标一致的可观察交互变化","failure_is_evidence":false},"free_exploration":{"version":"free-exploration-20261027-v1","role":"observation_not_need_or_mastery"},"independent_evidence_allowed":false}</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -491,7 +434,85 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 <style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
-<link data-exploration-layout rel="stylesheet" href="../../主动探索证据/课件工作区.css"></head>
+<link data-exploration-layout rel="stylesheet" href="../../主动探索证据/课件工作区.css"><style>.r8-figure{display:flex;flex-direction:column;flex:1 1 0;min-width:0;min-height:0;width:0;height:100%;margin:0;overflow:hidden}.r8-figure.r8-column{width:100%;height:0}
+html body[data-exploration-scene] .r8-figure>.r8-graphic{position:relative!important;inset:auto!important;flex:1 1 0!important;min-width:0!important;min-height:0!important;width:100%!important;height:0!important;max-height:none!important;max-width:none!important;order:0!important}
+.r8-guidance{box-sizing:border-box;flex:0 0 auto;min-width:0;margin:0;padding:9px 14px;border-top:1px solid #7d8d9d44;font:13px/1.65 "Microsoft YaHei",sans-serif;text-align:left;overflow-wrap:anywhere}.r8-guidance p{font:inherit;margin:0}.r8-guidance p+p,.r8-guidance aside+.r7-guide{margin-top:5px}.r8-guidance .r8-current{color:#f472b6}.r8-guidance .r8-history{color:#fbbf24}.r8-guidance aside{font:inherit}.r8-actions{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:30;padding:5px 0 8px;flex:0 0 auto;background:#1e293b}.r8-actions button{flex:1;min-width:0;min-height:40px!important;margin:0!important}.r8-actions :focus-visible{outline:3px solid #f3b641;outline-offset:2px}
+html body[data-exploration-scene="visualization3d"] #info.r8-space-caption{display:block!important;position:relative!important;inset:auto!important;transform:none!important;order:1!important;flex:0 0 auto!important;width:100%!important;max-width:none!important;max-height:none!important;height:auto!important;margin:0!important;padding:7px 14px!important;border-radius:0!important;box-sizing:border-box;overflow:visible!important}
+html body[data-exploration-scene="visualization3d"] #info.r8-space-caption>[hidden]{display:none!important}html body[data-exploration-scene="visualization3d"] #info.r8-space-caption h2{font-size:13px!important;line-height:1.5!important;margin:0 0 3px!important}.r8-space-caption .r8-guidance{padding:0;border:0}.r8-space-caption .value-display{margin-top:3px!important;padding:3px!important}
+.r7-marker label{display:block;margin:4px 0;font-size:13px}.r7-marker input{width:100%}.r7-marker output{display:block;white-space:normal;font-size:13px;line-height:1.6}.r7-continue{display:block;margin:12px 0 0;padding:8px 16px;cursor:pointer}
+html body[data-activity-point="GH-02-K03"] #canvas-container canvas[id="2d-fallback"]{position:absolute!important;left:12px!important;top:auto!important;bottom:12px!important;width:min(320px,calc(100% - 24px))!important;height:120px!important;max-height:120px!important;z-index:10}
+body[data-activity-revision] #game-container>.r8-guidance{margin:12px 0 0;color:inherit;background:transparent}body[data-activity-revision] #cq-record{max-width:min(300px,60vw)!important}
+@media(max-width:700px){.r8-guidance{font-size:12px;padding:7px 10px}.r8-figure.r8-column{flex:1 1 auto;height:460px;min-height:320px}html body[data-exploration-scene="visualization3d"] #info.r8-space-caption{padding:6px 10px!important}html body[data-exploration-scene="visualization3d"] #controls{max-height:44vh!important}}
+@media(prefers-reduced-motion:reduce){.r8-actions button{transition:none!important}}
+@media(max-width:700px){
+ html body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #app-container{flex-direction:column!important}
+ html body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] .r8-figure{flex:0 0 48dvh!important;width:100%!important;height:48dvh!important;min-height:0!important}
+ html body[data-exploration-point="GH-01-K02"][data-exploration-scene="simulation"] #controls{flex:1 1 0!important;height:0!important;width:100%!important;min-height:0!important}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .point-card{padding:8px!important;display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .coord-text{margin:0!important}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .input-group{display:grid!important;grid-template-columns:minmax(0,1fr) 70px;gap:5px!important;align-items:center}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .input-group input{width:100%!important;min-height:40px;box-sizing:border-box}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .toggle-btn{grid-column:1/-1}
+ body[data-activity-point="GH-01-K02"][data-activity-type="game"] .toggle-btn button{min-height:40px!important}
+ body[data-activity-point="GH-02-K01"][data-activity-type="game"] #candidate-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin:10px 0!important}
+ body[data-activity-point="GH-02-K01"][data-activity-type="game"] .candidate-btn{width:100%!important;min-width:0!important;min-height:44px!important;padding:8px!important;margin:0!important}
+ body[data-activity-point="GH-02-K01"][data-activity-type="game"] .rule-box{margin-bottom:12px!important}
+ html:has(body[data-activity-type="mindMap"]){overflow-x:clip}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar:not(.open){display:none!important}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar.open{display:flex!important;padding-bottom:70px}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar-toggle{right:10px!important;left:auto!important;transform:none!important;z-index:45;min-width:40px}
+ html body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #controls{z-index:40}
+}
+
+.r9-concept{font-size:13px!important;line-height:1.65!important;opacity:.94;margin-bottom:6px!important}.r9-native>strong{display:block;margin:4px 0;color:inherit}.r9-work{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:8px}.r9-work button{font:inherit!important;line-height:1.4!important;min-height:36px;cursor:pointer;max-width:100%;padding:6px 10px!important;border:1px solid #7990ad77!important;border-radius:6px!important;color:inherit!important;background:#7086a21a!important;box-sizing:border-box;white-space:normal}.r9-work button:hover,.r9-work button[aria-pressed=true]{background:#8d83bb40!important}.r9-work :focus-visible{outline:3px solid #ebae32!important;outline-offset:2px}.r9-work p{flex:1 0 100%;font:inherit}.r9-slider{flex:1 1 160px;display:flex;gap:6px;align-items:center;font:inherit}.r9-slider span{min-width:100px}.r9-slider input{min-width:70px;width:100%;margin:0!important}.r9-feedback:empty{display:none}.r9-feedback{margin-top:7px!important;border-left:3px solid #8c90b9;padding-left:9px}.r9-plot{width:260px;max-width:100%;height:108px;flex:0 1 260px;color:inherit}.r9-mapping{border-collapse:collapse;font:inherit;min-width:280px}.r9-mapping caption{text-align:left}.r9-mapping th,.r9-mapping td{padding:2px 7px;text-align:center;border:1px solid #7a8c9b44}.r9-mapping button{min-height:30px;padding:2px 15px!important;width:100%}.r9-case-row{display:flex;flex-wrap:wrap;gap:6px;flex:1 0 100%}.r9-band{height:42px;position:relative;flex:1 0 100%;background:#8793ae12;border:1px solid #8a94ae66;overflow:hidden}.r9-band i{position:absolute;left:50%;transform:translateX(-50%);top:3px;bottom:3px}.r9-allowed{width:var(--allowed);background:#40b39055}.r9-chosen{width:var(--span);border:2px solid #a38bdf;box-sizing:border-box}.r9-band span{position:absolute;left:8px;top:10px;font-size:12px}.r9-distance{flex:1 0 100%;padding:6px;background:#8793ae12;text-align:center}.r9-native{max-height:43dvh;overflow:auto;scrollbar-width:thin;scrollbar-gutter:stable}.r8-figure>.r8-guidance:not(.r9-native){max-height:28dvh;overflow:auto}html body[data-exploration-scene="visualization3d"] #info.r8-space-caption{max-height:40dvh!important;overflow:auto!important}#info .r9-native{max-height:none;overflow:visible}.r9-native table{color:inherit;background:transparent}.r9-native input{accent-color:#9b85d2}
+.r9-native,.r9-native>strong,.r9-native .r9-work{color:var(--r9-text)!important}.r9-records{margin:6px 0;padding-left:24px;display:flex;flex-wrap:wrap;gap:4px 30px}.r9-records li{font:inherit}
+.r9-native{display:flex;flex-direction:column;overflow:hidden!important}.r9-content{min-height:0;overflow:auto;scrollbar-width:thin}.r9-content>strong{display:block;margin:4px 0;color:var(--r9-text)!important}.r9-actions{display:flex;gap:6px;flex-wrap:wrap;flex:0 0 auto;padding-top:7px}.r9-actions button{font:inherit!important;line-height:1.4!important;min-height:36px;cursor:pointer;max-width:100%;padding:6px 10px!important;border:1px solid #7990ad77!important;border-radius:6px!important;color:var(--r9-text)!important;background:#7086a21a!important;box-sizing:border-box;white-space:normal}.r9-actions button:hover{background:#8d83bb40!important}html body[data-exploration-scene="visualization3d"] #info .r9-native{max-height:calc(40dvh - 90px)!important;overflow:hidden!important}
+.r9-actions :focus-visible{outline:3px solid #ebae32!important;outline-offset:2px}
+@media(max-width:700px){body[data-activity-type="mindMap"]:is([data-activity-point="GH-01-K01"],[data-activity-point="GH-01-K02"],[data-activity-point="GH-02-K01"],[data-activity-point="GH-02-K03"]) #sidebar{height:calc(56dvh - 110px)!important;max-height:calc(56dvh - 110px)!important;overflow:auto!important}}
+@media(max-width:700px){body[data-activity-type="mindMap"]:has(#diagram-svg) #sidebar{height:calc(56dvh - 110px)!important;max-height:calc(56dvh - 110px)!important}}
+@media(max-width:700px){.r9-concept{font-size:12px!important}.r9-native{max-height:44dvh}.r9-plot{height:90px;flex-basis:100%}.r9-mapping{min-width:0;width:100%;font-size:12px}.r9-mapping th,.r9-mapping td{padding:2px 4px}.r9-work button{min-height:40px}.r9-slider{flex-basis:100%}html body[data-exploration-scene="visualization3d"] #info.r8-space-caption{max-height:40dvh!important}}
+
+.r10-explanation{font:inherit;color:inherit;margin:7px 0 10px;padding:9px 10px;border:1px solid #8797ad66;border-radius:6px;background:#8495b00c}.r10-explanation>strong{display:block;color:inherit!important}.r10-explanation p{font:inherit;line-height:1.65;margin:4px 0!important}.r10-explanation ol{margin:5px 0;padding-left:23px}.r10-explanation li{margin:3px 0;line-height:1.65}.r10-transfer{border-left:3px solid #8f9bb3;padding-left:8px}.r10-explanation :focus-visible{outline:3px solid #edba50;outline-offset:2px}
+@media(min-width:701px) and (max-width:768px){
+  body[data-activity-type="mindMap"] :is(#sidebar,.sidebar):not(.collapsed){position:relative!important;inset:auto!important;flex:0 0 300px;width:300px!important;min-width:300px!important;max-width:300px!important;height:100%!important;box-shadow:none!important;}
+  html body[data-activity-point="GH-01-K01"][data-activity-type="mindMap"] #app>#sidebar:not(.collapsed){position:relative!important;inset:auto!important;height:100%!important;}
+  body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar:not(.open){display:none!important;}
+  body[data-activity-point="GH-01-K03"][data-activity-type="mindMap"] #sidebar.open{transform:none!important;}
+}
+@media(min-width:701px) and (max-height:600px){
+  body[data-activity-type="game"] .screen{padding:10px!important;}
+  body[data-activity-type="game"] :is(.header,.hud){padding:6px 10px!important;margin-bottom:6px!important;}
+  body[data-activity-type="game"] :is(.steps,.points-display,.rules-display,.input-grid,.output-inputs,.point-grid){margin-bottom:6px!important;}
+  body[data-activity-type="game"] :is(.points-display,.rule-card,.point-card){padding:6px!important;}
+  body[data-activity-type="game"] .output-inputs{margin-top:6px!important;gap:6px!important;}
+  body[data-activity-type="game"] .controls{margin-top:6px!important;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] #game-screen.active{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] #game-screen>:is(.header,.steps,#input-section,#conclusion-section,#feedback,.controls,#hint-box){grid-column:1/-1;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] #input-section{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] #input-section>:is(div:first-child,button){grid-column:1/-1;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] #input-section .output-inputs{margin:0!important;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] .output-input{min-width:0;padding:6px!important;font-size:16px;}
+  body[data-activity-point="GH-01-K01"][data-activity-type="game"] .controls{justify-content:center;}
+  body[data-activity-point="GH-01-K02"][data-activity-type="game"] .rule-display{margin:6px 0!important;padding:6px!important;}
+  body[data-activity-point="GH-01-K02"][data-activity-type="game"] .coord-text{margin-bottom:4px!important;font-size:16px;white-space:nowrap;}
+  body[data-activity-point="GH-01-K02"][data-activity-type="game"] .point-card{display:grid;grid-template-columns:80px minmax(0,1fr);gap:6px;align-items:center;}
+  body[data-activity-point="GH-01-K02"][data-activity-type="game"] .input-group{display:grid!important;grid-template-columns:minmax(0,1fr) 70px;gap:5px!important;align-items:center;}
+  body[data-activity-point="GH-01-K02"][data-activity-type="game"] .input-group input{width:100%!important;box-sizing:border-box;}
+  body[data-activity-point="GH-01-K02"][data-activity-type="game"] .toggle-btn{grid-column:1/-1;}
+  body[data-activity-point="GH-01-K03"][data-activity-type="game"] .game-main{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:8px;padding:10px;}
+  body[data-activity-point="GH-01-K03"][data-activity-type="game"] :is(#level-info,#target-text,.action-bar,#feedback,#explanation){grid-column:1/-1;margin:0!important;}
+  body[data-activity-point="GH-01-K03"][data-activity-type="game"] .canvas-wrapper{grid-column:1;grid-row:3;height:210px!important;}
+  body[data-activity-point="GH-01-K03"][data-activity-type="game"] #input-controls{grid-column:2;grid-row:3;display:flex;flex-direction:column;gap:6px;padding:8px;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] #game-screen.active{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] #game-screen>:is(h2,p,#candidate-grid,#feedback,#hint-container,button:last-child){grid-column:1/-1;margin:4px 0!important;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] #game-screen>.rule-box{grid-column:1;grid-row:2;margin:0;padding:8px;line-height:1.5;box-sizing:border-box;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] #game-screen>.table-container{grid-column:2;grid-row:2;margin:0;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] :is(th,td){padding:5px;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] .candidate-btn{min-height:40px;padding:7px;font-size:16px;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] .prediction-toggle{margin:0;}
+  body[data-activity-point="GH-02-K01"][data-activity-type="game"] :is(.prediction-btn,#submit-point-btn){min-height:40px;padding:7px;margin:0;}
+}
+#sidebar{overflow-y:auto}#sidebar.collapsed{display:block}</style></head>
 <body>
 
 <div id="diagram-container">
@@ -950,11 +971,11 @@ function showNodeDetail(nodeId) {
 }
 
 function runSimulation() {
-  const leftVal = parseFloat(document.getElementById('sim-left').value);
-  const rightVal = parseFloat(document.getElementById('sim-right').value);
+  const leftVal = (document.getElementById('sim-left').value.trim() ? Number(document.getElementById('sim-left').value) : NaN);
+  const rightVal = (document.getElementById('sim-right').value.trim() ? Number(document.getElementById('sim-right').value) : NaN);
   const resultDiv = document.getElementById('sim-result');
 
-  if (isNaN(leftVal) || isNaN(rightVal)) {
+  if (!Number.isFinite(leftVal) || !Number.isFinite(rightVal) || Math.abs(leftVal)>1000 || Math.abs(rightVal)>1000) {
     resultDiv.className = 'sim-result show noeexist';
     resultDiv.innerHTML = '⚠️ 请输入有效的数值';
     return;
@@ -1164,5 +1185,318 @@ setTimeout(() => {
 <script src="../../主动探索证据/free-exploration.js"></script>
 <script src="../../主动探索证据/free-exploration-runtime.js"></script>
 <!-- concept-exploration:end -->
-</body>
+<script>window.R7_TASK_ID="GH-02-K02-mindMap";window.R7_PANEL=["#sidebar"];
+(function(root,factory){const api=factory();if(typeof module==='object')module.exports=api;else root.R8Activities=api;})(typeof window==='undefined'?globalThis:window,function(){
+ 'use strict';
+ const ids=['GH-01-K01','GH-01-K02','GH-01-K03','GH-02-K01','GH-02-K02','GH-02-K03'];
+ const guides={
+ simulation:[
+  '先猜输入增加1时，输出会增加多少，再用滑块比较2x、x+3和x²。每次先固定一条规则，用图上的点和计算过程核对自己的预测。',
+  '先选一种函数，代入一两个横坐标算出应有的高度，再启动并拖动橙点验证。吸附容差只是操作辅助；点是否属于图像，仍由公式决定。',
+  '先关闭趋势指示器，按横坐标从小到大的顺序观察，再打开提示核对。试着反向拖动：鼠标的移动方向变了，函数在该区间的增减是否改变？',
+  '先预测初始函数的输出趋近哪个数，再分别从左右靠近2并减小步长。利用原有数表与预测框验证；最后用x≠2时的规则x+2解释观察，而不只看最后一行。',
+  '先比较跳跃情形的两侧读数，再切换到可去间断。分开看运动点当前高度、两侧趋近值和单点取值。δ是输入靠近目标的停止距离，不是输出误差。',
+  '先判断紫点应移到哪里，再拖动并检查连续性；随后故意移开一点，观察哪一项条件失效。空心圈的大小只影响显示，不删除邻近输入。'
+ ],
+ mindMap:[
+  '沿输入→规则→输出展开。试着用自己的话说明两条连接：输入受什么限制？规则与一次计算得到的值有什么区别？无需再计算一组固定数字。',
+  '从输入和输出找到有序对，再连接到图像点。选一个图上的点，说清先读哪条轴、代入哪个坐标、怎样判断它是否满足规则。',
+  '把上升、下降和不变三个分支放在一起比较。再展开复杂变化：说明“找到一个反例”和“证明整个区间的性质”所需的依据为什么不同。',
+  '对照输入目标a、附近趋势L与点值f(a)三个节点。把左右数表与规则解释连起来；有限记录是线索，不能独自替代对整个邻域的说明。',
+  '先在原有模拟器中输入两个不同的有限数，再改成相同的数。运行判定，沿高亮路径说明是哪一步改变了结论；不要用两侧的平均值代替极限。',
+  '沿三层条件逐步展开，说明失败会停在哪一层。对比“没有点值”和“没有共同有限极限”：两者后续可以采取的修复方法是否一样？'
+ ],
+ visualization3d:[
+  '固定一条函数规则，增加采样密度，比较映射线如何变密。旋转视角后再看：新增的是可见样本，不是新的函数规则；有限根线仍不是全部输入。',
+  '选f(x)=x/3，依次生成负输入、0和正输入的立柱。比较顶端在零平面的下方、平面上还是上方，再用数值读数核对；柱长与带正负号的输出要分开。',
+  '沿黄色的z=0截面选x₁<x₂，比较两个标记的高度，再把第二个点移到别处。观察结论如何随输入对改变；这只能直接说明当前两点的关系。',
+  '把输入从10调到50，比较3+1/x与3的距离，再观察侧面投影。数值越来越接近3，却不在有限正输入处等于3；这里考察输入不断增大。',
+  '先用俯视图比较输入位置，再切到侧视图比较输出高度。同一组数据为何在一个视角看似重合、另一个视角却分开？用左右极限的读数解释。',
+  '切换“只改f(0)”并对照2D视图：绿色附近轨道是否改变，紫色点又怎样移动？用共同极限1与当前点值的关系解释连续性，巡航只用于观察。'
+ ],
+ game:[
+  '两条已知规则通过相同的旧样本。找一个新输入并分别计算，再用这个反例判断有限记录能支持什么结论。',
+  '逐点代入规则审核记录。把“计算出的输出”和“给定纵坐标”分开比较，不合格的点再修正。',
+  '按关卡约束构造折线。先满足正负位置，再检查每一段的变化方向；试试是否还有另一组有效端点。',
+  '第一轮的数表看起来趋近同一个数：找更靠近0的输入检查这个猜测。第二轮则反过来比较不同规则是否可以有相同极限。',
+  '先诊断为什么只改点值不能改变跳跃。第二轮分别记录左右极限和原点值，只判断共同极限，不提前做下一知识点的连续修复。',
+  '先判断能否只改点值，再说明依据。换一组规则后重新检查三项连续条件，避免照搬前一轮结论。'
+ ]};
+ const graphics={simulation:['#canvas-container','#canvas-container','.canvas-container','.canvas-wrap','#canvasWrapper','#canvas-container'],mindMap:['#diagram-area','#diagram-area','#diagram-wrap','#svg-container','#diagram-container','#svgContainer']};
+ const actions=[['main-btn','reset-btn'],['main-btn','reset-btn'],['main-btn','reset-btn'],['main-btn','reset-btn'],['mainBtn','resetBtn'],['check-btn','start-btn','reset-btn']];
+ const activities=Object.fromEntries(ids.flatMap((id,i)=>Object.entries(guides).map(([type,list])=>[id+'-'+type,{point:id,type,guide:list[i],graphic:graphics[type]?.[i],primary:type==='simulation'?actions[i]:[],game:type==='game'}])));
+ return {version:'functions-exploration-r8-v1',courseVersion:'functions-limits-exploration-r8-20261106',activities};
+});
+
+(function(){
+ 'use strict';
+ const id=window.R7_TASK_ID,activity=window.R8Activities.activities[id];if(!activity)return;
+ function init(){
+  const panel=(window.R7_PANEL||[]).map(s=>document.querySelector(s)).find(Boolean)||document.body;
+  document.body.dataset.activityRevision=window.R8Activities.version;
+  document.body.dataset.activityPoint=activity.point;document.body.dataset.activityType=activity.type;
+  const box=document.createElement('section');box.className='r7-learning r8-guidance';box.setAttribute('aria-label','本页观察指引');
+  const guide=document.createElement('p');guide.className='r7-guide';guide.textContent=activity.guide;box.append(guide);
+  if(id==='GH-01-K01-simulation'){
+   const legend=document.createElement('aside');legend.id='r7-trace-legend';legend.setAttribute('aria-label','图上点的含义');
+   legend.innerHTML='<p><span class="r8-current">●</span> 粉色大点：当前的(x, f(x))。<span class="r8-history">●</span> 黄色小点：之前记录的输入和对应输出。</p><p>自动演示随机记录部分位置，最多保留20条；疏密不代表变化快慢。重置或换规则会清空记录。</p>';box.prepend(legend);
+  }
+  if(activity.graphic){
+   const graphic=document.querySelector(activity.graphic);if(!graphic)throw Error('Missing activity graphic: '+id);
+   const figure=document.createElement('figure');figure.className='r8-figure';graphic.before(figure);figure.append(graphic,box);graphic.classList.add('r8-graphic');
+   if(getComputedStyle(figure.parentElement).flexDirection==='column')figure.classList.add('r8-column');
+  }else if(activity.type==='visualization3d'){
+   // Keep live readouts, but replace static instructions with the current observation task.
+   for(const child of [...panel.children])if(child.tagName!=='H2'&&!child.id&&!child.querySelector('[id]'))child.hidden=true;
+   panel.append(box);panel.classList.add('r8-space-caption');
+   if(id==='GH-02-K03-visualization3d'){const alternate=document.getElementById('2d-fallback');document.getElementById('canvas-container').append(alternate);alternate.style.setProperty('display','none','important');}
+  }else panel.append(box);
+  if(activity.primary.length){
+   const bar=document.createElement('div');bar.className='r8-actions';bar.setAttribute('aria-label','主要操作');
+   const parents=new Set();for(const key of activity.primary){const button=document.getElementById(key);if(!button)throw Error('Missing primary control: '+key);parents.add(button.parentElement);bar.append(button);button.dataset.primaryControl='true';}
+   panel.prepend(bar);for(const parent of parents)if(parent!==panel&&!parent.children.length&&!parent.id)parent.remove();
+   const bg=getComputedStyle(panel).backgroundColor;if(bg!=='rgba(0, 0, 0, 0)')bar.style.backgroundColor=bg;
+  }
+  const clearOldFeedback=()=>{const mirror=document.getElementById('cq-visible-feedback');if(mirror)mirror.hidden=true;};
+  window.R7Continue=function(next){const current=panel.querySelector('.screen.active')||panel;const feedback=[...current.querySelectorAll('[id*="feedback"],.feedback')].find(e=>!e.closest('.r7-learning')&&e.getBoundingClientRect().height>0);const host=feedback||current;host.querySelector('.r7-continue')?.remove();const button=document.createElement('button');button.className='r7-continue';button.type='button';button.textContent='读完反馈，继续';button.addEventListener('click',()=>{button.remove();next();clearOldFeedback();},{once:true});host.append(button);};
+  if(activity.game){let active=panel.querySelector('.screen.active');const observer=new MutationObserver(()=>{const next=panel.querySelector('.screen.active');if(next!==active){active=next;clearOldFeedback();}});panel.querySelectorAll('.screen').forEach(screen=>observer.observe(screen,{attributes:true,attributeFilter:['class']}));}
+  if(activity.game&&typeof window.startGame==='function'){window.startGame();const reset=window.resetGame;if(reset)window.resetGame=function(){reset();window.startGame();};}
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+(function(root,factory){const api=factory();if(typeof module==='object')module.exports=api;else root.R9Native=api;})(typeof window==='undefined'?globalThis:window,function(){
+ 'use strict';
+ const version='native-construction-r9-v1',courseVersion='functions-limits-native-r9-20261106';
+ const points=['GH-01-K01','GH-01-K02','GH-01-K03','GH-02-K01','GH-02-K02','GH-02-K03'];
+ const concepts=[
+  '函数是一条固定的对应规则。x是输入，f(x)是按规则得到的输出。在允许的输入范围内，每个输入必须有、而且只能有一个输出；两个不同输入可以得到同一个输出。只看到几个样本，还不能确定所有输入的规则。',
+  '图像上的点写成(x,y)：先读横坐标x，再读纵坐标y。若规则是y=f(x)，就把x代入，核对算出的f(x)是否等于y。坐标可以为负；转动视角、改变刻度都不会改变这个等式。',
+  '判断增减时，先固定一个区间，再按x从小到大比较。严格上升要求区间内任取x₁<x₂，都有f(x₁)<f(x₂)。输出为负也可以上升。一个不满足的输入对就能否定“全程上升”，几个满足的点却不能证明它。',
+  '极限描述输入靠近某个位置时，输出趋近什么数。目标输入a、趋近值L和点值f(a)是三件事；考察附近时排除x=a。数表可以帮助发现趋势，但判断要有对所有足够近输入都适用的规则。输入不断增大时，也可以考察输出是否趋近固定的数。',
+  '左极限看x<a的一侧，右极限看x>a的一侧。双侧有限极限存在，需要两侧分别趋近有限数，而且这两个数相等。点值f(a)不会改变附近趋势；两侧不相等、无界或没有共同趋近值，都不能得到双侧有限极限。',
+  '在定义域内点a处连续，需要：f(a)有定义；两侧有共同有限极限L；f(a)=L。只有点值缺失或不相等时，可以把点值补成L。两侧趋势不一致时，只改点值没有用。连续不要求光滑，例如|x|在0有尖角，仍然连续。'
+ ];
+ const tasks={
+  'GH-01-K01-mindMap':{title:'把对应关系搭出来',goal:'允许输入是−1、0、1。点击格子连接输入和输出，让这张表能够定义一个函数；不要求遵从某个公式。',kind:'mapping'},
+  'GH-01-K02-mindMap':{title:'让坐标、规则和图上的点对上',goal:'规则是y=2x−1。左右移动改变x，上下移动改变y；把蓝点放到这条规则的图像上，再固定它。',kind:'point'},
+  'GH-01-K03-mindMap':{title:'给“全程上升”找一个反例',goal:'有人说y=x²−4在[−3,3]上严格上升。移动两个标记，找出x₁<x₂但右点不比左点高的一对。',kind:'counterexample'},
+  'GH-02-K01-mindMap':{title:'把一个样本变成一个邻近范围',goal:'当x≠2时，f(x)=(x²−4)/(x−2)=x+2。试着选一个范围，让其中所有输入的输出距4都小于0.2。',kind:'neighborhood'},
+  'GH-02-K02-mindMap':{title:'让数值沿关系图走一遍',goal:'用右侧原有的左右极限输入框，比较相等、不相等和负数情形。运行判定后，沿高亮路径看结论来自哪一个条件。',kind:'sides'},
+  'GH-02-K03-mindMap':{title:'沿条件逐层修复',goal:'先看哪一层条件没满足，再决定改点值、保留原函数，还是承认只改点值不能解决。',kind:'repair'},
+  'GH-01-K01-visualization3d':{title:'保留输入与输出的对照',goal:'选一条规则，用精确输入固定黄色映射线，再留下一条记录。比较不同输入同值与同一输入的唯一输出；采样线变密不会改变规则。',kind:'mapping_observe'},
+  'GH-01-K02-visualization3d':{title:'用立柱表示带符号的输出',goal:'在原控件中选f(x)=x/3并生成立柱。先收集一个顶端在零平面下方的例子，再收集上方的例子。柱子的长度不带正负号，顶端的坐标才表示输出。',kind:'signed_pillar'},
+  'GH-01-K03-visualization3d':{title:'在固定截面上寻找反例',goal:'固定z=0，把原来的两个标记作为x₁和x₂。找出x₁<x₂但f(x₁)≥f(x₂)的一对，否定“整条黄色截面严格上升”。旋转相机不会改变它们的坐标。',kind:'terrain'},
+  'GH-02-K01-visualization3d':{title:'让后面的整段轨迹进入误差带',goal:'这里考察x不断增大，z=3+1/x趋近3。用原滑块选择门槛X，让所有x>X的输出都距3小于0.05；采用门槛前，先观察距离。',kind:'tail'},
+  'GH-02-K02-visualization3d':{title:'同一组数据，换视角取证',goal:'先俯视，再侧视，分别保留观察。图中两侧极限固定为1和−1：俯视会丢失高度信息，不能用投影重合判断双侧极限。',kind:'projection'},
+  'GH-02-K03-visualization3d':{title:'分开观察附近轨道与单点',goal:'用原按钮只改f(0)，保留改变前后的记录。附近按1+x²/5变化，共同极限始终为1；对照2D图看单点改动如何影响连续性。',kind:'point_observe'}
+ };
+ const finite=(v,lo,hi)=>typeof v==='number'&&Number.isFinite(v)&&v>=lo&&v<=hi;
+ const terrain=x=>Math.sin(x/8*2.5)*.6+Math.sin(x/8*4+1)*Math.cos(.5)*.25+Math.cos(x/8*1.5)*.3;
+ function evaluate(id,s){
+  const t=tasks[id];if(!t||!s||typeof s!=='object'||Array.isArray(s))return null;
+  const result=(ok,feedback)=>({correct:ok,feedback});
+  switch(t.kind){
+   case 'mapping':{
+    if(!Array.isArray(s.links)||s.links.length!==3||s.links.some(row=>!Array.isArray(row)||row.some(n=>![0,1,2].includes(n))||new Set(row).size!==row.length))return null;
+    const missing=s.links.findIndex(a=>!a.length),multiple=s.links.findIndex(a=>a.length>1);
+    if(missing>=0)return result(false,'输入'+(missing-1)+'还没有输出。允许的每个输入都要有对应结果。');
+    if(multiple>=0)return result(false,'输入'+(multiple-1)+'连到了多个输出。请让这个输入只保留一个输出；不同输入共享一个输出没有问题。');
+    return result(true,'每一行恰有一个输出，这张有限对应表定义了一个函数。输出列不必各占一格；若要定义更多输入，还需要说明它们的规则。');}
+   case 'point':if(!finite(s.x,-3,3)||!finite(s.y,-7,7))return null;return result(s.y===2*s.x-1,s.y===2*s.x-1?'蓝点的纵坐标等于2x−1，所以属于这条图像。换一个x后，再找到对应点。':'横坐标是'+s.x+'，代入得到2×('+s.x+')−1='+ (2*s.x-1)+'，与当前纵坐标'+s.y+'不同。上下移动蓝点，或重新选择横坐标。');
+   case 'counterexample':if(!finite(s.a,-3,3)||!finite(s.b,-3,3)||s.a>=s.b)return null;return result(s.a*s.a>=s.b*s.b,s.a*s.a>=s.b*s.b?'右点不比左点高，这一对就否定了整个区间严格上升。它不说明整个区间都下降；0右侧仍在上升。':'这一对的右点更高，只能说明这两个位置符合上升关系。把标记移到0左侧，再看能否找到反例。');
+   case 'neighborhood':if(!finite(s.delta,.01,1)||![.2,.05].includes(s.epsilon))return null;return result(s.delta<=s.epsilon,s.delta<=s.epsilon?'对所有0<|x−2|<δ，都有|f(x)−4|=|x−2|<δ≤允许误差。理由覆盖整个邻近范围。':'当前范围太宽。例如选取距2为'+((s.delta+s.epsilon)/2).toFixed(3)+'的输入，仍在范围内，但输出已超出允许误差。请缩小δ。');
+   case 'repair':{
+    if(!['hole','jump','corner'].includes(s.case)||!['apply','leave','impossible'].includes(s.action)||!finite(s.value,-2,5))return null;
+    const ok=s.case==='hole'?s.action==='apply'&&s.value===2:s.case==='jump'?s.action==='impossible':s.action==='leave'||s.action==='apply'&&s.value===0;
+    return result(ok,ok?({hole:'附近规则是x+2，两侧趋近2。补上f(0)=2后三个条件都满足。',jump:'左侧趋近1、右侧趋近3。没有共同极限，任何单点值都无法补平这个跳跃。',corner:'|x|在0的左右极限与点值都是0。尖角不妨碍连续，无需修复。'})[s.case]:({hole:'两侧都按x+2趋近2。需要补的点值由这个共同极限决定。',jump:'这一步卡在共同极限：左右趋近值不相等。调整一个点不会改变两侧规则。',corner:'先核对三项条件。原函数的点值和共同极限都是0，不需要把尖角变圆。'})[s.case]);}
+   case 'signed_pillar':if(s.rule!=='linear'||!finite(s.x,-11,11)||!['negative','positive'].includes(s.target))return null;return result(s.target==='negative'?s.x<0:s.x>0,(s.target==='negative'?s.x<0:s.x>0)?'x='+s.x+'，输出x/3='+Number((s.x/3).toFixed(3))+'。顶端在零平面'+(s.x<0?'下':'上')+'方；柱长是输出的绝对值。':'这个输入的输出不在目标一侧。保持规则x/3，改变输入的正负，再生成立柱。');
+   case 'terrain':if(!finite(s.a,-7,7)||!finite(s.b,-7,7)||s.a>=s.b||!finite(s.scale,.5,3))return null;return result(terrain(s.a)>=terrain(s.b),terrain(s.a)>=terrain(s.b)?'按x从左到右，右侧输出没有变大。这一对足以否定全程严格上升；不要据此声称整条截面下降。':'这两个位置的输出在增大。它们不是反例；沿黄色截面把右标记移过一个局部高处，再比较。');
+   case 'tail':if(!finite(s.x,1,50)||![.05,.1].includes(s.epsilon))return null;return result(s.x>=1/s.epsilon,s.x>=1/s.epsilon?'当x>X时，0<1/x<1/X≤允许误差，因此后面所有输出都在误差带内。有限输入处仍有1/x>0，不会恰好等于3。':'当前门槛还不够大。在X与'+(1/s.epsilon)+'之间仍有输出离3超过允许误差；继续向右移动门槛。');
+   default:return null;
+  }
+ }
+ function fingerprint(id,s){return JSON.stringify([id,Object.keys(s||{}).sort().map(k=>[k,s[k]])]);}
+ function grade(data,point){if(data?.independent!==false||data.evidence_scope!=='native_construction_r9'||data.task_version!==version||data.course_version!==courseVersion)return null;const id=data.parameters?.task_id;if(!tasks[id]||!id.startsWith(point+'-')||data.knowledge_point_id!==point||data.challenge_id!==id+'-construction')return null;return evaluate(id,data.parameters.state)?.correct??null;}
+ return {version,courseVersion,points,concepts,tasks,evaluate,grade,fingerprint,terrain};
+});
+
+(function(root,factory){const api=factory(typeof module==='object'?require('../functions-limits-r9/model'):root.R9Native);if(typeof module==='object')module.exports=api;else root.R9Native=api;})(typeof window==='undefined'?globalThis:window,function(base){
+ 'use strict';
+ const version='native-construction-r10-v1',courseVersion='functions-limits-integrated-r10-20261106';
+ const tasks=JSON.parse(JSON.stringify(base.tasks));
+ Object.assign(tasks['GH-01-K02-mindMap'],{kind:'domain',title:'还原空点与真正的点值',goal:'x≠2时，f(x)=(x²−4)/(x−2)=x+2。先看题目是否另外规定f(2)，再还原图像。约分不能替原函数补上定义；紫点是你正在调整的草稿。'});
+ Object.assign(tasks['GH-02-K01-mindMap'],{title:'倍率改变后，输入范围该多大',goal:'附近规则为f(x)=k(x−2)+4。先看输出误差要求，再调整输入范围δ；切换倍率k，说明为什么一个范围不能照搬到所有规则。'});
+ Object.assign(tasks['GH-01-K03-visualization3d'],{title:'在可读的截面上寻找反例',goal:'黄色截面固定z=0，规则为f(x)=s(x²/32−1)，s是正的高度倍率。选择x₁<x₂但f(x₁)≥f(x₂)的一对，否定整段严格上升；负输出也可以增大。'});
+ const finite=(v,a,b)=>typeof v==='number'&&Number.isFinite(v)&&v>=a&&v<=b;
+ function evaluate(id,s){
+  if(!s||typeof s!=='object')return null;
+  if(id==='GH-01-K02-mindMap'){
+   if(!['hole','assigned'].includes(s.mode)||!['exclude','assign'].includes(s.action)||!finite(s.pointValue,-2,5))return null;
+   const correct=s.mode==='hole'?s.action==='exclude':s.action==='assign'&&s.pointValue===0;
+   return {correct,feedback:correct?(s.mode==='hole'?'原式在2处没有定义，(2,4)保留空点。x+2仅在x≠2时与原式等价；两个公式在其他地方相同，不代表定义域相同。':'空点(2,4)表示附近曲线没有在这里取值，实心点(2,0)记录另行规定的f(2)=0。同一输入仍只有一个实际输出。'):(s.mode==='hole'?'题目没有给f(2)赋值。约分只对x≠2成立，不能把(2,4)或其他点擅自画成实际点值。':'此时题目已另外规定f(2)=0。不能删掉这个值，也不能用约分式在2处算出的4覆盖原定义。')};
+  }
+  if(id==='GH-02-K01-mindMap'){
+   if(!finite(s.delta,.01,1)||![.2,.05].includes(s.epsilon)||![1,2,3,4].includes(s.gain))return null;
+   const correct=s.gain*s.delta<=s.epsilon;
+   return {correct,feedback:correct?`对于所有0<|x−2|<δ，都有|f(x)−4|=${s.gain}|x−2|<${s.gain}δ≤${s.epsilon}。正倍率越大，允许的输入半径越小。`:`这个范围过宽。取输入距离r=(${s.delta}+${s.epsilon}/${s.gain})/2，它小于δ，却有${s.gain}r>${s.epsilon}，所以输出误差超标。把δ缩到不大于${s.epsilon}/${s.gain}（精确上界），再用倍率关系说明整个范围。`};
+  }
+  if(id==='GH-01-K03-visualization3d'){
+   if(!finite(s.a,-7,7)||!finite(s.b,-7,7)||s.a>=s.b||!finite(s.scale,.5,3))return null;
+   const correct=s.a*s.a>=s.b*s.b;
+   return {correct,feedback:correct?'右侧输入更大，输出却没有变大。这一对足以反驳全程严格上升；它不能证明整段下降，0右侧仍会上升。':'这两个位置的输出在增大，不能作为反例。保持x₁<x₂，移到0左侧再比较；用公式而不是相机朝向解释。'};
+  }
+  return base.evaluate(id,s);
+ }
+ function grade(data,point){const id=data?.parameters?.task_id;if(data?.independent!==false||data.evidence_scope!=='native_construction_r10'||data.task_version!==version||data.course_version!==courseVersion||data.knowledge_point_id!==point||!tasks[id]||!id.startsWith(point+'-')||data.challenge_id!==id+'-construction')return null;return evaluate(id,data.parameters.state)?.correct??null;}
+ return {...base,version,courseVersion,tasks,evaluate,grade};
+});
+
+(function(){
+ 'use strict';
+ const model=window.R9Native,id=window.R7_TASK_ID,task=model.tasks[id],point=id.slice(0,9),index=model.points.indexOf(point);
+ function init(){
+  const guide=document.querySelector('.r8-guidance');if(!guide||index<0)return;
+  document.body.dataset.activityRevision=model.version;
+  const concept=document.createElement('p');concept.className='r9-concept';concept.textContent=model.concepts[index];guide.prepend(concept);
+  if(!task)return;
+  guide.classList.add('r9-native');guide.style.setProperty('--r9-text',getComputedStyle(guide.querySelector('.r7-guide')).color);const title=document.createElement('strong');title.textContent=task.title;guide.querySelector('.r7-guide').textContent=task.goal;concept.after(title);
+  const work=document.createElement('div');work.className='r9-work';guide.append(work);
+  const feedback=document.createElement('p');feedback.className='r9-feedback';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');guide.append(feedback);
+  let sequence=0,feedbackCount=0,feedbackVersion=0,exposedFeedbackVersion=-1,lastCommit='',snapshots=[];
+  function emit(kind,state,extra={}){const key=crypto.randomUUID?.()||Date.now()+'-'+(++sequence),data={schema_version:'openmaic-learning-event-v2',event_id:key,attempt_id:key,chapter_id:'V14-C1',knowledge_point_id:point,scene_type:id.slice(10),resource_id:id,course_version:model.courseVersion,task_version:model.version,evidence_scope:'native_construction_r10',independent:false,source:'student',emission_source:'student',timestamp:new Date().toISOString(),parameters:{task_id:id,state,prior_feedback_count:feedbackCount},...extra};
+   if(window.OpenMaicLearningEvidence?.emit)window.OpenMaicLearningEvidence.emit(kind,data);else window.parent.postMessage({type:'maic_learning_event',payload:{...data,event_type:kind}},'*');
+  }
+  function say(text){if(feedback.textContent!==text){feedback.textContent=text;feedbackVersion++;}if(text)requestAnimationFrame(()=>{const scroll=guide.querySelector('.r9-content')||guide;const f=feedback.getBoundingClientRect(),s=scroll.getBoundingClientRect();if(f.bottom>s.bottom)scroll.scrollTop+=f.bottom-s.bottom+8;
+   // Re-observe updated content even when its visible fraction stayed unchanged.
+   exposure.takeRecords();exposure.unobserve(feedback);exposure.observe(feedback);
+  });}
+  const exposure=new IntersectionObserver(entries=>{if(entries.some(e=>e.intersectionRatio>=.5)&&feedback.textContent&&feedbackVersion!==exposedFeedbackVersion){exposedFeedbackVersion=feedbackVersion;emit('authored_feedback_exposed',{feedback:feedback.textContent,feedback_version:feedbackVersion},{source:'system',emission_source:'system'});}},{threshold:.5});exposure.observe(feedback);
+  function commit(state){const result=model.evaluate(id,state);if(!result){say('先完成有效的操作设置，再采用这组结果。');return false;}say(result.feedback);const key=model.fingerprint(id,state);if(lastCommit===key)return result.correct;lastCommit=key;
+   emit('challenge_result',state,{challenge_id:id+'-construction',is_correct:result.correct,attempt_number:++sequence});feedbackCount++;return result.correct;
+  }
+  function button(text,fn,host=work){const b=document.createElement('button');b.type='button';b.textContent=text;b.addEventListener('click',fn);host.append(b);return b;}
+  function line(text,host=work){const p=document.createElement('p');p.textContent=text;host.append(p);return p;}
+  function slider(label,min,max,step,value,change,host=work){const l=document.createElement('label');l.className='r9-slider';const out=document.createElement('span'),input=document.createElement('input');input.type='range';Object.assign(input,{min,max,step,value});input.setAttribute('aria-label',label);const update=()=>{out.textContent=label+'：'+Number(input.value);change?.(Number(input.value));};input.addEventListener('input',()=>{update();say('');});input.addEventListener('change',()=>emit('exploration_observed',{control:label,value:Number(input.value)}));l.append(out,input);host.append(l);out.textContent=label+'：'+value;return input;}
+  function observe(state,text){if(snapshots.some(s=>JSON.stringify(s)===JSON.stringify(state))){say('这组条件已经保留。改变一个相关条件，再比较。');return;}snapshots.push(state);snapshots=snapshots.slice(-4);let list=guide.querySelector('.r9-records');if(!list){list=document.createElement('ol');list.className='r9-records';feedback.before(list);}list.replaceChildren();for(const s of snapshots){const li=document.createElement('li');li.textContent=task.kind==='mapping_observe'?'输入'+s.x+' → 输出'+Number(s.y.toFixed(3))+'；规则：'+s.ruleLabel:task.kind==='sides'?'左'+s.left+' / 右'+s.right+' → '+(s.left===s.right?'共同极限'+s.left:'不相等'):task.kind==='projection'?({top:'俯视：高度被压掉',side:'侧视：极限高度差2',angle:'斜视：位置与高度同时可见'})[s.view]:'共同极限1 / 点值'+s.value+' → '+(s.value===1?'连续':'不连续');list.append(li);}say(text);emit('exploration_observed',{records:snapshots});}
+  function plot(fn,a,b,minY=-7,maxY=7){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 300 120');svg.classList.add('r9-plot');svg.setAttribute('role','img');svg.setAttribute('aria-label','函数曲线与当前标记点');work.prepend(svg);const X=x=>20+(x+3)/6*260,Y=y=>100-(y-minY)/(maxY-minY)*85;
+   return ()=>{const pts=Array.from({length:121},(_,i)=>{const x=-3+i/20;return X(x)+','+Y(fn(x));}).join(' ');const values=b?[a(),b()]:[a()];svg.innerHTML='<path d="M20 '+Y(0)+'H280 M150 10V105" stroke="currentColor" opacity=".35" fill="none"/><polyline points="'+pts+'" fill="none" stroke="#bda5ff" stroke-width="2"/>'+values.map((p,i)=>'<circle cx="'+X(p.x)+'" cy="'+Y(p.y)+'" r="5" fill="'+(i?'#fbbf24':'#56b4ff')+'"/><text x="'+Math.min(240,Math.max(24,X(p.x)+6))+'" y="'+Math.max(13,Y(p.y)-8)+'" fill="currentColor" font-size="11">('+p.x+','+Number(p.y.toFixed(2))+')</text>').join('')+'<text x="280" y="'+(Y(0)-4)+'" fill="currentColor" font-size="11">x</text><text x="157" y="12" fill="currentColor" font-size="11">y</text>';};
+  }
+  if(task.kind==='mapping'){
+   const links=[[],[],[]],table=document.createElement('table');table.className='r9-mapping';table.innerHTML='<caption>点击交点添加或移除连线</caption><thead><tr><th>输入 ↓ / 输出 →</th><th>0</th><th>1</th><th>2</th></tr></thead>';const body=document.createElement('tbody');table.append(body);work.append(table);
+   links.forEach((row,i)=>{const tr=document.createElement('tr');const h=document.createElement('th');h.textContent=i-1;tr.append(h);[0,1,2].forEach(v=>{const cell=document.createElement('td');const b=button('○',()=>{const at=row.indexOf(v);at<0?row.push(v):row.splice(at,1);row.sort();b.textContent=row.includes(v)?'●':'○';b.setAttribute('aria-pressed',String(row.includes(v)));say('');},cell);b.setAttribute('aria-label','连接输入'+(i-1)+'与输出'+v);b.setAttribute('aria-pressed','false');tr.append(cell);});body.append(tr);});
+   button('采用这组连线',()=>commit({links}));
+   }else if(task.kind==='domain'){
+   let mode='hole',pointValue=0;const read=line(''),svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 320 140');svg.classList.add('r9-plot');svg.setAttribute('role','img');svg.setAttribute('aria-label','x等于2处的空点和点值草稿');work.prepend(svg);
+   function draw(){read.textContent=mode==='hole'?'题目条件：f(2)未定义。其余输入按x+2计算。':'题目条件：另外规定f(2)=0，其余输入仍按x+2计算。';svg.innerHTML='<path d="M15 110H305 M70 12V130" fill="none" stroke="currentColor" opacity=".45"/><path d="M10 97.5L310 35" stroke="#9b8ce8" stroke-width="3"/><circle cx="190" cy="60" r="7" fill="#141b29" stroke="#bda5ff" stroke-width="3"/><circle cx="190" cy="'+(110-pointValue*12.5)+'" r="5" fill="#f2a1cd"/><text x="201" y="53" fill="currentColor" font-size="12">空点(2,4)</text><text x="105" y="'+Math.min(128,124-pointValue*12.5)+'" fill="currentColor" font-size="12">草稿(2,'+pointValue+')</text><text x="295" y="123" fill="currentColor" font-size="12">x</text>';}
+   button('切换：是否另给点值',()=>{mode=mode==='hole'?'assigned':'hole';draw();say('题目条件已改变，请重新核对定义。');});slider('准备画的f(2)',-2,5,1,0,v=>{pointValue=v;draw();});button('保留未定义，不补点',()=>commit({mode,pointValue,action:'exclude'}));button('按草稿画实际点值',()=>commit({mode,pointValue,action:'assign'}));draw();
+  }else if(task.kind==='point'){
+   let x=0,y=0;const draw=plot(v=>2*v-1,()=>({x,y}));slider('横坐标x',-3,3,1,x,v=>{x=v;draw();});slider('纵坐标y',-7,7,1,y,v=>{y=v;draw();});button('固定这个点',()=>commit({x,y}));draw();
+  }else if(task.kind==='counterexample'){
+   let a=-2,b=1;const draw=plot(v=>v*v-4,()=>({x:a,y:a*a-4}),()=>({x:b,y:b*b-4}),-5,6);slider('左标记x₁',-3,3,.5,a,v=>{a=v;draw();});slider('右标记x₂',-3,3,.5,b,v=>{b=v;draw();});button('保留这个反例',()=>{if(a>=b)return say('先把x₁放在x₂左边，按输入从小到大的顺序比较。');commit({a,b});});draw();
+  }else if(task.kind==='neighborhood'){
+   let delta=.5,epsilon=.2,gain=1;const read=line(''),track=document.createElement('div');track.className='r9-band';track.setAttribute('role','img');work.prepend(track);
+   function update(){read.textContent='输入范围：0<|x−2|<'+delta+'；允许输出误差：|f(x)−4|<'+epsilon+'。输出距离是输入距离的'+gain+'倍。';track.style.setProperty('--span',delta*100+'%');track.style.setProperty('--allowed',epsilon/gain*100+'%');track.setAttribute('aria-label','紫色输入范围半径'+delta+'，绿色允许半径'+epsilon/gain);track.innerHTML='<i class="r9-allowed"></i><i class="r9-chosen"></i><span>中心：a=2 / L=4</span>';}
+   slider('倍率k',1,4,1,gain,v=>{gain=v;update();});slider('邻近范围δ',.01,1,.01,delta,v=>{delta=v;update();});button('采用这个邻近范围',()=>commit({delta,epsilon,gain}));button('换成误差0.05',()=>{epsilon=epsilon===.2?.05:.2;update();say('误差已改变。重新选择能覆盖整个邻域的范围。');});update();
+  }else if(task.kind==='sides'){
+   const read=line('运行原判定器后，这里会保留对照。');const run=document.querySelector('.sim-btn');run?.addEventListener('click',()=>{const values=['sim-left','sim-right'].map(k=>document.getElementById(k).value.trim());if(values.some(v=>!v))return;const [left,right]=values.map(Number);if(![left,right].every(v=>Number.isFinite(v)&&Math.abs(v)<=1000))return;read.textContent='左：'+left+' → '+(left===right?'同一个有限数 → 双侧极限为'+left:'不同的有限数 → 无双侧有限极限')+' ← 右：'+right;observe({left,right},left===right?'这个结论来自两侧有限且相等；没有用到点值。':'这不是操作失败，而是一个对照情形。两侧均值不能替代共同极限。');});
+  }else if(task.kind==='repair'){
+   let selected='hole',value=0;const details=line(''),cases=document.createElement('div');cases.className='r9-case-row';work.prepend(cases);const desc={hole:'x≠0时f(x)=x+2，f(0)未定义。点值 ✕ → 两侧共同趋近2 → 等值待检查。',jump:'x<0时f(x)=x+1，x>0时f(x)=x+3，f(0)=2。点值 ✓ → 左1、右3 ✕ → 无法进入等值检查。',corner:'f(x)=|x|。f(0)=0 ✓ → 左右都趋近0 ✓ → 点值等于极限 ✓。'};
+   function update(){details.textContent=desc[selected];for(const b of cases.children)b.setAttribute('aria-pressed',String(b.dataset.case===selected));}
+   for(const [key,label]of Object.entries({hole:'缺一个点',jump:'两侧跳跃',corner:'连续的尖角'})){const b=button(label,()=>{selected=key;update();say('');},cases);b.dataset.case=key;}
+   slider('准备采用的f(0)',-2,5,1,value,v=>value=v);button('应用点值修复',()=>commit({case:selected,value,action:'apply'}));button('只改点值无法修复',()=>commit({case:selected,value,action:'impossible'}));button('保留原函数',()=>commit({case:selected,value,action:'leave'}));update();
+  }else if(task.kind==='mapping_observe'){
+   slider('固定输入x',-3,3,.5,0,v=>{window.R9Scene?.setInput(v);});button('保留这条映射',()=>{const s=window.R9Scene?.read();if(!s)return say('图形正在初始化，请稍后再操作。');if(!Number.isFinite(s.y))return say('这个输入不在当前函数的实数定义域内，不能生成输出。请检查规则允许哪些输入。');s.ruleLabel=document.getElementById('func-select').selectedOptions[0].textContent;observe(s,'已保留 x='+s.x+' → f(x)='+Number(s.y.toFixed(3))+'。固定规则后，同一个输入只有这一个输出。再选不同输入作比较。');});
+  }else if(task.kind==='signed_pillar'){
+   let target='negative';const read=line('当前收集目标：零平面下方的顶端。');button('收集刚生成的立柱',()=>{const s=window.R9Scene?.read();if(!s||s.rule!=='linear')return say('先用原控件选择f(x)=x/3，再生成立柱。选择规则或还未生成不算失败。');if(commit({...s,target})){target=target==='negative'?'positive':'negative';read.textContent='接着收集：零平面'+(target==='negative'?'下':'上')+'方的顶端。';}});
+  }else if(task.kind==='terrain'){
+   button('保留这对截面证据',()=>{const c=window.R7SceneContext;if(!c)return say('图形正在初始化。');if(c.first>=c.second)return say('先让x₁<x₂，再比较两个输出。');commit({a:c.first,b:c.second,scale:c.scale});});
+  }else if(task.kind==='tail'){
+   const read=line(''),track=document.createElement('div');track.className='r9-distance';work.prepend(track);let epsilon=.05;
+   function update(){const x=Number(document.getElementById('x-slider')?.value||1);read.textContent='X='+x+'，当前距离1/X='+Number((1/x).toFixed(4))+'；要求所有x>X时，距离小于'+epsilon+'。';track.textContent='3 ← 距离 '+Number((1/x).toFixed(4))+' → 3+1/X';}
+   document.getElementById('x-slider')?.addEventListener('input',update);button('采用这个门槛X',()=>{window.R9Scene?.pause();update();commit({x:Number(document.getElementById('x-slider').value),epsilon});});button('换一条误差带',()=>{epsilon=epsilon===.05?.1:.05;update();say('误差要求已改变，再选一个门槛。');});update();
+  }else if(task.kind==='projection'){
+   let view='angle';for(const v of ['top','side','angle'])document.getElementById('preset-'+v)?.addEventListener('click',()=>{view=v;});button('保留当前投影观察',()=>observe({view,left:1,right:-1},({top:'俯视只能比较水平位置，输出高度被压掉了。还需要侧视确认左右趋近值。',side:'侧视能看出两侧极限高度1与−1相差2，双侧有限极限不存在。',angle:'斜视同时显示位置与高度。改变相机只改变投影，不改变函数值。'})[view]));
+  }else if(task.kind==='point_observe'){
+   button('保留点值与附近趋势',()=>{const s=window.R9Scene?.read();if(!s)return say('图形正在初始化。');observe(s,'共同极限仍为1，当前f(0)='+s.value+'。'+(s.value===1?'两者相等，函数连续。':'只改变了点值，附近规则没变；两者不相等，所以不连续。'));});
+  }
+  const actions=document.createElement('footer');actions.className='r9-actions';for(const b of [...work.children].filter(n=>n.tagName==='BUTTON'||n.classList.contains('r9-slider')))actions.append(b);
+  const content=document.createElement('div');content.className='r9-content';content.append(...guide.childNodes);guide.append(content,actions);
+  // Guided constructions remain practice even when their final state is valid.
+  work.addEventListener('click',()=>requestAnimationFrame(()=>window.dispatchEvent(new Event('resize'))));
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+(function(root,factory){const api=factory();if(typeof module==='object')module.exports=api;else root.R10Lessons=api;})(typeof window==='undefined'?globalThis:window,function(){
+ 'use strict';
+ const lessons=[
+ {id:'GH-01-K01',title:'输入、输出和函数规则',minutes:8,
+  goal:'说明允许输入与实际输出，核对同一输入的输出唯一性，并区分已知规则与有限样本猜测。',
+  core:'定义域是允许输入的集合，值域是按规则实际得到的输出集合。f表示整条函数规则，f(x)表示这次输入的输出。固定规则后，每个允许输入恰有一个输出；不同输入可以同值。',
+  example:{title:'先确定范围，再检查对应',setup:'f(x)=x²，允许−2≤x≤2。',steps:['输入−2和2都得到4，输入0得到0。相同输出不违反函数要求。','每个允许输入按平方规则只有一个结果；实际输出从0到4，所以值域是[0,4]。','如果把定义域换成全部实数，规则表达式没变，函数的输入范围和值域都变了。'],conclusion:'判断一个函数，必须同时看定义域和对应规则。'},
+  extension:{title:'多条公式也可以给出唯一输出',setup:'0≤x≤1时y=x+2；1≤x≤3时y=2x+1。',steps:['边界x=1同时适用两条公式，但两式都得到3。','其余允许输入各适用一条规则，所以仍然是函数。','若第二条改为y=2x+2，x=1就同时得到3和4，必须修改边界或规则。'],conclusion:'同一输入有几条适用公式不是关键；它们最终是否给出同一个输出才是关键。'},
+  caution:'若只知道两个观测点，不能认定所有输入都遵从一条直线；先明确“一次函数模型”这一假设，两个不同输入才足以确定该模型。',
+  transfer:'比较几条记录时，先说清“已给定规则”还是“正在猜规则”。后者需要更多假设和新数据检验。',refs:['CN-TJ-1.1','CN-SC-1.1','CN-SCZ-1.1']},
+ {id:'GH-01-K02',title:'坐标点与函数图像',minutes:9,
+  goal:'按刻度读取坐标，用规则核对图像点，保留化简前的定义域，区分空点与实际点值。',
+  core:'有序对(x,y)先写输入再写输出。点属于y=f(x)的图像，需要x在定义域中，而且y=f(x)。空心点表示那个位置不取该值，实心点表示实际点值；图像上的空圈只是标记，不是删除一整段邻域。',
+  example:{title:'化简没有给原式补一个点',setup:'g(x)=(x²−9)/(x−3)，定义域为x≠3。',steps:['先因式分解：x²−9=(x−3)(x+3)。','仅在x≠3时约去x−3，得到g(x)=x+3。','原函数在x=3处仍无定义；图像是直线y=x+3去掉(3,6)，这里画空心点。'],conclusion:'“附近公式相同”不等于“原函数在所有输入上都相同”。'},
+  extension:{title:'限制定义域、补点与单独赋值',setup:'对比q(x)=x+3（全实数）与原g；原g在3处无定义。',steps:['原g与q在x≠3处同值，但定义域不同，所以不是同一个函数。','把q限制为x≠3，或把g补成g(3)=6，都能让两者成为同一个函数。','另设h在3处取1、其他位置按x+3计算，应在(3,6)画空点，在(3,1)画实点。'],conclusion:'补点后画哪一个实心点，以新定义为准；化简本身不负责补点。'},
+  caution:'横轴和纵轴可以使用不同刻度。例如横轴每格1、纵轴每格2，右3格上2格表示(3,4)，不是(3,2)。',
+  transfer:'若q(x)=x+3定义在全部实数上，它与原g不是同一个函数。可把q的定义域限制为x≠3，或给g补定义g(3)=6，使二者相同。若另补g(3)=1，则在(3,1)画实心点，(3,6)仍是空点。',refs:['CN-TJ-1.1','CN-SC-1.1','CN-SCZ-1.1']},
+ {id:'GH-01-K03',title:'图像的上升、下降与变化方向',minutes:8,
+  goal:'按输入顺序比较输出，区分样本判断与全区间判断，构造有效反例。',
+  core:'严格上升是在选定区间内，对任意x₁<x₂都有f(x₁)<f(x₂)。严格下降则要求f(x₁)>f(x₂)。输出正负表示相对横轴的位置；增减表示有序输入对应的输出如何变化。',
+  example:{title:'负输出也可以先增大再减小',setup:'输入0、1、2的输出依次为−4、−1、−3。',steps:['从输入0到1：−4<−1，样本输出增大。','从输入1到2：−1>−3，样本输出减小。','三个输出都是负数，但两次变化方向不同。'],conclusion:'要看输出之间的大小关系，不是只看它们是正数还是负数。'},
+  extension:{title:'一个反例能说明多少',setup:'有人断言f(x)=x²在[−3,3]上严格上升。',steps:['取x₁=−2、x₂=−1，满足x₁<x₂。','f(−2)=4，而f(−1)=1；较大输入反而对应较小输出。','这一对已否定“整个区间严格上升”，但没有证明整个区间下降；0右侧的平方值仍在增大。'],conclusion:'反驳全称判断只需一个有效反例；证明全称判断需要覆盖整个区间的依据。'},
+  caution:'连续也不保证单调。有限个上升的记录之间仍可能出现局部下降，不能把“屏幕中暂时没看到”当成“不存在”。',
+  transfer:'比较两条模型曲线时，可以找一个区分性输入；如果旧样本全部相同，也不能直接宣布两条规则在所有输入上相同。',refs:['CN-TJ-1.1','CN-SC-1.1','CN-SCZ-1.2']},
+ {id:'GH-02-K01',title:'从数表观察趋近',minutes:12,
+  goal:'区分a、L与f(a)，从数表过渡到邻域规则，用误差关系给出对所有允许输入有效的范围。',
+  core:'a是输入靠近的位置，L是附近输出趋近的数，f(a)是输入恰好为a时的输出。讨论x→a时看x≠a的邻近输入；L不由单点取值决定。数表提供线索，规则让我们说明未列出的邻近输入。',
+  example:{title:'从倍率1到倍率3',setup:'x≠2时g(x)=3x+1，另设g(2)=0。要求附近输出与7的距离小于0.3。',steps:['附近规则给出L=7；点值g(2)=0另看。','|g(x)−7|=|3x+1−7|=3|x−2|：输出误差是输入误差的3倍。','取0<|x−2|<0.1，就有|g(x)−7|<0.3。取更小的正半径也有效，不必取最大半径。'],conclusion:'本例应将允许的输出误差除以3；不能照搬倍率1时“输入误差等于输出误差”的数值。'},
+  extension:{title:'“足够近”需要保证所有输入',setup:'用ε表示给定的正输出误差，用δ表示待选的正输入范围半径。',steps:['先给ε>0，再根据规则选择δ>0；不是先固定一批测试点。','若附近f(x)=k(x−a)+L且k≠0，取0<δ≤ε/|k|，就能保证0<|x−a|<δ时，|f(x)−L|<ε。','k=0时附近输出恒为L，误差为0；任何仍落在该规则适用邻域内的正δ都有效。'],conclusion:'一次试点合格不是范围保证。这里的线性公式为邻域内全部允许输入提供了依据。'},
+  caution:'x→∞是输入不断增大，和x→a不是同一种方向。例3+1/x在x→∞时趋近3，但有限正输入处不等于3。离散轮次n则是数列，不能只凭有限训练曲线宣布收敛。',
+  transfer:'一个简化预测器ŷ=3x+1中，输入误差0.02会造成输出误差0.06。这里说明的是固定模型对输入扰动的反应，不是证明模型对新数据预测准确。',refs:['CN-TJ-1.3','CN-TJ-1.5','CN-SC-1.3','OS-2.5','GOOGLE-LOSS']},
+ {id:'GH-02-K02',title:'图像上的左右极限',minutes:9,
+  goal:'分别使用两侧规则，先检查各侧有限趋近，再比较共同值；区分跳跃、无界与不收敛。',
+  core:'左极限使用小于a的邻近输入，右极限使用大于a的邻近输入。双侧有限极限存在，当且仅当两侧有限极限都存在且相等。该点的值和两侧平均值都不能代替共同极限。',
+  example:{title:'先算两侧，再选拼接参数',setup:'x<1时f(x)=2x+k；x>1时f(x)=x+3；f(1)=9。',steps:['从左侧靠近1，2x+k趋近2+k。','从右侧靠近1，x+3趋近4。','要有共同有限极限，令2+k=4，得k=2。此时左右都趋近4，公式不必相同。'],conclusion:'只改f(1)不会改变k=2这个条件；共同极限为4，点值9另看。'},
+  extension:{title:'“没有有限极限”有不同原因',setup:'把下面三种情形分开判断。',steps:['有限跳跃：左侧趋近1，右侧趋近3。两侧各自有有限极限，但不相等。','无界：1/x²在两侧靠近0时越来越大，没有有限上界；不能把正无穷当作一个有限实数。','不收敛：若两列都趋近0的正输入，其输出已由规则证明恒为1与−1，右侧不能趋近同一个数。'],conclusion:'结论“不存在”之后，还要说明有限性或相等性在哪一步失败。'},
+  caution:'只给几行数表不能证明无界或振荡；必须结合完整规则，或已证明性质的趋近序列。',
+  transfer:'分类例子：分数s(x)=x连续；规定x<0.5输出类别0，x≥0.5输出类别1。类别函数左右分别趋近0和1，存在跳变。阈值处归到哪类必须由规则明确。',refs:['CN-TJ-1.3','CN-SC-1.3','GOOGLE-THRESHOLD']},
+ {id:'GH-02-K03',title:'连续就是不跳断',minutes:8,
+  goal:'依次核对点值、共同有限极限与相等关系，在给定修改权限下决定能否修复。',
+  core:'在定义域内点a处连续，需要f(a)有定义、双侧有限极限L存在，而且f(a)=L。点值缺失或不合适时，只有共同有限极限已经存在，才可以通过补点修复。端点只按定义域允许的一侧判断。',
+  example:{title:'先判断能否修，再决定补什么',setup:'左侧趋近4，右侧趋近4，原点值为9；只允许改点值。',steps:['原点值有定义；左右都有共同有限极限4。','原点值9与极限4不同，所以原函数在该点不连续。','把点值改为4，三项条件同时满足；附近的规则无需改动。'],conclusion:'补点的值来自共同极限，不是随意选一个“看起来居中”的数。'},
+  extension:{title:'跳跃不能补一个点解决，尖角却可以连续',setup:'对照两种容易混淆的图形。',steps:['左侧趋近4、右侧趋近5时，没有共同极限。无论把点值设在哪里，都不能同时等于4和5。','g(x)=|x|在0的左右极限都是0，g(0)=0，所以连续。','|x|有尖角但不间断；是否可导是后续课程中的另一个问题。'],conclusion:'连续、光滑与可导不能当成同一个概念。'},
+  caution:'若允许改变邻域规则，可以先调参数让两侧趋近值一致，再令点值等于共同值。作答时要说明你使用了哪一种修改权限。',
+  transfer:'例如左侧f(x)=2x+k，右侧f(x)=x+3，在x=1拼接：先令2+k=4得到k=2，再设f(1)=4。只求k还没有完成三个连续条件。',refs:['CN-TJ-1.8','CN-TJ-1.9','OS-2.4']}
+ ];
+ const version='functions-limits-lessons-r10-v1';
+ return {version,lessons,byId:Object.fromEntries(lessons.map(x=>[x.id,x])),learningMinutes:60,openingMinutes:3,closingMinutes:3};
+});
+
+(function(){
+ 'use strict';
+ function init(){
+  const id=window.R10_LESSON_ID||String(window.R7_TASK_ID||'').slice(0,9),lesson=window.R10Lessons?.byId[id];
+  if(!lesson)return;
+  const host=document.querySelector('.r9-content')||document.querySelector('.r8-guidance');if(!host||host.querySelector('.r10-explanation'))return;
+  const old=host.querySelector('.r9-concept');if(old)old.textContent=lesson.core;
+  const section=document.createElement('section');section.className='r10-explanation';section.setAttribute('aria-label','本知识点的推理示例');
+  const heading=document.createElement('strong');heading.textContent='推理示例：'+lesson.example.title;
+  const setup=document.createElement('p');setup.textContent=lesson.example.setup;const list=document.createElement('ol');for(const step of lesson.example.steps){const li=document.createElement('li');li.textContent=step;list.append(li);}
+  const conclusion=document.createElement('p');conclusion.textContent=lesson.example.conclusion;
+  const transfer=document.createElement('p');transfer.className='r10-transfer';transfer.textContent=lesson.transfer;
+  section.append(heading,setup,list,conclusion,transfer);
+  // It stays in the existing scroll region; native controls remain in their footer.
+  if(old)old.after(section);else host.prepend(section);
+  window.dispatchEvent(new Event('resize'));
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script></body>
 </html>
