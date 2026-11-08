@@ -628,7 +628,8 @@ async function init() {
         } else {
           state.participant = null;
           renderAuth();
-          showLogin("暂时无法核验登录，请检查网络后刷新；无需重新注册。");
+          showLogin(error.status === 409 && error.code === 'study_runtime_mismatch'
+            ? error.message : "暂时无法核验登录，请检查网络后刷新；无需重新注册。");
           console.warn("Learning snapshot restore failed:", error.message);
         }
       }

@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "115126c9d2da0a108732",
+  "version": "df3dee1ed6fd3ac6d4dd",
   "indexSha256": "b57a8e561574d6f18e368c38cfc4a601f747abc391fa2453356e3a0896705e8c",
   "scripts": [
     {
@@ -66,7 +66,7 @@
     {
       "tag": "<script src=\"app/main/core.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/core.js",
-      "sha256": "8e0c0e81540db6acaadf073aa9d174691ee0f1df2eaae5cf8019e9aee9f38797"
+      "sha256": "7ae11d7fd7d5d2287ac2bb712dc4f72abcb624fb0594c00d9b55a9bb0274b9b4"
     },
     {
       "tag": "<script src=\"app/main/system-announcements.js?v=20260726-announcements-v7\"></script>",
@@ -221,7 +221,7 @@
     {
       "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/bootstrap.js",
-      "sha256": "8775693468237261c898fb26a50943305299ca23dd54dd8b54c8869968bf932d"
+      "sha256": "aca718160c63e6a5b178bb95277de72ea38a8403551623020e2290383d2090a6"
     },
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
@@ -251,7 +251,7 @@
     {
       "tag": "<script src=\"app/main/three-arm-study.js?v=20261031\"></script>",
       "file": "app/main/three-arm-study.js",
-      "sha256": "b14a36fb9e98f4d1f44888c8adf8c3b820ad0609a11e4ac3e490504b7071c225"
+      "sha256": "3045ef9c96eb2b6829e88fabf999e69c5f9aaf21397ef529b4f8ee0abff88d4f"
     },
     {
       "tag": "<script src=\"app/main/regulation-transfer.js?v=r11\"></script>",

@@ -22,7 +22,7 @@
         const r=await fetch('api/study/'+path,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:payload}:{}),signal:options.signal?AbortSignal.any([controller.signal,options.signal]):controller.signal});
         const raw=await r.text();let p;try{p=JSON.parse(raw);}catch{throw Object.assign(new Error('连接暂时中断，页面中的填写内容仍保留。请重试。'),{status:r.status,retryable:true});}
         if(token!==state.authToken)throw new Error('账号已变化，请重新打开');
-        if(!r.ok||p?.ok!==true)throw Object.assign(new Error(p?.message||'请求未完成，请重试。'),{status:r.status,retryable:[408,429,502,503,504].includes(r.status)});
+        if(!r.ok||p?.ok!==true)throw Object.assign(new Error(p?.message||'请求未完成，请重试。'),{status:r.status,code:p?.code,retryable:[408,429,502,503,504].includes(r.status)});
         return p.data;
       }catch(error){
         if(options.signal?.aborted)throw error;
@@ -136,7 +136,10 @@
     d.append(button('保存并继续',async()=>{await request('survey',{stage,answers});delete surveyDrafts[key];dialog.close();if(stage==='baseline')await global.LearnerSetup.resumePreparation();else await openTasks();}),button('稍后继续',()=>{dialog.close();if(stage==='baseline'&&typeof switchView==='function')switchView('home');}));show();
   }
   async function openTasks(){
-    if(global.StudyEntry.arm==='assigned'&&!run){await openEnrollment();return;}
+    if(global.StudyEntry.arm==='assigned'&&!run){
+      try{setRun((await request('state')).run);}
+      catch(error){if(error.code!=='study_enrollment_required')throw error;await openEnrollment();return;}
+    }
     const data=await request('state');setRun(data.run);const d=modal('问卷与后续任务');
     if(run.mode==='preview'&&!run.regulationVersion){
       d.append(el('p','你正在继续原版本体验。新版加入带图前后测、每个知识点两道检测及独立调节任务；首次现场按80分钟加10分钟缓冲设计，体验计时只提示。'),
@@ -216,7 +219,7 @@
       if(data.probe&&snapshot.active&&!snapshot.locked&&!snapshot.check&&!snapshot.offer&&!snapshot.prompt&&!global.TaskSupport?.hasConversation(snapshot)&&!global.SupportCycleUI?.active(snapshot.supportCycle)&&!global.SupportCycleUI?.interactionBusy&&!dialog?.open&&!document.querySelector('dialog[open]')&&!attempted.has(data.probe.id)){
         attempted.add(data.probe.id);await showProbe(data.probe);
       }
-    }catch(e){if(e.status===409&&global.StudyEntry.arm==='assigned'&&!run&&!dialog?.open&&!attempted.has('enroll')){attempted.add('enroll');openEnrollment();}}finally{loading=false;}
+    }catch(e){if(e.code==='study_enrollment_required'&&global.StudyEntry.arm==='assigned'&&!run&&!dialog?.open&&!attempted.has('enroll')){attempted.add('enroll');openEnrollment();}}finally{loading=false;}
   }
   function allowsUnit(unit){if(!run||!unit?.id)return true;const stages=global.StudyStages,pending=stages.reviews.find(s=>s.id===run.pendingConfiguration?.stage);if(pending&&stages.crosses(pending,unit.id)){pendingUnit=unit.id;global.LearnerSetup.open();return false;}const required=stages.reviews.find(s=>s.points.every(id=>state.submittedQuizzes?.includes(id+'-formative'))&&!(run.reviewedStages||[]).includes(s.id)&&stages.crosses(s,unit.id));if(!required)return true;pendingUnit=unit.id;if(!dialog?.open)openReview().catch(()=>{});return false;}
   function resumeAfterConfiguration(){if(!pendingUnit||run?.pendingConfiguration)return;const target=pendingUnit;pendingUnit=null;selectUnit(target);}

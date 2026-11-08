@@ -1261,7 +1261,7 @@ function studyRunForRequest(req,participant){
 }
 function publicParticipantForRequest(req,participant){
   let run;
-  try{run=studyRunForRequest(req,participant);}catch(e){if(e.status!==409)throw e;}
+  try{run=studyRunForRequest(req,participant);}catch(e){if(e.code!=='study_enrollment_required')throw e;}
   return {...safePublicParticipant(participant),...(run?{participantId:run.id,study:threeArmStudy.publicRun(run)}:{})};
 }
 function authenticate(req, body = {}) {
@@ -4980,13 +4980,13 @@ async function handleManagedProactiveIntervention({
 }
 
 async function handleApi(req, res, url) {
+  try {
   if (!checkRateLimit(req, url.pathname)) {
     const retryAfterSeconds = req.rateLimitRetryAfterSeconds;
     res.setHeader('Retry-After', String(retryAfterSeconds));
     sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。", retryAfterSeconds });
     return;
   }
-  try {
   if(['/api/learning/support-cycle','/api/learning/assistant','/api/learning/proactive/outcomes','/api/learning/notes','/api/learning/agent-runtime','/api/learning/learner-preferences'].some(prefix=>url.pathname===prefix||url.pathname.startsWith(prefix+'/'))){
     const auth=authenticate(req);
     if(auth&&regulationTransfer.protects(auth.participant.id)){sendJson(res,409,{ok:false,code:'regulation_transfer_protected',message:'调节任务期间暂停原学习帮助与回顾，请使用任务内的规定材料。'});return;}

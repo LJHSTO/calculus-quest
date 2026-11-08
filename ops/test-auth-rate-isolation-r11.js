@@ -4,7 +4,7 @@ const source = fs.readFileSync(require.resolve('../server.js'), 'utf8');
 const start = source.indexOf('const rateLimitMap = new Map();');
 const end = source.indexOf('\nfunction checkAssistantRateLimit(', start);
 const handlerStart = source.indexOf('async function handleApi(req, res, url) {');
-const handlerEnd = source.indexOf('\n  try {', handlerStart);
+const handlerEnd = source.indexOf("\n  if(['/api/learning/support-cycle'", handlerStart);
 assert(start > 0 && end > start && handlerStart > 0 && handlerEnd > handlerStart);
 function boot() {
   let now = 100000, result;
@@ -13,7 +13,7 @@ function boot() {
     authenticate(req) { const id = sessions.get(req.headers.authorization); return id ? { participant: { id } } : null; },
     sendJson(_res, status, body) { result = { status, body }; } });
   vm.runInContext(source.slice(start, end), c);
-  vm.runInContext(source.slice(handlerStart, handlerEnd) + '\n}', c);
+  vm.runInContext(source.slice(handlerStart, handlerEnd) + '\n} catch(error) { throw error; }\n}', c);
   const request = (method, token) => ({ method, headers: token ? { authorization: token } : {}, socket: { remoteAddress: 'synthetic-nat' } });
   return { context: c, advance(ms) { now += ms; },
     check(path, method = 'GET', token) { const req = request(method, token); return { allowed: c.checkRateLimit(req, path), retryAfterSeconds: req.rateLimitRetryAfterSeconds }; },

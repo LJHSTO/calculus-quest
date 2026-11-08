@@ -421,9 +421,22 @@ function applyMultiSceneLearningRoute(route) {
 
 async function loadMultiSceneLearningRoute() {
   if (multiSceneLearningRoute) return multiSceneLearningRoute;
-  const response=await fetch(appRelativeUrl('api/course/multi-scene-learning-route'),{headers:state.authToken?{Authorization:'Bearer '+state.authToken}:{}});
-  if(!response.ok)throw new Error('多场景学习路线加载失败');
-  multiSceneLearningRoute=await response.json();
+  const token = state.authToken, participantId = state.participant?.participantId;
+  const current = () => token === state.authToken && participantId === state.participant?.participantId;
+  let response=await fetch(appRelativeUrl('api/course/multi-scene-learning-route'),{headers:token?{Authorization:'Bearer '+token}:{}});
+  if (!current()) throw new Error('登录账号已变化，请重新打开学习页面。');
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    if (!current()) throw new Error('登录账号已变化，请重新打开学习页面。');
+    if (response.status === 409 && error.code === 'study_enrollment_required' && window.StudyEntry?.arm === 'assigned') {
+      // Before consent, show only the same public route available to signed-out visitors.
+      response = await fetch(appRelativeUrl('api/course/multi-scene-learning-route'));
+    } else throw Object.assign(new Error(error.message || '多场景学习路线加载失败'), { status: response.status, code: error.code });
+  }
+  if (!response.ok) throw new Error('多场景学习路线加载失败');
+  const route = await response.json();
+  if (!current()) throw new Error('登录账号已变化，请重新打开学习页面。');
+  multiSceneLearningRoute=route;
   applyMultiSceneLearningRoute(multiSceneLearningRoute);
   return multiSceneLearningRoute;
 }
@@ -1108,6 +1121,14 @@ async function hydrateLearningState(options = {}) {
   const payload = await response.json().catch(() => ({}));
   if (!learningSessionIsCurrent(session)) return false;
   if (!response.ok || payload.ok === false) {
+    if (response.status === 409 && payload.code === 'study_enrollment_required' && window.StudyEntry?.arm === 'assigned') {
+      // Authentication succeeded; this account has no study run until explicit consent.
+      applyServerLearningSnapshot(null, { replace: true });
+      learningSnapshotGeneration = 0;
+      learningSnapshotRevision = 0;
+      persistStateLocally();
+      return false;
+    }
     const error = new Error(payload.message || "学习记录恢复失败，请重新登录。");
     error.status = response.status;
     error.code = payload.code || "";
