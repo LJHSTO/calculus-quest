@@ -104,6 +104,9 @@
   let proactiveCandidateId = "";
   let proactiveStudyRequestId = 0;
   let proactiveStudyKey = "";
+  let proactiveStudyInFlight = null;
+  let proactiveStudyRetry = null;
+  let proactiveStudyRetryTimer = null;
   let proactiveResolutionChain = Promise.resolve();
   let proactiveCheckKey = "";
   let proactiveCheckSelection = "";
@@ -111,9 +114,29 @@
   let proactiveCheckSubmitting = false;
   let proactiveCheckFeedback = null;
   let proactiveChoiceSaving = false;
+  let composerDraftKey = "";
   let supportView = { placement: "inline", modality: "tip", format:"plain" };
   let agentRefreshAt=0, agentRefreshBusy=false;
   let designSpaceSyncPending = false;
+
+  function learnerDraftKey(kind, id, meta=courseMeta()) {
+    if(!isSignedInNow()||!meta.unitId)return '';
+    const generation=typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:exposureGeneration;
+    return 'calculus-assistant-draft-r12:'+JSON.stringify([state.participant.participantId,generation,global.ThreeArmStudyUI?.run?.id||'',meta.chapterId,meta.unitId,kind==='composer'?'unit':meta.sceneType||'slide',kind,id||'']);
+  }
+  function saveComposerDraft() {
+    if(!composerDraftKey)return;
+    try{if(els.input.value)localStorage.setItem(composerDraftKey,JSON.stringify({text:els.input.value.slice(0,2000),context:activeContext}));else localStorage.removeItem(composerDraftKey);}catch{}
+  }
+  function restoreComposerDraft(meta=courseMeta()) {
+    const key=learnerDraftKey('composer','',meta);if(key===composerDraftKey)return;
+    saveComposerDraft();composerDraftKey=key;els.input.value='';
+    try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&typeof saved.text==='string'){
+      els.input.value=saved.text.slice(0,2000);
+      if(saved.context?.unitId===meta.unitId&&(saved.context.scope!=='interactive'||saved.context.sceneType===meta.sceneType))activeContext=Core.normalizeContextRef(saved.context,meta);
+    }}catch{}
+    resizeComposer();
+  }
 
   function supportSurfaceOwnsContent() {
     return Boolean(global.ProactiveSurface && (courseMeta().unitType === "knowledge"||courseMeta().isQuiz&&courseMeta().quizSubmitted)
@@ -165,6 +188,7 @@
 
   function designSpaceSnapshot() {
     const meta = courseMeta();
+    syncProactiveCheckState(meta);
     const locked = quizAssistantLocked(meta, false)
       || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession() || global.ThreeArmStudyUI?.judgmentActive);
     const eligible = isSignedInNow() && meta.supported && meta.taskReady !== false && !locked && learningViewActive();
@@ -181,6 +205,8 @@
       quizSubmitted: meta.quizSubmitted,
       quizResourceUnitId: meta.quizResourceUnitId,
       generation: exposureGeneration,
+      learningGeneration: typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:exposureGeneration,
+      runId: global.ThreeArmStudyUI?.run?.id || "",
       taskMessages: messages.map(({id,role,content,error,streaming})=>({id,role,content,error:Boolean(error),streaming:Boolean(streaming)})),
       taskError: taskRequestError?.unitId===meta.unitId&&taskRequestError.sceneType===(meta.sceneType||'slide')?taskRequestError.message:'',
       reply: messages.filter(message=>message.role==="assistant"&&!message.error).slice(-1).map(message=>({id:message.id,text:message.content||"",streaming:message.streaming===true}))[0]||null,
@@ -663,6 +689,16 @@ const proactiveJustificationDrafts = new Map();
     };
   }
 
+  function coursewareProgressScope() {
+    const owner=String(state.participant?.participantId||''),run=global.ThreeArmStudyUI?.run;
+    const generation=typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:0;
+    if(!owner||!isSignedInNow()||typeof learningSnapshotReady==='undefined'||!learningSnapshotReady
+      ||!Number.isInteger(generation)||generation<1||!proactiveStudy.loaded
+      ||proactiveStudyKey!==`${owner}|${courseMeta().chapterId}`||proactiveStudy.agentAssistanceBlocked
+      ||activeProactiveOutcomeSession()||global.StudyEntry&&(!run?.id||run.id!==owner))return null;
+    return {owner,generation,runId:run?.id||'ordinary'};
+  }
+
   function quizAssistantLocked(meta = courseMeta(), includeSupportCheck = true) {
     return Boolean(meta?.isQuiz && !meta.quizSubmitted || global.CommonLearning?.protects()
       || includeSupportCheck && Boolean(pendingIndependentCheck()));
@@ -785,12 +821,14 @@ const proactiveJustificationDrafts = new Map();
 
   function syncProactiveCheckState(meta = courseMeta()) {
     const check = proactiveVerificationCheck(meta);
+    const current=courseMeta();
+    if(meta.unitId!==current.unitId||meta.sceneType!==current.sceneType)return check;
     const nextKey = check?.id
-      ? `${proactiveScopeKey(meta)}:${check.id}`
+      ? learnerDraftKey('check',check.id,meta)
       : "";
     if (nextKey === proactiveCheckKey) return check;
     proactiveCheckKey = nextKey;
-    proactiveCheckSelection = "";
+    try{const saved=localStorage.getItem(nextKey);proactiveCheckSelection=check?.options.some(o=>o.value===saved)?saved:'';}catch{proactiveCheckSelection='';}
     proactiveCheckStartedAt = nextKey ? Date.now() : 0;
     proactiveCheckSubmitting = false;
     if (nextKey) proactiveCheckFeedback = null;
@@ -2179,7 +2217,10 @@ const proactiveJustificationDrafts = new Map();
       ? String(state?.participant?.participantId || "")
       : "";
     const key = `${participantId}|${meta.chapterId}`;
+    const token = state?.authToken || '', generation = exposureGeneration;
     if (!participantId || !meta.chapterId) {
+      clearTimeout(proactiveStudyRetryTimer); proactiveStudyRetryTimer=null;
+      proactiveStudyRetry=null; proactiveStudyInFlight=null;
       proactiveStudyRequestId += 1;
       proactiveStudyKey = "";
       proactiveStudy = {
@@ -2204,6 +2245,11 @@ const proactiveJustificationDrafts = new Map();
       return proactiveStudy;
     }
 
+    if(proactiveStudyInFlight?.key===key&&proactiveStudyInFlight.token===token&&proactiveStudyInFlight.generation===generation)return proactiveStudyInFlight.promise;
+    if(proactiveStudyRetry?.key===key&&proactiveStudyRetry.token===token&&proactiveStudyRetry.generation===generation&&Date.now()<proactiveStudyRetry.until)return proactiveStudy;
+    const flight={key,token,generation,promise:null};proactiveStudyInFlight=flight;
+    flight.promise=(async()=>{
+
     const requestId = ++proactiveStudyRequestId;
     try {
       const response = await fetch(
@@ -2214,15 +2260,20 @@ const proactiveJustificationDrafts = new Map();
       );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || payload.ok === false) {
-        throw new Error(payload.message || "主动学习状态暂时不可用。");
+        const error=new Error(payload.message || "主动学习状态暂时不可用。");
+        const retry=response.headers?.get?.('Retry-After');
+        const seconds=Number(retry), delay=retry!==null&&Number.isFinite(seconds)?seconds*1000:Date.parse(retry)-Date.now();
+        error.retryMs=response.status===429?Math.min(2147483647,Math.max(1000,Number.isFinite(delay)?delay:30000)):0;
+        throw error;
       }
-      if (requestId !== proactiveStudyRequestId || key !== `${String(
+      if (requestId !== proactiveStudyRequestId || token!==state.authToken || generation!==exposureGeneration || key !== `${String(
         state?.participant?.participantId || ""
       )}|${courseMeta().chapterId}`) {
         return proactiveStudy;
       }
       proactiveStudyKey = key;
-      applyProactiveStudy(payload.data || {}, meta);
+      clearTimeout(proactiveStudyRetryTimer);proactiveStudyRetryTimer=null;proactiveStudyRetry=null;
+      applyProactiveStudy(payload.data || {}, courseMeta());
       if (proactiveStudy.assignment && proactiveStudyManaged(meta)) {
         await loadProactiveOutcomes({
           force: options.force === true,
@@ -2242,22 +2293,22 @@ const proactiveJustificationDrafts = new Map();
       }
       return proactiveStudy;
     } catch (error) {
-      if (requestId !== proactiveStudyRequestId) return proactiveStudy;
+      if (requestId !== proactiveStudyRequestId || token!==state.authToken || generation!==exposureGeneration) return proactiveStudy;
+      const attempts=proactiveStudyRetry?.key===key?proactiveStudyRetry.attempts+1:1;
+      const wait=error.retryMs||Math.min(30000,1000*2**Math.min(5,attempts-1));
+      proactiveStudyRetry={key,token,generation,attempts,until:Date.now()+wait};
+      clearTimeout(proactiveStudyRetryTimer);
+      proactiveStudyRetryTimer=setTimeout(()=>{
+        if(participantId===state?.participant?.participantId&&token===state.authToken&&generation===exposureGeneration)loadProactiveStudy(courseMeta()).catch(()=>{});
+      },wait);
       proactiveStudyKey = key;
       proactiveStudy = {
         ...proactiveStudy,
         loaded: false,
         managed: meta.chapterId === PROACTIVE_STUDY_CHAPTER_ID,
         candidateCollectionEnabled: false,
-        assignment: null,
-        participation: {
-          mode: "implicit-pilot",
-          status: "not_enrolled",
-          enrolled: false,
-          withdrawn: false
-        },
-        studentPreference: "standard",
-        policyStates: []
+        // 失败只暂停新的主动授权，已保存的反馈与进度仍保留。
+        unavailable: error.message
       };
       clearProactivePresentation();
       track("knowledge_proactive_state_unavailable", {
@@ -2266,6 +2317,8 @@ const proactiveJustificationDrafts = new Map();
       });
       return proactiveStudy;
     }
+    finally {if(proactiveStudyInFlight===flight)proactiveStudyInFlight=null;}
+    })();return flight.promise;
   }
 
   function serverAuthorizedProactiveDecision(payload = {}, meta = courseMeta()) {
@@ -4254,11 +4307,37 @@ const proactiveJustificationDrafts = new Map();
       if(!value)continue;
       const p=document.createElement('p');setQuestionMathContent(p,`${label}：${value}`);article.append(p);
     }
+    if(!history && feedback.tone!=='error'){
+      const note=document.createElement('p');note.textContent=feedback.status==='incorrect'||feedback.tone==='warning'
+        ?'这道独立检查的首次回答已保存。若你选择继续帮助，后面会换一道练习题；新题不会改写这次结果，也不要求答对才能继续课程。'
+        :'这只是本次练习的结果，不代表整个知识点已经掌握。';article.append(note);
+      if(feedback.questionId){const cards=[...document.querySelectorAll('.question-card[data-question]')],index=cards.findIndex(c=>c.dataset.question===feedback.questionId);if(index>=0){const context=document.createElement('p');context.textContent=`这是针对本次检测第 ${index+1} 题提供帮助后的独立练习，不改变原题的提交结果。`;article.append(context);}}
+      const review=otherFormativeReviewNode(feedback.questionId);if(review)article.append(review);
+    }
     if(!history && feedback.id){
       const done=document.createElement('button');done.type='button';done.textContent='收起结果，继续学习';
       done.onclick=()=>acknowledgeCheckFeedback(feedback.id);article.append(done);
     }
+    if(!history&&feedback.questionId&&global.TaskSupport?.selectedQuestion&&global.TaskSupport.selectedQuestion!==feedback.questionId){
+      const saved=document.createElement('details'),label=document.createElement('summary');
+      const index=[...document.querySelectorAll('.question-card[data-question]')].findIndex(n=>n.dataset.question===feedback.questionId);
+      label.textContent=index>=0?`第 ${index+1} 题的检查结果（已保存）`:'上一题的检查结果（已保存）';saved.className='support-saved-check';saved.append(label,article);return saved;
+    }
     return article;
+  }
+
+  function otherFormativeReviewNode(excludeId) {
+    const meta=courseMeta(),unit=typeof getUnit==='function'?getUnit():null;
+    if(!meta.isQuiz||!meta.quizSubmitted||unit?.assessmentPhase!=='formative'||typeof quizRecordsForUnit!=='function')return null;
+    const records=new Map(quizRecordsForUnit(meta.unitId).map(r=>[r.questionId,r]));
+    const questions=(unit.quizQuestions||unit.scene?.content?.questions||unit.questions||[]).filter(q=>q.id!==excludeId&&records.get(q.id)?.isCorrect===false);
+    if(!questions.length)return null;
+    const section=document.createElement('details');section.className='support-other-questions';
+    const title=document.createElement('summary');title.textContent='本次检测的其他错题（自主选择）';section.append(title);
+    const hint=document.createElement('p');hint.textContent='知点每次集中讲一个关键关系。其他错题不会被记作已解决，你可以选择继续复盘。';section.append(hint);
+    for(const q of questions){const button=document.createElement('button');button.type='button';button.textContent=`请知点讲第 ${(unit.quizQuestions||unit.scene?.content?.questions||unit.questions).findIndex(item=>item.id===q.id)+1} 题`;
+      button.disabled=proactiveCheckSubmitting||isAsking;button.onclick=()=>global.KnowledgeAssistant.askInTask('请带我检查这道题的关键关系，先给一个简短线索。',q.id);section.append(button);}
+    return section;
   }
 
   function proactiveInlineOfferNode(suggestion, { recordShown = true } = {}) {
@@ -4403,11 +4482,16 @@ const proactiveJustificationDrafts = new Map();
     const owner=state.authToken,generation=exposureGeneration;
     const scopeKey = proactiveScopeKey(meta);
     const declined = options.declined === true;
+    const binding=options.binding;
+    if(binding&&(binding.token!==state.authToken||binding.key!==learnerDraftKey('check',check?.id,meta)||binding.unitId!==meta.unitId||binding.scopeKey!==scopeKey)){
+      setStatus('学习位置或账号已变化，请返回原来的独立检查；已选回答仍保留。','warning');render();return false;
+    }
+    const selected=binding?binding.selection:proactiveCheckSelection;
     if (
       proactiveCheckSubmitting
       || !check?.id
       || !scopeKey
-      || (!declined && !proactiveCheckSelection)
+      || (!declined && (!selected || binding&&!check.options.some(o=>o.value===selected)))
     ) return false;
     proactiveCheckSubmitting = true;
     renderMessages();
@@ -4424,7 +4508,7 @@ const proactiveJustificationDrafts = new Map();
           scopeKey,
           sceneType: meta.sceneType,
           checkId: check.id,
-          response: declined ? "" : proactiveCheckSelection,
+          response: declined ? "" : selected,
           resolution: declined ? "declined" : "",
           durationMs: proactiveCheckStartedAt
             ? Math.max(0, Date.now() - proactiveCheckStartedAt)
@@ -4439,7 +4523,7 @@ const proactiveJustificationDrafts = new Map();
         })
       });
       const payload = await response.json().catch(() => ({}));
-      if(owner!==state.authToken||generation!==exposureGeneration)return false;
+      if(owner!==state.authToken||generation!==exposureGeneration||binding&&binding.key!==learnerDraftKey('check',check.id,meta))return false;
       if (!response.ok || payload.ok === false) {
         const error = new Error(payload.message || "这道支架后检查暂时无法提交。");
         error.code = payload.code || "";
@@ -4453,6 +4537,7 @@ const proactiveJustificationDrafts = new Map();
         }, meta);
       }
       const result = payload.checkResult || {};
+      try{localStorage.removeItem(learnerDraftKey('check',check.id,meta));}catch{}
       const decision = payload.decision || {};
       const nextSupportAuthorized = decision.intervene
         && decision.action !== "stay_silent"
@@ -4517,7 +4602,7 @@ const proactiveJustificationDrafts = new Map();
       render();
       return true;
     } catch (error) {
-      if(owner!==state.authToken||generation!==exposureGeneration)return false;
+      if(owner!==state.authToken||generation!==exposureGeneration||binding&&binding.key!==learnerDraftKey('check',check.id,meta))return false;
       proactiveCheckFeedback = {
         scopeKey,
         unitId: meta.unitId, sceneType: meta.sceneType || 'slide',
@@ -4533,11 +4618,12 @@ const proactiveJustificationDrafts = new Map();
       render();
       return false;
     } finally {
-      if(owner===state.authToken&&generation===exposureGeneration){proactiveCheckSubmitting = false;renderMessages();}
+      if(owner===state.authToken&&generation===exposureGeneration&&(!binding||binding.key===learnerDraftKey('check',check.id,meta))){proactiveCheckSubmitting = false;renderMessages();}
     }
   }
 
   function proactiveVerificationNode(check) {
+    const meta=courseMeta(),binding={token:state.authToken,key:learnerDraftKey('check',check.id,meta),unitId:meta.unitId,scopeKey:proactiveScopeKey(meta),selection:proactiveCheckSelection};
     const article = document.createElement("article");
     article.className = "knowledge-message assistant knowledge-proactive-verification";
     article.dataset.independentCheck = 'true';
@@ -4569,7 +4655,10 @@ const proactiveJustificationDrafts = new Map();
       button.disabled = proactiveCheckSubmitting;
       setQuestionMathContent(button, item.value === "__unknown__" ? "我不会" : `${String.fromCharCode(65+optionIndex)}. ${item.label || ""}`);
       button.addEventListener("click", () => {
+        if(binding.token!==state.authToken||binding.key!==learnerDraftKey('check',check.id))return;
+        binding.selection=item.value;
         proactiveCheckSelection = item.value;
+        try{localStorage.setItem(learnerDraftKey('check',check.id),item.value);}catch{}
         proactiveCheckFeedback = null;
         renderMessages();
       });
@@ -4582,17 +4671,18 @@ const proactiveJustificationDrafts = new Map();
     submit.disabled = proactiveCheckSubmitting || !proactiveCheckSelection;
     submit.textContent = proactiveCheckSubmitting ? "正在提交" : "提交检查";
     submit.addEventListener("click", () => {
-      submitProactiveVerification(check);
+      submitProactiveVerification(check,{binding});
     });
     const decline = document.createElement("button");
     decline.type = "button";
     decline.disabled = proactiveCheckSubmitting;
     decline.textContent = "暂不检查";
     decline.addEventListener("click", () => {
-      submitProactiveVerification(check, { declined: true });
+      submitProactiveVerification(check, { declined: true,binding });
     });
     actions.append(submit, decline);
-    article.append(heading, prompt, options, actions);
+    const help=document.createElement('p');help.textContent='独立完成一次，再看反馈；本题提交后保留首次结果。';
+    article.append(heading, help, prompt, options, actions);
     return article;
   }
 
@@ -5081,6 +5171,7 @@ const proactiveJustificationDrafts = new Map();
 
   function renderUnit() {
     const meta = courseMeta();
+    restoreComposerDraft(meta);
     const discussion=conceptDiscussionMeta(meta);
     const awaitingAgent=rehearsalConversationPending(meta);
     const quizLocked = quizAssistantLocked(meta);
@@ -5440,6 +5531,7 @@ const proactiveJustificationDrafts = new Map();
     root: () => document.querySelector("#lesson-player"),
     sidebarRoot: root,
     getCourseMeta: courseMeta,
+    getProgressScope: coursewareProgressScope,
     onContext: (ref) => useContext(ref, "object-pick"),
     onRecentInteraction: (ref) => {
       recentInteraction = ref;
@@ -5580,6 +5672,7 @@ const proactiveJustificationDrafts = new Map();
     pendingProactivePrompt = null;
     openMessageSourceId = "";
     els.input.value = "";
+    saveComposerDraft();
     resizeComposer();
     setStatus("新对话已准备好，收到助教回复后才会保存。", "");
     render();
@@ -5751,6 +5844,7 @@ const proactiveJustificationDrafts = new Map();
     const meta = courseMeta();
     const discussion=conceptDiscussionMeta(meta);
     const question = els.input.value.trim();
+    saveComposerDraft();const submittedDraftKey=composerDraftKey;
     const assistantIntent = pendingAssistantIntent;
     const proactivePrompt = usableProactivePrompt(pendingProactivePrompt, meta)
       ? pendingProactivePrompt
@@ -5858,6 +5952,7 @@ const proactiveJustificationDrafts = new Map();
         throw error;
       }
       assistantMessage.streaming = false;
+      try{if(composerDraftKey===submittedDraftKey&&els.input.value)saveComposerDraft();else localStorage.removeItem(submittedDraftKey);}catch{}
       renderMessages();
       setStatus(
         assistantMessage.fallback
@@ -5878,6 +5973,7 @@ const proactiveJustificationDrafts = new Map();
         setStatus(assistantMessage.content, "warning");
         renderMessages();
         await loadHistory(meta, activeConversationId);
+        try{localStorage.removeItem(submittedDraftKey);}catch{}
         return;
       }
       const localUserIndex = messages.indexOf(userMessage);
@@ -5895,6 +5991,7 @@ const proactiveJustificationDrafts = new Map();
         els.input.value = question;
         pendingGeneratedDraft = question;
         resizeComposer();
+        saveComposerDraft();
       }
       setStatus(error.message || "知点暂时没有接通，请稍后再试。", "error");
       taskRequestError = {unitId:meta.unitId,sceneType:meta.sceneType||'slide',message:error.message||'知点暂时没有接通，请稍后再试。'};
@@ -5924,6 +6021,7 @@ const proactiveJustificationDrafts = new Map();
     clearTimeout(syncTimer);
     syncTimer = null;
     const meta = courseMeta();
+    saveComposerDraft();
     if (!els.noteEditor.hidden && !noteDropAllowed()) hideSelectionAction();
     const nextParticipantId = isSignedInNow()
       ? String(state?.participant?.participantId || "")
@@ -6008,6 +6106,7 @@ const proactiveJustificationDrafts = new Map();
       pendingGeneratedDraft = "";
       openMessageSourceId = "";
       els.input.value = "";
+      composerDraftKey='';
       resizeComposer();
       hideSelectionAction();
       if (participantChanged) {
@@ -6222,6 +6321,7 @@ const proactiveJustificationDrafts = new Map();
     submitQuestion();
   });
   els.input.addEventListener("input", () => {
+    saveComposerDraft();
     if (pendingGeneratedDraft && els.input.value !== pendingGeneratedDraft) {
       pendingGeneratedDraft = "";
     }
@@ -6230,6 +6330,7 @@ const proactiveJustificationDrafts = new Map();
     }
     resizeComposer();
   });
+  global.addEventListener('pagehide',saveComposerDraft);
   els.input.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
     event.preventDefault();
@@ -6473,7 +6574,9 @@ const proactiveJustificationDrafts = new Map();
         const card=[...document.querySelectorAll(".question-card[data-question]")].find(node=>node.dataset.question===questionId);
         if(!meta.isQuiz||!meta.quizSubmitted||!card)return false;
         activeContext=Core.normalizeContextRef({kind:"quiz",scope:"quiz",chapterId:meta.chapterId,unitId:meta.unitId,questionId,label:card.querySelector("h3")?.textContent||"题目复盘",confidence:"high"},meta);
+        if(pendingProactivePrompt?.questionId&&pendingProactivePrompt.questionId!==questionId)pendingProactivePrompt=null;
       }
+      global.TaskSupport?.openConversation?.(questionId);
       const previousMessageId=messages.at(-1)?.id;
       els.input.value=String(question||"").slice(0,2000);
       await submitQuestion();

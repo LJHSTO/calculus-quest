@@ -2,7 +2,7 @@
   "version": "openmaic-pro-lessons-r11",
   "source": "OpenMAIC Pro",
   "sourcePackageSha256": "8f466fde444893651180046cd101f06327fac2af3961dbd901c0879fdee9dbb6",
-  "integration": "保留原讲解页与24个互动；六个Pro补页仅增加加载握手和网站上下文标记。",
+  "integration": "保留原讲解页与24个互动；六个Pro补页增加网站加载握手。r12本地精修移除重复的对比例题装饰标签，未改原始Pro源包或讲稿音频。",
   "pages": [
     {
       "pointId": "GH-01-K01",
@@ -65,8 +65,8 @@
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/GH-01-K01.html",
-      "bytes": 10053,
-      "sha256": "6e3cf12bdc0fb462a783fc75fc2b9350f9a14fa73fd802929198e0b243f9efcc"
+      "bytes": 10015,
+      "sha256": "7c22b558a54a344f670b97cbb54d91bd7a8cf45f13958001a562c2e53632f21e"
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/audio/audio-4.mp3",
@@ -85,8 +85,8 @@
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/GH-01-K02.html",
-      "bytes": 8433,
-      "sha256": "0c239ff3d065f9f6970c8480301c610185a46a51ed2a71fe233f49713f0de59c"
+      "bytes": 8395,
+      "sha256": "e171948758195fdd37285075c7ebf3d2330b43f0e55ca1f2162b18ee6257bea8"
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/audio/audio-7.mp3",
@@ -105,8 +105,8 @@
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/GH-01-K03.html",
-      "bytes": 8893,
-      "sha256": "6bb069744595f3e608593cac59705d34378f096fccaff4af838a5205e1927e39"
+      "bytes": 8855,
+      "sha256": "527f8217c37a508fe0db1ec5549f4fee6cf124554d4692a4866e6fdd9d3f3f7a"
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/audio/audio-10.mp3",
@@ -125,8 +125,8 @@
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/GH-02-K01.html",
-      "bytes": 9311,
-      "sha256": "1317debc0b45717ba9de1bb7c34f2523bd58c5efdf7009a8f66a796b0d95b868"
+      "bytes": 9273,
+      "sha256": "24e60fe82630d9072b5cd2add26a9ef4a62c87c5aa47826a40f176fee1f17284"
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/audio/audio-13.mp3",
@@ -145,8 +145,8 @@
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/GH-02-K02.html",
-      "bytes": 8433,
-      "sha256": "9d68a68a2ae408c44e063f48b3255c5577ba4a5a25ff2c39aacd81e4a0446aaa"
+      "bytes": 8395,
+      "sha256": "a385a4bd9283c4462461aae30617986e2f685c30ba59da73b96dc7e28a26827c"
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/audio/audio-16.mp3",
@@ -165,8 +165,13 @@
     },
     {
       "path": "resources/open-maic/pro-supplements-r11/GH-02-K03.html",
-      "bytes": 9021,
-      "sha256": "6663c4edf9a32d99c3eae392bd07274e49192d754deb3a45cdd512c422bd27be"
+      "bytes": 8983,
+      "sha256": "0b4ff99aa2239d42488f04141b9edd7ef7f38c48935768e571bb7e39cd4b9739"
     }
-  ]
+  ],
+  "localRefinement": {
+    "version": "courseware-ux-r12",
+    "change": "移除六页标题右侧重复装饰标签",
+    "sourcePackageUnchanged": true
+  }
 }

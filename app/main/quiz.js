@@ -57,8 +57,9 @@ function selectedChoiceValues(unitId, questionId) {
 function optionText(question, value) {
   if (value === "__unknown__") return "我不会";
   if (value === "__skip__") return "暂不作答";
-  const option = (question.options || []).find((item) => item.value === value);
-  return option ? `${option.value}. ${displayOptionLabel(option)}` : value;
+  const options = (question.options || []).filter(item => !['__unknown__','__skip__'].includes(item.value));
+  const index = options.findIndex(item => item.value === value),option=options[index];
+  return option ? `${String.fromCharCode(65+index)}. ${displayOptionLabel(option)}` : value;
 }
 
 function displayQuestionText(question = {}) {
@@ -78,8 +79,9 @@ function formatAnswerValuesHtml(question, values) {
   return `
     <div class="answer-lines">
       ${list.map((value) => {
-        const option = (question.options || []).find((item) => item.value === value);
-        const marker = value === "__unknown__" ? "?" : String(option?.value || value || "?").trim().toUpperCase();
+        const options = (question.options || []).filter(item => !['__unknown__','__skip__'].includes(item.value));
+        const index = options.findIndex(item => item.value === value),option=options[index];
+        const marker = value === "__unknown__" ? "?" : option ? String.fromCharCode(65+index) : String(value || "?").trim().toUpperCase();
         const label = value === "__unknown__" ? "我不会" : option ? displayOptionLabel(option) : String(value || "");
         return `<div class="answer-line">
           <span class="answer-choice-marker" aria-hidden="true">${escapeHtml(marker)}</span>
@@ -209,7 +211,7 @@ function shortAnswerReferenceText(question, result = {}) {
 }
 
 function renderQuestionReview({ question, result, index, unit }) {
-  if(/^fl-r(?:7|10|11)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
+  if(/^fl-r(?:7|10|11|12)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
   if(quizResponseIsOmitted(result.response))return '<div class="question-review" data-question-review>本题未作答，已单独记录。</div>';
   if (question.type === "short_answer" && result.response === "__unknown__") {
     return renderReviewBlock("你的回答", "我不会（0 分）") + renderAnalysisBlock(shortAnswerReferenceText(question, result));
@@ -690,7 +692,7 @@ async function submitQuiz(unitId) {
     if (existingHint) existingHint.remove();
     const summaryQuestions = unit.adaptiveFormative ? questions : allQuestions;
     const summary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
-    const outcomeHtml = /^fl-r(?:7|10|11)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
+    const outcomeHtml = /^fl-r(?:7|10|11|12)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
       quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测已提交：${outcomeHtml}。</div>`);

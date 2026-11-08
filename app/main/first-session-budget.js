@@ -18,14 +18,8 @@
     notice.append(title, description, close); document.body.append(notice); notice.showModal();
   }
   function paint() {
-    const host = document.querySelector('.player-top .player-actions');
-    if (!budget || !host) { badge?.remove(); badge = null; return; }
-    if (!badge) { badge = document.createElement('button'); badge.type = 'button'; badge.className = 'first-session-budget'; badge.onclick = () => explain(badge.dataset.expired === 'true' && budget.enforce); host.prepend(badge); }
-    const elapsed = elapsedNow();
-    const expired = !budget.completed && elapsed >= budget.maximumSeconds;
-    badge.textContent = budget.completed ? '首场用时 ' + format(elapsed) : '现场 ' + format(elapsed) + ' / 90:00';
-    badge.dataset.expired = String(expired); badge.title = budget.enforce ? '正式学习：首次现场限90分钟，随访另计' : '体验计时：超过预算会提示，保留继续测试入口';
-    if (!budget.completed && elapsed >= budget.posttestReserveFromSeconds) badge.dataset.reserve = 'true'; else delete badge.dataset.reserve;
+    badge?.remove(); badge = null;
+    if (!budget) return;
     if (closed() && !warned.has(runId)) { warned.add(runId); global.dispatchEvent(new CustomEvent('cq:first-session-closed', { detail: { runId } })); explain(true); }
   }
   function update(run) {

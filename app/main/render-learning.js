@@ -1087,7 +1087,7 @@ function renderQuiz(unit) {
     }
   });
   let questions = unit.scene.content?.questions || [];
-  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r(?:7|10|11)-/.test(q.id));
+  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r(?:7|10|11|12)-/.test(q.id));
   let submitted = (state.submittedQuizzes || []).includes(unit.id);
   const unitResults = quizRecordsForUnit(unit.id);
   const archivedQuestions = unit.scene.content?.quizConfig?.archivedQuestions || [];
@@ -1185,7 +1185,7 @@ function renderQuiz(unit) {
         ${submitted ? '' : renderAssessmentBanner(unit)}
         <div class="quiz-card" data-context-id="quiz:${escapeHtml(unit.id)}:page" data-context-kind="quiz" data-context-scope="quiz" data-context-confidence="medium" data-context-label="${escapeHtml(unit.label)}">
           ${quizTopBanner}
-          ${researchReceipt?'<p class="quiz-version-notice">符号说明：f(a)是输入恰好为a时的输出；x→a表示x接近a。请根据题目给出的条件独立推理，可用自然语言作答。不会时可选“我不会”；暂时不答可点题目下方“暂不作答”，提交前可以返回。两种情况分别记录。前后测使用相同说明。</p>':''}
+          ${researchReceipt?'<p class="quiz-version-notice">符号说明：f(a)是输入恰好为a时的输出；x→a表示x接近a。请根据题目给出的条件独立推理，可用自然语言作答。不会时可选“我不会”；提交前可以回来修改。前后测使用相同说明。</p>':''}
           <div data-quiz-support-host></div>
           ${reviewingArchive ? '<p class="quiz-version-notice">这是此前已提交的旧版测验，保留原题和原成绩；新版题目不会覆盖这份记录。</p>' : ""}
           ${visibleQuestions
@@ -1211,7 +1211,7 @@ function renderQuiz(unit) {
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
             <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : adaptiveState?.needsDiagnostic ? '提交诊断题' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
-            <p>${researchReceipt?(submitted?'作答已保存，请继续下一步；研究测验暂不提供逐题讲解。':'请独立作答，完成各题或标记“暂不作答”后统一提交。'):submitted ? '可在题目下方查看解析，或选择一道题和知点讨论。' : adaptiveState?.needsDiagnostic ? '再完成一道诊断题，看看哪一步需要回顾。' : completionAllowed ? adaptiveState ? '先完成核心题；答错时会出现一道诊断题。' : '请独立完成本次测验。不确定时可以选择“我不会”，完成后统一提交。' : '接受学习建议后，即可提交本节测验。'}</p>
+            <p>${researchReceipt?(submitted?'作答已保存，请继续下一步；研究测验暂不提供逐题讲解。':'请独立完成各题，不会时可以选择“我不会”，完成后统一提交。'):submitted ? '可在题目下方查看解析，或选择一道题和知点讨论。' : adaptiveState?.needsDiagnostic ? '再完成一道诊断题，看看哪一步需要回顾。' : completionAllowed ? adaptiveState ? '先完成核心题；答错时会出现一道诊断题。' : '请独立完成本次测验。不确定时可以选择“我不会”，完成后统一提交。' : '接受学习建议后，即可提交本节测验。'}</p>
             <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>
@@ -1272,27 +1272,26 @@ function renderQuestionInput(unit, question, submitted, result = null) {
           data-short-answer
           data-unit-id="${unit.id}"
          data-question-id="${question.id}"
-          ${submitted || ["__unknown__","__skip__"].includes(draft) ? "disabled" : ""}
+          ${submitted || draft === "__unknown__" ? "disabled" : ""}
          placeholder="例如：先写出计算步骤，再解释几何或物理意义。"
         >${escapeHtml(["__unknown__","__skip__"].includes(draft) ? "" : draft)}</textarea>
         <label class="quiz-unknown-choice"><input type="checkbox" data-short-unknown
           data-unit-id="${unit.id}" data-question-id="${question.id}"
-          ${draft === "__unknown__" ? "checked" : ""} ${submitted || draft === '__skip__' ? "disabled" : ""}>我不会</label>
-        ${renderQuizOmissionAction(unit, question, submitted, draft)}
+          ${draft === "__unknown__" ? "checked" : ""} ${submitted ? "disabled" : ""}>我不会</label>
         <div class="draft-status">本题草稿会自动保存在本地记录中</div>
       </div>
     `;
   }
 
   const draft = submitted && result?.response != null ? result.response : readQuizDraft(unit.id, question.id, question.type === "multiple" ? [] : "");
-  const omitted = quizResponseIsOmitted(draft);
   return `
     <fieldset>
       ${[...(question.options || []).filter(option => !["__unknown__", "__skip__"].includes(option.value)), { value: "__unknown__", label: "我不会" }]
-        .map((option) => {
+        .map((option,optionIndex) => {
           const selected = Array.isArray(draft) ? draft.includes(option.value) : draft === option.value;
+          const optionLabel=String.fromCharCode(65+optionIndex);
           return `
-          <label class="${option.value === "__unknown__" ? "unknown-choice-option" : "knowledge-choice-option"}" data-context-id="quiz:${escapeHtml(question.id)}:option:${escapeHtml(option.value)}" data-context-kind="quiz-option" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-option="${escapeHtml(option.value)}" data-context-confidence="high" data-context-label="${escapeHtml(option.value === "__unknown__" ? "我不会" : `${option.value}. ${displayOptionLabel(option)}`)}">
+          <label class="${option.value === "__unknown__" ? "unknown-choice-option" : "knowledge-choice-option"}" data-context-id="quiz:${escapeHtml(question.id)}:option:${escapeHtml(option.value)}" data-context-kind="quiz-option" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-option="${escapeHtml(option.value)}" data-context-confidence="high" data-context-label="${escapeHtml(option.value === "__unknown__" ? "我不会" : `${optionLabel}. ${displayOptionLabel(option)}`)}">
             <input
               type="${question.type === "multiple" ? "checkbox" : "radio"}"
               name="${unit.id}-${question.id}"
@@ -1301,15 +1300,14 @@ function renderQuestionInput(unit, question, submitted, result = null) {
               data-unit-id="${unit.id}"
               data-question-id="${question.id}"
               ${selected ? "checked" : ""}
-              ${submitted || omitted ? "disabled" : ""}
+              ${submitted ? "disabled" : ""}
             />
-            <span>${option.value === "__unknown__" ? "我不会" : `${option.value}. ${renderQuestionMath(displayOptionLabel(option))}`}</span>
+            <span>${option.value === "__unknown__" ? "我不会" : `${optionLabel}. ${renderQuestionMath(displayOptionLabel(option))}`}</span>
           </label>
         `;
         })
         .join("")}
     </fieldset>
-    ${renderQuizOmissionAction(unit, question, submitted, draft)}
   `;
 }
 

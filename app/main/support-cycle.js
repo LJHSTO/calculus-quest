@@ -13,10 +13,15 @@
   const interactionBusy=()=>pointerBusy||global.TaskSupport?.interactionBusy||Boolean(document.activeElement?.matches('textarea,input:not([type=button]):not([type=checkbox]):not([type=range]),[contenteditable=true]'));
   const deferInquiry=c=>Boolean(c?.status==='awaiting_confirmation'&&!presentedInquiries.has(c.id)&&interactionBusy());
   const active=c=>c&&["awaiting_confirmation","queued","offered","engaged","awaiting_check","postponed"].includes(c.status);
+  const draftStorageKey=()=>`calculus-support-drafts-r12:${encodeURIComponent(owner)}`;
+  function persistDrafts(){try{if(owner)localStorage.setItem(draftStorageKey(),JSON.stringify([...drafts].slice(-60)));}catch{}}
   function draft(key){if(!drafts.has(key))drafts.set(key,{need:"",note:"",ratings:{},result:"",perceivedGoal:null,requestMore:false});return drafts.get(key);}
   function sync(next){
-    const identity=`${next.ownerKey}:${next.generation}`;
-    if(identity!==owner){owner=identity;requestSequence++;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;exposureMonitor?.clear({forget:true});}
+    const identity=next.ownerKey?`${next.ownerKey}:${next.learningGeneration??next.generation}:${next.runId||''}`:'';
+    if(identity!==owner){owner=identity;requestSequence++;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;exposureMonitor?.clear({forget:true});
+      try{const saved=JSON.parse(localStorage.getItem(draftStorageKey())||'[]');if(Array.isArray(saved))for(const [key,value] of saved.slice(-60))if(typeof key==='string'&&key.startsWith(owner+':')&&value&&typeof value==='object')drafts.set(key,value);}catch{}
+    }
+    if(next.supportCycle?.checkResult){drafts.delete(`${owner}:${next.supportCycle.id}:check:${next.supportCycle.checkResult.checkId}`);persistDrafts();}
     if(snapshot?.scopeKey!==next.scopeKey||snapshot?.sceneType!==next.sceneType||snapshot?.ownerKey!==next.ownerKey||next.locked||next.check)manualScope="";
     snapshot=next;
   }
@@ -25,14 +30,19 @@
     const sequence=++requestSequence;
     busy=true;pendingAction=command.action;error="";global.KnowledgeAssistant.refreshSupportSurface();
     const startOwner=owner;
-    try {await global.KnowledgeAssistant.supportCycleRequest(command);if(startOwner===owner&&command.action==='close'){manualScope='';global.TaskSupport?.leaveConversation();}}
+    try {await global.KnowledgeAssistant.supportCycleRequest(command);if(startOwner===owner){
+      if(command.action==='report')drafts.delete(`${owner}:${snapshot.scopeKey}:need`);
+      if(command.action==='feedback')drafts.delete(`${owner}:${command.id}:feedback`);
+      if(['submit_check','skip_check'].includes(command.action))drafts.delete(`${owner}:${command.id}:check:${command.checkId}`);
+      persistDrafts();if(command.action==='close'){manualScope='';global.TaskSupport?.leaveConversation();}
+    }}
     catch(e){if(startOwner===owner&&sequence===requestSequence)error=e.message;}
     finally{if(startOwner===owner&&sequence===requestSequence){busy=false;pendingAction="";global.KnowledgeAssistant.refreshSupportSurface();}}
   }
   function button(label,fn){const b=el("button",label);b.type="button";b.disabled=busy;b.onclick=fn;return b;}
   function choices(container, options, selected, choose) {
     for(const [value,label] of Object.entries(options)){
-      const b=button(label,()=>{choose(value);for(const n of container.querySelectorAll("button"))n.setAttribute("aria-pressed",String(n===b));});
+      const b=button(label,()=>{choose(value);persistDrafts();for(const n of container.querySelectorAll("button"))n.setAttribute("aria-pressed",String(n===b));});
       b.setAttribute("aria-pressed",String(selected===value));container.append(b);
     }
   }
@@ -41,10 +51,10 @@
     for(const [key,label] of Object.entries({value:"觉得值得学",confidence:"有信心完成",cost:"觉得负担大",tension:"感到紧张或挫败"})){
       const row=el("label",`${label}：0（完全没有）–4（非常强）`), input=el("input");
       input.type="number";input.min="0";input.max="4";input.step="1";input.value=d.ratings[key]??"";input.setAttribute("aria-label",label);
-      input.oninput=()=>d.ratings[key]=input.value===""?null:Number(input.value);row.append(input);details.append(row);
+      input.oninput=()=>{d.ratings[key]=input.value===""?null:Number(input.value);persistDrafts();};row.append(input);details.append(row);
     }form.append(details);
   }
-  function note(form,d,label){const row=el("label",label),input=el("textarea");input.rows=2;input.maxLength=600;input.value=d.note;input.setAttribute("aria-label",label);input.oninput=()=>{d.note=input.value;};row.append(input);form.append(row);}
+  function note(form,d,label){const row=el("label",label),input=el("textarea");input.rows=2;input.maxLength=600;input.value=d.note;input.setAttribute("aria-label",label);input.oninput=()=>{d.note=input.value;persistDrafts();};row.append(input);form.append(row);}
   function checkin(next,open=false,inquiryId=null){
     const reflection=next.supportCycle?.inquiry?.basis==='exploration_comparison';
     const d=draft(`${owner}:${next.scopeKey}:need`),details=el("details");details.open=open;
@@ -55,7 +65,7 @@
     const label=el('label','其他方面');other.setAttribute('aria-label','其他需要');
     const blank=el('option','选择其他需要（可选）');blank.value='';other.append(blank);
     for(const [value,text]of Object.entries(needs).filter(([k])=>!['concept','monitoring','clarify_concept','reflection','none'].includes(k))){const option=el('option',text);option.value=value;other.append(option);}
-    other.value=Object.hasOwn(primary,d.need)?'':d.need;other.onchange=()=>{d.need=other.value;for(const b of list.querySelectorAll('button'))b.setAttribute('aria-pressed','false');};label.append(other);form.append(label);
+    other.value=Object.hasOwn(primary,d.need)?'':d.need;other.onchange=()=>{d.need=other.value;persistDrafts();for(const b of list.querySelectorAll('button'))b.setAttribute('aria-pressed','false');};label.append(other);form.append(label);
     const extra=el('details');extra.append(el('summary','补充一句（选填）'));note(extra,d,"想补充的目标或困难");form.append(extra);
     const submit=el("button","开始帮助");submit.type="submit";submit.className='support-primary-action';submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.need){error="请先选择当前需要。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"report",confirmed:true,need:d.need,note:d.note,ratings:d.ratings,...(inquiryId?{inquiryId}: {})});};
@@ -68,7 +78,7 @@
     const perceived=el("details");perceived.append(el("summary","你感受到的主要帮助（可不选）"));const options=el("div");choices(options,goalNames,d.perceivedGoal,v=>d.perceivedGoal=v);perceived.append(options);form.append(perceived);
     const extra=el('details');extra.append(el('summary','补充说明（选填）'));note(extra,d,"具体哪里有用或不合适（可不填）");selfRatings(extra,d);form.append(extra);
     if(c.rounds<=Number(c.profile?.supportFollowups||0)){
-      const follow=button(d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次',()=>{d.requestMore=!d.requestMore;follow.textContent=d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次';follow.setAttribute('aria-pressed',String(d.requestMore));});follow.setAttribute('aria-pressed',String(d.requestMore));form.append(follow,el('p','保存反馈后才会安排补充；仍会等待所选间隔和合适的任务边界。'));
+      const follow=button(d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次',()=>{d.requestMore=!d.requestMore;persistDrafts();follow.textContent=d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次';follow.setAttribute('aria-pressed',String(d.requestMore));});follow.setAttribute('aria-pressed',String(d.requestMore));form.append(follow,el('p','保存反馈后才会安排补充；仍会等待所选间隔和合适的任务边界。'));
     }else{d.requestMore=false;form.append(el('p','本轮不再追加帮助。你可以继续自己尝试，之后仍可重新求助。'));}
     const submit=el("button","保存反馈");submit.type="submit";submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.result){error="请选择反馈。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"feedback",id:c.id,...d});};details.append(form);return details;
@@ -108,6 +118,7 @@
     const actions=el("footer");if(c.status==="offered")actions.append(button("我先试一试",()=>request({action:"accept",id:c.id})));
     actions.append(button("结束这轮帮助",()=>request({action:"close",id:c.id})));
     actions.append(button("做一次独立检查",()=>request({action:"start_check",id:c.id})));
+    section.append(el('p','检查只记录一次独立回答。答错后会保留结果与解释；后续若有新题，不会修改这次结果。'));
     const nextSteps=feedback(next,c);
     const provenance=el('details');provenance.className='support-inquiry-evidence';provenance.append(el('summary','讲解信息'),el('p',`这次主要帮助你${({cognitive:'理解概念与步骤',metacognitive:'检查理解、调整方法',motivational:'找到学习的价值与信心',emotional:'缓解学习中的紧张',behavioral:'安排接下来的学习'})[c.plan.primaryGoal]}。${c.content.audit.fallback?'当前使用课程内的讲解。':'由智能体老师根据当前任务生成。'}`));
     section.append(actions,nextSteps,provenance);return section;
@@ -133,8 +144,9 @@
     }else if(c?.status==="awaiting_check"){
       root.dataset.independentCheck='true';
       root.append(el("h4","独立检查"),el("p","提示和对话已暂停。也可以跳过，不会把跳过记成答错。"),el("p",c.check.prompt));
-      const d=draft(`${owner}:${c.id}:check`),list=el("div");choices(list,Object.fromEntries(c.check.options.map(o=>[o.value,o.label])),d.response,v=>d.response=v);root.append(list);
-      root.append(button("提交独立检查",()=>request({action:"submit_check",id:c.id,checkId:c.check.id,response:d.response})),button("跳过检查",()=>request({action:"skip_check",id:c.id,checkId:c.check.id})));
+      const d=draft(`${owner}:${c.id}:check:${c.check.id}`),list=el("div");choices(list,Object.fromEntries(c.check.options.map(o=>[o.value,o.label])),d.response,v=>d.response=v);root.append(list);
+      root.append(el('p','这是独立练习，提交后保留首次结果；不会要求答对才能继续学习。'));
+      root.append(button("提交独立检查",()=>{if(!d.response){error='请先选择一个回答。';global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"submit_check",id:c.id,checkId:c.check.id,response:d.response});}),button("跳过检查",()=>request({action:"skip_check",id:c.id,checkId:c.check.id})));
     } else {
       if(c?.content&&["offered","engaged"].includes(c.status))root.append(content(next,c));
       else if(c&&["queued","postponed"].includes(c.status)){

@@ -28,6 +28,7 @@
   }
   new MutationObserver(syncLoadingWatches).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style","class"]});
   document.addEventListener("visibilitychange",syncLoadingWatches);
+  global.addEventListener('cq:proactive-state',()=>{for(const entry of frames.values())entry.restorePage?.();});
 
   function mount(host, canvas, unit, resourceRoot) {
     if (!host || !canvas?.elements?.length) return;
@@ -67,6 +68,7 @@
     }
     const pages=unit?.scene?.content?.knowledgePoint?.slide?.pages||[canvas];
     const lecturePages=unit?.scene?.content?.knowledgePoint?.slide?.lecturePages||[];
+    const lectureVersion=String(unit?.scene?.content?.knowledgePoint?.slide?.lectureVersion||'');
     let pageIndex=0;
     host.dataset.openmaicPage='1';host.dataset.openmaicPageSummary='';
     const slide=prepare(pages[0]);
@@ -87,12 +89,12 @@
     frames.set(frame, entry);
     const rendererUrl = new URL("assets/openmaic-classroom/frame.html", document.baseURI).href;
     if(pages.length>1){
-      host.parentElement.querySelector('.openmaic-page-nav')?.remove();
-      const nav=document.createElement('nav');nav.className='openmaic-page-nav';nav.setAttribute('aria-label','本知识点讲解页');
-      const prev=document.createElement('button'),next=document.createElement('button'),status=document.createElement('span');prev.type=next.type='button';prev.textContent='上一讲解页';next.textContent='下一讲解页';status.setAttribute('role','status');
+      document.querySelectorAll('.openmaic-page-nav').forEach(node=>node.remove());
+      const nav=document.createElement('nav');nav.className='openmaic-page-nav';nav.dataset.lectureUnit=unit.id;nav.setAttribute('aria-label','本知识点讲解页');
+      const prev=document.createElement('button'),next=document.createElement('button'),status=document.createElement('span');prev.type=next.type='button';prev.textContent='上一页';next.textContent='下一页';prev.setAttribute('aria-label','上一讲解页');next.setAttribute('aria-label','下一讲解页');status.setAttribute('role','status');
       function update(){status.textContent='讲解 '+(pageIndex+1)+' / '+pages.length;prev.disabled=pageIndex===0;next.disabled=pageIndex===pages.length-1;}
       function show(index){
-        if(!Number.isInteger(index)||index<0||index>=pages.length||index===pageIndex)return;
+        if(!host.isConnected||getUnit()?.id!==unit.id||!Number.isInteger(index)||index<0||index>=pages.length||index===pageIndex)return;
         global.LessonPlayback?.pause();if(typeof pauseNarrationQueue==='function')pauseNarrationQueue();
         pageIndex=index;host.dataset.openmaicPage=String(index+1);host.dataset.openmaicPageSummary=index>0?String(lecturePages[index-1]?.summary||''):'';
         const fallbackDeck = host.querySelector('[data-slide-deck]');
@@ -110,8 +112,18 @@
         entry.resizeObserver = new ResizeObserver(() => syncLoadingDeadline(frame, entry));
         entry.resizeObserver.observe(host); syncLoadingDeadline(frame, entry);
         update();global.LearningWorkspace?.syncPlayback?.();analyticsTrack('slide_page_view',{data:{unitId:unit.id,page:index+1,pageCount:pages.length,lectureVersion:unit?.scene?.content?.knowledgePoint?.slide?.lectureVersion||'functions-limits-lessons-r10-v1'}});
+        if(typeof rememberLearningUiCursor==='function')rememberLearningUiCursor({lecturePage:index,pageId:String(pages[index].id||''),lectureVersion});
       }
-      prev.addEventListener('click',()=>show(pageIndex-1));next.addEventListener('click',()=>show(pageIndex+1));nav.append(prev,status,next);host.before(nav);update();
+      entry.restorePage=()=>{
+        if(entry.pageRestored||!host.isConnected||getUnit()?.id!==unit.id)return;
+        if(typeof learningUiCursorContext!=='function'||!learningUiCursorContext(unit.id))return;
+        entry.pageRestored=true;
+        const saved=typeof readLearningUiCursor==='function'?readLearningUiCursor(unit.id):null;
+        if(saved?.lectureVersion===lectureVersion&&saved.lecturePage<pages.length&&String(pages[saved.lecturePage]?.id||'')===saved.pageId)show(saved.lecturePage);
+      };
+      prev.addEventListener('click',()=>show(pageIndex-1));next.addEventListener('click',()=>show(pageIndex+1));nav.append(prev,status,next);
+      const controls=document.querySelector('.classroom-controlbar .classroom-controls');
+      if(controls)controls.before(nav);else host.before(nav);update();
     }
     host.dataset.openmaicState = "loading";
     const loading = document.createElement("span");
@@ -123,7 +135,7 @@
     host.append(frame);
     // Hidden iframes suspend renderer animation frames; give a full window only while the host is shown.
     entry.resizeObserver=new ResizeObserver(()=>syncLoadingDeadline(frame,entry));
-    entry.resizeObserver.observe(host);syncLoadingDeadline(frame,entry);
+    entry.resizeObserver.observe(host);syncLoadingDeadline(frame,entry);entry.restorePage?.();
   }
 
   global.addEventListener("message", (event) => {

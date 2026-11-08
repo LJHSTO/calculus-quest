@@ -3,7 +3,7 @@
 .reg-transfer-window[open]{display:flex;flex-direction:column}
 .reg-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 28px;border-bottom:1px solid #e8ebf2;background:#faf9ff;flex-shrink:0}
 .reg-header h2{margin:3px 0 0;font-size:1.3rem;line-height:1.5}.reg-eyebrow{margin:0;color:#6b5bb3;font-size:.85rem;letter-spacing:.05em}
-.reg-clock{white-space:nowrap;font-variant-numeric:tabular-nums;color:#5946ac;border:1px solid #ded7f6;background:#f3efff;border-radius:20px;padding:7px 12px;font-size:.9rem}
+.reg-clock{display:none}
 .reg-body{overflow-y:auto;overscroll-behavior:contain;padding:20px 28px 12px;line-height:1.75;min-height:0}.reg-body p{margin:0 0 14px}.reg-body h3{font-size:1.08rem;line-height:1.65;margin:12px 0}.reg-body ol{padding-left:25px}.reg-body li{margin:9px 0}
 .reg-progress,.reg-footnote{color:#6a7890;font-size:.85rem}.reg-footnote{margin-top:20px!important}.reg-question,.reg-help{border:1px solid #e0e4ee;border-radius:14px;padding:16px 20px;margin:16px 0;background:#fff}
 .reg-figure{margin:12px 0 18px;text-align:center}.reg-figure img{display:block;max-width:100%;width:min(640px,100%);height:auto;margin:auto;border-radius:8px}.reg-figure figcaption{font-size:.82rem;color:#68768e;margin:8px auto;max-width:640px;text-align:left}.reg-figure-fallback{border:1px dashed #b7bed1;padding:12px;text-align:left}

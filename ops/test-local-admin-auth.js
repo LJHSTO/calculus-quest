@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const http = require("node:http");
 const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
@@ -79,6 +80,29 @@ async function runCase(root, dbPath, expected, overrides = {}) {
 
     const anonymousOverview = await requestJson(baseUrl, "/api/admin/stats/overview");
     assert.equal(anonymousOverview.response.status, expected.anonymousStatus);
+
+    if (expected.bypass) {
+      for (const headers of [
+        { Origin: "https://external.example" },
+        { Origin: "null" },
+        { "Sec-Fetch-Site": "cross-site" },
+        { "X-Forwarded-For": "203.0.113.42" }
+      ]) {
+        const response = await fetch(baseUrl + "/api/admin/stats/overview", { headers });
+        assert.equal(response.status, 403, JSON.stringify(headers));
+      }
+      const sameOrigin = await fetch(baseUrl + "/api/admin/stats/overview", {
+        headers: { Origin: baseUrl, "Sec-Fetch-Site": "same-origin" }
+      });
+      assert.equal(sameOrigin.status, 200);
+      const foreignHostStatus = await new Promise((resolve, reject) => {
+        http.get(baseUrl + "/api/admin/stats/overview", { headers: { Host: "external.example" } }, (response) => {
+          response.resume();
+          resolve(response.statusCode);
+        }).on("error", reject);
+      });
+      assert.equal(foreignHostStatus, 403);
+    }
 
     const authenticatedOverview = await requestJson(
       baseUrl,

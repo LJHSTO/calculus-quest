@@ -37,11 +37,10 @@
   function modal(title){if(!dialog){dialog=el('dialog');dialog.id='three-arm-dialog';document.body.append(dialog);}dialog.oncancel=null;dialog.onclose=null;dialog.replaceChildren(el('h2',title));dialog.setAttribute('aria-label',title);return dialog;}
   async function show(){const host=document.fullscreenElement||document.body;if(dialog.parentElement!==host)host.append(dialog);if(!dialog.open)dialog.showModal();dialog.scrollTop=0;}
   function syncReview(){const b=document.getElementById('three-arm-review');if(!b)return;const w=global.StudyStages.reviewWindow(run,state.submittedQuizzes,typeof currentUnitId==='string'?currentUnitId:''),checking=global.KnowledgeAssistant?.pendingIndependentCheck?.();b.disabled=!w.allowed&&!checking;b.title=checking?'有一道检查尚未完成，点击返回检查或暂不检查。':w.message;}
-  function setRun(value){run=value;global.FirstSessionBudget?.update(value);judgmentActive=Boolean(value?.activeJudgment);const label=document.getElementById('three-arm-entry-label');if(label&&run){const text=run.mode==='preview'?`${run.arm}组 · 体验`:'本次学习';label.title=labels[run.arm];if(label.textContent!==text)label.textContent=text;}syncReview();}
+  function setRun(value){run=value;global.dispatchEvent(new CustomEvent('cq:three-arm-state',{detail:{runId:value?.id||''}}));global.FirstSessionBudget?.update(value);judgmentActive=Boolean(value?.activeJudgment);document.getElementById('three-arm-entry-label')?.remove();syncReview();}
   function install(){
     const host=document.querySelector('.player-top .player-actions'),account=document.getElementById('account-pilot-status');if(!host||!account||document.getElementById('three-arm-review'))return;
-    const label=el('span');label.id='three-arm-entry-label';label.className='three-arm-entry-label';
-    const review=button('学习回顾',()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);return openReview();});review.id='three-arm-review';review.className='user-menu-item';account.before(review);host.prepend(label);setRun(run);
+    const review=button('学习回顾',()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);return openReview();});review.id='three-arm-review';review.className='user-menu-item';account.before(review);setRun(run);
   }
   async function openReview(){
     const window=global.StudyStages.reviewWindow(run,state.submittedQuizzes,typeof currentUnitId==='string'?currentUnitId:'');

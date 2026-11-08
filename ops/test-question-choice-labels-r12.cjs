@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),render=fs.readFileSync(path.join(root,'app/main/render-learning.js'),'utf8'),quiz=fs.readFileSync(path.join(root,'app/main/quiz.js'),'utf8');
+let draft='';const context={readQuizDraft:()=>draft,escapeHtml:value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'),displayOptionLabel:option=>option.label,renderQuestionMath:value=>String(value)};
+vm.createContext(context);vm.runInContext(render.slice(render.indexOf('function renderQuestionInput('),render.indexOf('function renderSlide(')),context);
+vm.runInContext(quiz.slice(quiz.indexOf('function optionText('),quiz.indexOf('function renderReviewBlock(')),context);
+const checks=[],test=(name,fn)=>{fn();checks.push({name,passed:true});};
+const question={id:'fl-r12-formative-example',type:'single',options:[{value:'0',label:'第一条关系'},{value:'1',label:'第二条关系'},{value:'__skip__',label:'跳过本题'},{value:'2',label:'第三条关系'},{value:'3',label:'第四条关系'},{value:'__unknown__',label:'我不会'}]},unit={id:'synthetic-formative'};
+test('选项显示A至D但提交值仍0至3',()=>{const html=context.renderQuestionInput(unit,question,false);for(const [i,letter] of ['A','B','C','D'].entries()){assert(html.includes(`value="${i}"`));assert(html.includes(`<span>${letter}. `));assert(html.includes(`data-context-option="${i}"`));}assert(!html.includes('<span>0.'));});
+test('只保留一个我不会入口，不显示暂不作答操作',()=>{const html=context.renderQuestionInput(unit,question,false);assert.equal((html.match(/value="__unknown__"/g)||[]).length,1);assert(!/value="__skip__"|data-quiz-omission|跳过本题|暂不作答/.test(html));});
+test('正确答案和作答回顾采用相同字母映射',()=>{assert.equal(context.optionText(question,'2'),'C. 第三条关系');const html=context.formatAnswerValuesHtml(question,['0','3']);assert.match(html,/>A<\/span>/);assert.match(html,/>D<\/span>/);assert.equal(context.formatAnswerValues(question,['1']),'B. 第二条关系');});
+test('旧遗漏草稿不变成我不会且仍可重新选择',()=>{draft='__skip__';const html=context.renderQuestionInput(unit,question,false);assert(!/checked|disabled/.test(html));assert.equal(draft,'__skip__');});
+test('旧遗漏简答草稿保留且输入可用',()=>{draft='__skip__';const html=context.renderQuestionInput(unit,{id:'short',type:'short_answer'},false);assert(!/checked|disabled/.test(html));assert.equal(draft,'__skip__');});
+test('已提交答案按原numeric值选中并禁用修改',()=>{draft='';const html=context.renderQuestionInput(unit,question,true,{response:'1'});assert.match(html,/value="1"[\s\S]*?checked[\s\S]*?disabled/);assert.match(html,/<span>B\. 第二条关系<\/span>/);});
+test('旧遗漏记录语义保持',()=>{assert.equal(context.optionText(question,'__skip__'),'暂不作答');assert.equal(context.optionText(question,'__unknown__'),'我不会');});
+const out=process.env.STUDENT_UX_OUTPUT||path.join(root,'tmp/question-choice-r12');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'选项字母与遗漏兼容回归.json'),JSON.stringify({passed:true,scope:'提取实际renderer和review函数；只变显示，numeric判分值与历史遗漏不变',checks},null,2));console.log(JSON.stringify({passed:true,checks:checks.length}));

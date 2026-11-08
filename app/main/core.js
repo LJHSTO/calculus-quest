@@ -901,6 +901,51 @@ function learningSurfaceRestoreFor(unitId) {
   return saved.unitId === unitId ? saved : null;
 }
 
+// This local cursor only remembers presentation choices for the authenticated
+// current lesson. It never supplies task state, answers, completion or help.
+function learningUiCursorContext(unitId = currentUnitId) {
+  const unit=getUnit(unitId),run=window.ThreeArmStudyUI?.run;
+  if(!isSignedIn()||!learningSnapshotReady||!learningSnapshotGeneration||unitId!==currentUnitId
+    ||unit?.type!=='knowledge'||window.OperationGuide?.active||window.FirstSessionBudget?.closed
+    ||window.ThreeArmStudyUI?.judgmentActive||window.KnowledgeAssistant?.pendingIndependentCheck?.())return null;
+  const support=window.KnowledgeAssistant?.designSpaceSnapshot?.();
+  if(!support?.loaded||support.locked||support.check||support.offer||support.prompt
+    ||support.supportCycle&&support.supportCycle.status!=='closed')return null;
+  if(window.StudyEntry&&!run?.id)return null;
+  const owner=String(state.participant?.participantId||''),runId=run?.id||'ordinary';
+  return {unit,owner,runId,generation:learningSnapshotGeneration,key:`learning-ui-cursor-v1:${owner}:${runId}:${learningSnapshotGeneration}:${unitId}`};
+}
+
+function readLearningUiCursor(unitId = currentUnitId) {
+  const context=learningUiCursorContext(unitId);if(!context)return null;
+  try{
+    const cursor=JSON.parse(localStorage.getItem(context.key)||'null');
+    if(cursor?.version!==1||cursor.owner!==context.owner||cursor.runId!==context.runId
+      ||cursor.generation!==context.generation||cursor.unitId!==unitId)return null;
+    const result={};
+    if(['slide','interactive'].includes(cursor.surface))result.surface=cursor.surface;
+    if(knowledgeInteractionTypes(context.unit).some(type=>type.id===cursor.sceneType))result.sceneType=cursor.sceneType;
+    if(Number.isInteger(cursor.lecturePage)&&cursor.lecturePage>=0&&cursor.lecturePage<100
+      &&typeof cursor.pageId==='string'&&typeof cursor.lectureVersion==='string'){
+      result.lecturePage=cursor.lecturePage;result.pageId=cursor.pageId;result.lectureVersion=cursor.lectureVersion;
+    }
+    return result;
+  }catch{return null;}
+}
+
+function rememberLearningUiCursor(value = {}) {
+  const context=learningUiCursorContext();if(!context)return false;
+  const previous=readLearningUiCursor()||{},cursor={...previous};
+  if(['slide','interactive'].includes(value.surface))cursor.surface=value.surface;
+  if(knowledgeInteractionTypes(context.unit).some(type=>type.id===value.sceneType))cursor.sceneType=value.sceneType;
+  if(Number.isInteger(value.lecturePage)&&value.lecturePage>=0&&value.lecturePage<100
+    &&typeof value.pageId==='string'&&typeof value.lectureVersion==='string'){
+    cursor.lecturePage=value.lecturePage;cursor.pageId=value.pageId.slice(0,180);cursor.lectureVersion=value.lectureVersion.slice(0,180);
+  }
+  try{localStorage.setItem(context.key,JSON.stringify({version:1,owner:context.owner,runId:context.runId,
+    generation:context.generation,unitId:currentUnitId,...cursor,updatedAt:new Date().toISOString()}));return true;}catch{return false;}
+}
+
 function learningSnapshot() {
   const restoredSurface = typeof learningSurfaceRestoreFor === 'function' ? learningSurfaceRestoreFor(currentUnitId) : null;
   return {

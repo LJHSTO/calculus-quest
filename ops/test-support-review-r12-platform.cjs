@@ -1,0 +1,68 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{chromium}=require('playwright-core'),bank=require('../lib/assessments/functions-limits-registry').forVersion(process.env.SUPPORT_BANK_VERSION);
+const out=path.resolve(process.env.SUPPORT_R12_OUTPUT||__dirname+'/../tmp/support-review-r12-platform'),base=(process.argv.slice(2).find(arg=>/^https?:\/\//.test(arg))||process.env.STUDENT_UX_BASE_URL||'http://127.0.0.1:54049').replace(/\/$/,''),expiryOnly=process.argv.includes('--expiry-only');fs.mkdirSync(out,{recursive:true});assert.match(base,/^http:\/\/(127\.0\.0\.1|localhost):\d+$/,'本回归只在显式隔离的本机服务创建合成账号');
+async function main(scenario,foreignOffer){const startedAt=Date.now();const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,channel:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?undefined:(process.env.PLAYWRIGHT_CHROMIUM_CHANNEL||'chrome'),headless:true}),page=await browser.newPage({viewport:{width:1440,height:1000}}),checks=[],errors=[],decisions=[],layoutEvidence=[],coursewareDocuments=[];let resourceEvidence=null;page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('response',async r=>{if(r.url().endsWith('/api/learning/assistant/intervention')){try{const b=await r.json();decisions.push({status:r.status(),body:b});}catch{}}});
+ const scenarioLabel={decline:'拒绝',change:'换场景',check:'独立检查',range:'误差示例',expiry:'真实到期'}[scenario];
+ const snapshot=()=>page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot());
+ const api=(url,body)=>page.evaluate(async({url,body})=>{const r=await fetch(url,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+state.authToken,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const b=await r.json();if(!r.ok)throw Error(url+' '+r.status+' '+b.message);return b;},{url,body});
+ const select=async(point,type)=>{await page.evaluate(async id=>{ensureAgenticPath().pendingPlan=null;agenticUnlockUnit(id,'synthetic_r10_validation');selectUnit(id);await syncLearningSnapshot('synthetic_r10_unit');},point);await page.locator('[data-workspace-canvas="interactive"]').click();await page.locator('[data-knowledge-scene="'+type+'"]').click();await page.frameLocator('iframe[data-courseware-frame]').locator('.r9-native').waitFor();return page.frameLocator('iframe[data-courseware-frame]');};
+ const flush=()=>page.evaluate(()=>analyticsFlushUntilSettled(20000));
+ try{
+  await page.goto(base+'/?study=B');await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-auth-mode="register"]').click();await page.locator('#nickname').fill('直接提示交互合成'+Date.now());await page.locator('#register-password').fill('Synthetic-r9-course-123');await page.locator('#register-password-confirm').fill('Synthetic-r9-course-123');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});await page.locator('[data-view="learn"]').first().click();
+  const survey=(await api('api/study/survey?stage=baseline')).data;await api('api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.options?.find(o=>o.value===3)?.value??3]))});
+  if(await page.locator('#three-arm-dialog[open]').count())await page.locator('#three-arm-dialog').getByRole('button',{name:'稍后继续',exact:true}).click();
+  await page.waitForTimeout(2200);if(await page.getByRole('button',{name:'进入知识前测',exact:true}).isVisible())await page.getByRole('button',{name:'进入知识前测',exact:true}).click();
+  await page.locator('[data-view="learn"]').first().click();await page.locator('.question-card').first().waitFor({state:'visible'});
+  assert.equal(await page.locator('.support-inquiry:visible').count(),0);checks.push('前测期间没有主动帮助');
+  const questions=[...bank.questions('pre','X'),...bank.questions('pre','Y')],cards=page.locator('.question-card');for(let i=0;i<await cards.count();i++){const card=cards.nth(i),id=await card.getAttribute('data-question'),q=questions.find(q=>q.id===id);assert.ok(q,id);if(q.type==='short_answer')await card.locator('textarea').fill('这是合成工程验收回答，保留人工批改状态。');else await card.locator('input[value="'+q.answer[0]+'"]').check();}
+  await page.locator('[data-submit-quiz]').click();await page.waitForFunction(()=>state.submittedQuizzes.includes('V14-C1-pre'));
+  await page.waitForTimeout(1200);if(await page.getByRole('button',{name:'开始学习',exact:true}).first().isVisible())await page.getByRole('button',{name:'开始学习',exact:true}).first().click();
+  if(await page.locator('[data-guide-pause]').isVisible())await page.locator('[data-guide-pause]').click();
+  const prefs=(await api('api/learning/learner-preferences')).data,answers=prefs.record.answers;for(const a of Object.values(answers))a.reason='default';answers.D5.value=process.argv.includes('--cycle')||process.argv.includes('--skip')?'ask':'cue';if(scenario==='range')answers.D3.value='example';if(process.argv.includes('--stop'))answers.D6.value='stop';await api('api/learning/learner-preferences',{answers,expectedRevision:prefs.record.revision,selectionSource:'synthetic_r10_browser_fixture'});
+  await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-view="learn"]').first().click();
+  // Fixture opens each target unit; task interactions and support delivery use the real UI and API.
+  await page.waitForTimeout(1200);if(await page.locator('[data-guide-pause]').isVisible())await page.locator('[data-guide-pause]').click();
+  if(await page.locator('[data-quiz-path-action="pilot-next"]').first().isVisible())await page.locator('[data-quiz-path-action="pilot-next"]').first().click();
+  await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==='knowledge');
+
+
+  await select('GH-01-K02','mindMap');await page.evaluate(()=>KnowledgeAssistant.open());
+  await page.locator('[data-knowledge-input]').fill('这是一段尚未发送的真实平台草稿');fs.writeFileSync(path.join(out,'before-composer.json'),JSON.stringify(await page.evaluate(()=>({currentUnitId,snapshot:KnowledgeAssistant.designSpaceSnapshot(),run:ThreeArmStudyUI.run?.id,generation:learningSnapshotGeneration,entries:Object.fromEntries(Object.entries(localStorage).filter(([k])=>k.startsWith('calculus-assistant-draft-r12:')))})),null,2));
+  await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-view="learn"]').first().click();await page.waitForTimeout(1200);await page.evaluate(()=>KnowledgeAssistant.open());
+  assert.equal(await page.locator('[data-knowledge-input]').inputValue(),'这是一段尚未发送的真实平台草稿');checks.push('完整平台知点未发输入在刷新后保留');
+  await page.locator('[data-knowledge-input]').fill('');await page.evaluate(()=>KnowledgeAssistant.close());
+  const id='GH-01-K02-formative';await page.evaluate(async id=>{ensureAgenticPath().pendingPlan=null;agenticUnlockUnit(id,'synthetic_r12_review_fixture');selectUnit(id);await syncLearningSnapshot('synthetic_r12_review_fixture');},id);
+  await page.locator('.question-card').first().waitFor();const qs=require('../lib/assessments/functions-limits-registry').formative(1,bank.version);assert.equal(qs.length,2);
+  for(const q of qs){const wrong=q.options.find(o=>!q.answer.includes(o.value));await page.locator('.question-card[data-question="'+q.id+'"]').locator('input[value="'+wrong.value+'"]').check();}
+  await page.locator('[data-submit-quiz]').click();await page.waitForFunction(id=>state.submittedQuizzes.includes(id),id);
+  await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().offer?.questionId,null,{timeout:25000});
+  assert.equal(await page.getByRole('button',{name:'请知点讲这道题',exact:true}).count(),2,'每道确认错误题应有自主求助入口');const offer=(await snapshot()).offer;assert.equal(await page.locator('.task-support-panel').count(),1,'自动帮助只能出现一个焦点');
+  assert.equal(await page.locator('.question-card:has(.task-support-panel)').getAttribute('data-question'),offer.questionId);checks.push('两题错误仅一个自动焦点，按实际题号定位');
+  await page.getByRole('button',{name:'接受提示并继续交流',exact:true}).first().click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().policyState?.lifecycle?.phase==='accepted_pending_response');
+  await page.getByRole('button',{name:'用一题检查',exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().check);
+  const check=(await snapshot()).check,adapter=require('../lib/proactive-policy/adapters/functions-limits-r12');const wrong=check.options.find(o=>adapter.gradeVerificationCheck({knowledgePointId:'GH-01-K02',supportLevel:check.supportLevel,checkId:check.id,response:o.value})?.correct===false);
+  await page.getByRole('radiogroup').getByRole('radio').nth(check.options.indexOf(wrong)).click();
+  await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-view="learn"]').first().click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().check);
+  assert.equal((await snapshot()).check.id,check.id);assert.equal((await snapshot()).checkSelection,wrong.value);checks.push('完整平台检查ID和已选答案刷新恢复');
+  const capture=page.waitForResponse(r=>r.url().endsWith('/api/learning/proactive/check')&&r.request().postDataJSON()?.response);
+  await page.getByRole('button',{name:'提交检查',exact:true}).click();const receipt=await(await capture).json();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().feedback?.tone==='warning');
+  assert.equal(receipt.checkResult.correct,false);const saved=receipt.checkResult;
+  if(process.argv.includes('--stop')){assert.equal((await snapshot()).policyState.lifecycle.phase,'maximum_support_reached');assert.equal((await snapshot()).offer,null);checks.push('D6本轮结束：第一次检查错误后无自动补充');}
+  if(process.argv.includes('--two-wrong')){
+    await page.getByRole('button',{name:'接受提示并继续交流',exact:true}).first().click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().policyState?.lifecycle?.phase==='accepted_pending_response');
+    await page.getByRole('button',{name:'用一题检查',exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().check);
+    const second=(await snapshot()).check;assert.notEqual(second.id,check.id);assert.equal((await snapshot()).checkSelection,'');
+    const otherWrong=second.options.find(o=>adapter.gradeVerificationCheck({knowledgePointId:'GH-01-K02',supportLevel:second.supportLevel,checkId:second.id,response:o.value})?.correct===false);
+    await page.getByRole('radiogroup').getByRole('radio').nth(second.options.indexOf(otherWrong)).click();
+    await page.getByRole('button',{name:'提交检查',exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().policyState?.lifecycle?.phase==='maximum_support_reached');
+    assert.equal((await snapshot()).offer,null);assert.equal((await snapshot()).check,null);checks.push('D6一次补充：第二道新检查首次答错后达到上限，不再追加，也不修改第一次结果');
+  }
+
+  const replay=await api('api/learning/proactive/check',{chapterId:'V14-C1',unitId:id,scopeKey:'GH-01-K02',sceneType:'quiz',checkId:check.id,response:wrong.value});assert.equal(replay.replayed,true);assert.equal(replay.checkResult.attemptId,saved.attemptId);checks.push('错误结果保存解释；同题重复提交不重判');
+  await page.getByText('本次检测的其他错题（自主选择）',{exact:true}).click();const other=page.locator('.support-other-questions button');assert.equal(await other.count(),1);
+  const waiting=page.waitForResponse(r=>r.url().endsWith('/api/learning/assistant/ask'));await other.click();await waiting;await page.waitForTimeout(1600);checks.push('另一错题保持自主求助入口，点击实际发送服务器请求');
+  const otherId=qs.find(q=>q.id!==offer.questionId).id;assert.equal(await page.locator('.task-support-panel').evaluate(n=>n.closest('.question-card')?.dataset.question),otherId);const taskInput=page.locator('.task-response-form textarea').last();await taskInput.waitFor({state:'visible'});await taskInput.fill('我还有一半理解尚未发送，刷新后接着写。');await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-view="learn"]').first().click();await page.waitForFunction(()=>document.querySelector('.task-response-form textarea')?.value==='我还有一半理解尚未发送，刷新后接着写。');assert.equal(await page.locator('.task-support-panel').evaluate(n=>n.closest('.question-card')?.dataset.question),otherId);checks.push('介入后交流草稿及原错题位置刷新恢复');for(const width of [1440,1024,390]){await page.setViewportSize({width,height:900});await page.waitForTimeout(300);await page.evaluate(()=>TaskSupport.locate());await page.screenshot({path:path.join(out,'形成性支持及其他题入口-'+width+'.png'),fullPage:false});await page.locator('.task-support-panel').screenshot({path:path.join(out,'知点实际界面-'+width+'.png')});}
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'完整平台支持与草稿回归.json'),JSON.stringify({passed:true,checks,errors,offerQuestionId:offer.questionId,checkResult:saved,scope:'阶段本机模拟服务，非最终发布或真实模型验收'},null,2));console.log(JSON.stringify({passed:true,checks,errors}));
+ }catch(e){fs.writeFileSync(path.join(out,'失败诊断.json'),JSON.stringify({error:e.message,errors,snapshot:await snapshot(),draft:await page.evaluate(()=>({currentUnitId,run:ThreeArmStudyUI.run?.id,generation:learningSnapshotGeneration,entries:Object.fromEntries(Object.entries(localStorage).filter(([k])=>k.startsWith('calculus-assistant-draft-r12:')))}))},null,2));await page.screenshot({path:path.join(out,'失败截图.png')});throw e;}finally{await browser.close();}
+}
+main('check').catch(e=>{console.error(e);process.exitCode=1;});

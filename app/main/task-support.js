@@ -3,6 +3,8 @@
   let snapshot, owner = "", frame = null, channel = "", source = null, key = "", panel = null;
   let controls = new Map(), visibility = null, exposureTimer = null, exposed = new Set(), unavailable = false, revision = 0, serializedKey = "", replyContext = "";
   const drafts = new Map();
+  const draftStorageKey=()=>`calculus-task-drafts-r12:${encodeURIComponent(owner)}`;
+  function persistDrafts(){try{if(owner)localStorage.setItem(draftStorageKey(),JSON.stringify({drafts:[...drafts].slice(-60),replyContext,selectedQuestion}));}catch{}}
   let selectedQuestion = "";
   const contextKey=next=>`${next.unitId}:${next.sceneType||'slide'}`;
   const hasConversation=next=>replyContext===contextKey(next);
@@ -48,7 +50,7 @@
     const form=el("form",null,"task-response-form"), label=el("label",prompt), input=el("textarea");
     input.rows=2;input.maxLength=2000;input.placeholder="有疑问或想核对理解时再写，不必每次填写。";input.value=drafts.get(draftKey)||"";input.setAttribute("aria-label",prompt);
     input.dataset.taskDraftKey=draftKey;
-    input.addEventListener("input",()=>drafts.set(draftKey,input.value));label.append(input);
+    input.addEventListener("input",()=>{drafts.set(draftKey,input.value);persistDrafts();});label.append(input);
     const submit=el("button","发送我的想法"), status=el("p",null,"task-response-status");submit.type="submit";submit.disabled=snapshot.busy;
     status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     if(snapshot.busy)status.textContent='知点正在回应…';
@@ -61,12 +63,12 @@
     form.append(submit,status);form.addEventListener("submit",async event=>{
       event.preventDefault();if(snapshot.busy)return;if(!input.value.trim()){status.textContent='请先写下想核对的想法或疑问。';input.focus();return;}const submittedText=input.value;drafts.set(draftKey,submittedText);submit.disabled=true;status.textContent='知点正在回应…';
       const submittedContext=contextKey(snapshot);
-      replyContext=submittedContext;
+      replyContext=submittedContext;persistDrafts();
       const ok=await global.KnowledgeAssistant.askInTask(input.value,questionId||selectedQuestion||(snapshot.unitType==='quiz'?snapshot.replyQuestionId:''));
       submit.disabled=false;
       if(ok){
         if(contextKey(snapshot)===submittedContext)selectedQuestion=global.KnowledgeAssistant.designSpaceSnapshot().replyQuestionId||selectedQuestion;
-        if(drafts.get(draftKey)===submittedText){drafts.delete(draftKey);if(input.value===submittedText)input.value="";
+        if(drafts.get(draftKey)===submittedText){drafts.delete(draftKey);persistDrafts();if(input.value===submittedText)input.value="";
           for(const field of document.querySelectorAll('textarea[data-task-draft-key]'))if(field.dataset.taskDraftKey===draftKey && field.value===submittedText)field.value="";
         }status.textContent="";
       }else{status.textContent="暂未发送成功，你的草稿仍保留。";}deliver();global.KnowledgeAssistant.refreshSupportSurface();
@@ -83,21 +85,27 @@
       if(item.role==='user')turns.push({question:item.content,pending:next.busy});
       else if(item.role==='assistant'&&turns.length){const turn=turns.at(-1);turn.reply=item.error?'暂未发送成功，请重试。':item.content;turn.pending=item.streaming;}
     }
-    for(const turn of turns.slice(-8)){const response=el('div',null,'task-conversation-reply');response.append(el('p',turn.question,'task-student-message'));if(turn.reply)response.append(replyBody(turn.reply));else if(turn.pending)response.append(el('p','知点正在回应…','task-response-status'));parent.append(response);}
-    parent.classList.add('has-task-conversation');const history=el('div',null,'task-conversation-scroll');history.append(...parent.childNodes);parent.append(history);
+    const history=el('div',null,'task-conversation-scroll');
+    for(const turn of turns.slice(-8)){const response=el('div',null,'task-conversation-reply');response.append(el('p',turn.question,'task-student-message'));if(turn.reply)response.append(replyBody(turn.reply));else if(turn.pending)response.append(el('p','知点正在回应…','task-response-status'));history.append(response);}
+    parent.classList.add('has-task-conversation');parent.append(history);
     if(!next.prompt&&next.unitType==='quiz'&&next.quizResourceUnitId){
       const back=el('button','回到本知识点课件','task-course-return');back.type='button';back.dataset.quizResourceLink=next.quizResourceUnitId;back.dataset.quizResourceScene='simulation';parent.append(back);
     }
-    draftForm(parent,'继续交流（选填）',`${next.scopeKey}:${next.sceneType||'slide'}:conversation`);
+    const questionId=next.unitType==='quiz'?(selectedQuestion||next.replyQuestionId||''):'';
+    draftForm(parent,'继续交流（选填）',`${next.scopeKey}:${next.sceneType||'slide'}:conversation:${questionId}`,questionId);
   }
   function quizReview(next){
     for(const card of document.querySelectorAll(".question-card[data-question]")){
       const existing=card.querySelector(".question-task-review");
-      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10|11)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
+      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10|11|12)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
       card.querySelector(".task-assessment-note")?.remove();if(existing)continue;
       const questionId=card.dataset.question, details=el("div",null,"question-task-review");
-      const button=el('button','和知点讨论这道题');button.type='button';
-      button.onclick=()=>{selectedQuestion=questionId;replyContext=contextKey(next);key='';revision++;global.KnowledgeAssistant.refreshSupportSurface();if(next.view.placement==='sidebar')global.dispatchEvent(new CustomEvent('cq:knowledge-assistant-visibility',{detail:{open:true}}));requestAnimationFrame(()=>{if(!locate())document.querySelector('.learning-support-surface')?.scrollIntoView({block:'nearest',behavior:'instant'});document.querySelector('.task-response-form textarea,.support-chat-form textarea')?.focus({preventScroll:true});});};
+      const records=typeof quizRecordsForUnit==='function'?quizRecordsForUnit(next.unitId):[];
+      const incorrect=records.filter(r=>r.questionId===questionId).at(-1)?.isCorrect===false;
+      const button=el('button',incorrect?'请知点讲这道题':'和知点讨论这道题');button.type='button';
+      button.onclick=async()=>{selectedQuestion=questionId;replyContext=contextKey(next);persistDrafts();key='';revision++;global.KnowledgeAssistant.refreshSupportSurface();if(next.view.placement==='sidebar')global.dispatchEvent(new CustomEvent('cq:knowledge-assistant-visibility',{detail:{open:true}}));requestAnimationFrame(()=>{if(!locate())document.querySelector('.learning-support-surface')?.scrollIntoView({block:'nearest',behavior:'instant'});document.querySelector('.task-response-form textarea,.support-chat-form textarea')?.focus({preventScroll:true});});
+        if(incorrect){button.disabled=true;try{await global.KnowledgeAssistant.askInTask('请带我检查这道题的关键关系，先给一个简短线索。',questionId);}finally{button.disabled=false;}}
+      };
       details.append(button);card.append(details);
     }
   }
@@ -129,9 +137,12 @@
   }
   function sync(next){
     next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
-    const nextOwner=`${next.ownerKey}:${next.generation||0}`;
-    if(nextOwner!==owner){clear();owner=nextOwner;drafts.clear();exposed.clear();replyContext="";selectedQuestion='';}
-    if(snapshot?.unitId!==next.unitId)selectedQuestion='';
+    const nextOwner=next.ownerKey?`${next.ownerKey}:${next.learningGeneration??next.generation??0}:${next.runId||''}`:'';
+    const ownerChanged=nextOwner!==owner;
+    if(ownerChanged){clear();owner=nextOwner;drafts.clear();exposed.clear();replyContext="";selectedQuestion='';
+      try{const saved=JSON.parse(localStorage.getItem(draftStorageKey())||'{}'),entries=Array.isArray(saved)?saved:saved.drafts;if(Array.isArray(entries))for(const [key,value] of entries.slice(-60))if(typeof key==='string'&&typeof value==='string')drafts.set(key,value.slice(0,2000));if(typeof saved.replyContext==='string')replyContext=saved.replyContext;if(replyContext===contextKey(next)&&typeof saved.selectedQuestion==='string')selectedQuestion=saved.selectedQuestion;}catch{}
+    }
+    if(!ownerChanged&&snapshot&&snapshot.unitId!==next.unitId)selectedQuestion='';
     snapshot=next;
     if(next.unitType==="quiz")quizReview(next);
     const handles=next.signedIn&&next.active&&next.taskReady!==false&&(next.unitType==="knowledge"||(next.unitType==="quiz"&&next.quizSubmitted&&Boolean(next.offer||next.prompt||next.check||next.feedback||next.muted||hasConversation(next)||replyContext===contextKey(next))))&&!next.locked&&next.view.placement==="inline"&&next.view.modality==="tip";
@@ -229,5 +240,7 @@
     const cx=Math.max(f.left,Math.min(f.right-1,x+r.width/2)),cy=Math.max(f.top,Math.min(f.bottom-1,y+r.height/2));
     return r.width*r.height>0&&area/(r.width*r.height)>=.5&&document.elementFromPoint(cx,cy)===frame?visibility.pilotProbe:null;
   }
-  global.TaskSupport=Object.freeze({sync,clear,locate,returnToTask,visibleProbeId,appendConversation,hasConversation,leaveConversation(){replyContext="";},get selectedQuestion(){return selectedQuestion;},get conversationRevision(){return revision+(snapshot?.taskMessages?.length||0);},get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
+  global.TaskSupport=Object.freeze({sync,clear,locate,returnToTask,visibleProbeId,appendConversation,hasConversation,
+    openConversation(questionId=''){if(!snapshot||snapshot.locked||snapshot.check)return;selectedQuestion=questionId;replyContext=contextKey(snapshot);persistDrafts();key='';global.KnowledgeAssistant.refreshSupportSurface();},
+    leaveConversation(){replyContext="";persistDrafts();},get selectedQuestion(){return selectedQuestion;},get conversationRevision(){return revision+(snapshot?.taskMessages?.length||0);},get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
 })(window);

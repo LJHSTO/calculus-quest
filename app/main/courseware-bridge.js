@@ -3,6 +3,39 @@
   window.__calculusQuestContextBridge = true;
 
   const PARENT = window.parent;
+  let progressChannel = '';
+  let pendingProgress = null;
+  function progressFields() {
+    return [...document.querySelectorAll('input:not([type=password]):not([type=file]),textarea,select,details')].slice(0,100);
+  }
+  function saveProgress() {
+    if (!progressChannel || pendingProgress || window.__cqRestoringProgress) return;
+    const fields=progressFields().map((n,index)=>({id:n.id,index,tag:n.tagName,type:n.type,value:String(n.value||'').slice(0,2000),checked:Boolean(n.checked),open:Boolean(n.open)}));
+    post('cq:progress-save',{channel:progressChannel,saved:{version:1,fields,revealed:document.querySelectorAll('.step.on').length,custom:window.CQCoursewareProgress?.get?.()||null,native:window.CQNativeProgress?.get?.()||null,simulation:window.CQSimulationProgress?.get?.()||null}});
+  }
+  function restoreProgress(saved) {
+    if (!saved || saved.version!==1 || !Array.isArray(saved.fields)) return;
+    if(document.readyState==='loading'||saved.custom&&!window.CQCoursewareProgress?.set||saved.native&&!window.CQNativeProgress?.set||saved.simulation&&!window.CQSimulationProgress?.set)return;
+    window.__cqRestoringProgress=true;
+    try {
+      window.CQCoursewareProgress?.set?.(saved.custom);
+      window.CQNativeProgress?.set?.(saved.native);
+      const fields=progressFields();
+      for(const item of saved.fields.slice(0,100)){
+        const node=item.id?document.getElementById(String(item.id)):fields[item.index];
+        if(!node||node.tagName!==item.tag||node.type!==item.type||node.disabled)continue;
+        if(node.tagName==='DETAILS')node.open=Boolean(item.open);
+        else {node.value=String(item.value||'').slice(0,2000);if(['checkbox','radio'].includes(node.type))node.checked=Boolean(item.checked);node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}));}
+      }
+      // 原导出的表单监听可能重置仿真；最后再按已保存数据重建。
+      window.CQSimulationProgress?.set?.(saved.simulation);
+      const reveal=document.getElementById('rv');
+      if(reveal&&document.querySelector('#stage .steps'))for(let i=document.querySelectorAll('.step.on').length;i<Math.min(3,Number(saved.revealed)||0);i++)reveal.click();
+      pendingProgress=null;
+    } finally {requestAnimationFrame(()=>{window.__cqRestoringProgress=false;});}
+  }
+  document.addEventListener('DOMContentLoaded',()=>restoreProgress(pendingProgress));
+  window.addEventListener('cq:progress-ready',()=>restoreProgress(pendingProgress));
   let noteDropChannel = '';
   let noteDragCandidate = null;
   function beginNoteTextDrag(event) {
@@ -213,6 +246,7 @@
   }
 
   function post(type, payload = {}) {
+    if (window.__cqRestoringProgress && type!=='cq:bridge-ready') return;
     PARENT.postMessage({ type, ...payload }, "*");
   }
 
@@ -369,20 +403,76 @@
       repairDisplacementOverlays();
       repairAreaSimulationLayout();
       repairRiskMasterLayout();
+      repairNativeNarrowLayout();
       window.requestAnimationFrame(() => {
         repairAreaSimulationLayout();
         repairRiskMasterLayout();
+        repairNativeNarrowLayout();
       });
       window.setTimeout(() => {
         repairAreaSimulationLayout();
         repairRiskMasterLayout();
+        repairNativeNarrowLayout();
       }, 80);
       window.setTimeout(() => {
         repairAreaSimulationLayout();
         repairRiskMasterLayout();
+        repairNativeNarrowLayout();
         coursewareLayoutRepairScheduled = false;
       }, 380);
     });
+  }
+
+  const narrowLayoutProperties = new Map();
+  function setNarrowLayout(node,values) {
+    if(!node)return;
+    if(!narrowLayoutProperties.has(node))narrowLayoutProperties.set(node,new Map());
+    for(const [name,value] of Object.entries(values)){
+      if(!narrowLayoutProperties.get(node).has(name))narrowLayoutProperties.get(node).set(name,[node.style.getPropertyValue(name),node.style.getPropertyPriority(name)]);
+      if(node.style.getPropertyValue(name)!==value||node.style.getPropertyPriority(name)!=='important')node.style.setProperty(name,value,'important');
+    }
+  }
+  function repairNativeNarrowLayout() {
+    if(innerWidth>700){
+      const changed=narrowLayoutProperties.size>0;
+      for(const [node,values] of narrowLayoutProperties)for(const [name,[value,priority]] of values){if(value)node.style.setProperty(name,value,priority);else node.style.removeProperty(name);}
+      narrowLayoutProperties.clear();
+      if(changed)window.requestAnimationFrame(()=>{
+        // 导出页只在初次包裹图形时决定列布局；跨断点后应按父布局更新。
+        for(const figure of document.querySelectorAll('.r8-figure'))figure.classList.toggle('r8-column',getComputedStyle(figure.parentElement).flexDirection==='column');
+        window.dispatchEvent(new Event('resize'));
+      });
+      return;
+    }
+    const type=document.body?.dataset.activityType;
+    if(!['simulation','mindMap'].includes(type))return;
+    const figure=document.querySelector('.r8-figure'),graphic=figure?.querySelector('.r8-graphic');
+    if(!graphic)return;
+    // 导出的响应式脚本还会写入固定视口高度；让窄屏纵向流样式接管。
+    setNarrowLayout(document.documentElement,{height:'auto','overflow-y':'auto'});
+    setNarrowLayout(document.body,{display:'flex','flex-direction':'column',height:'auto','min-height':'100dvh','max-height':'none',overflow:'visible'});
+    const parents=[];for(let node=figure.parentElement;node&&node!==document.body;node=node.parentElement)parents.push(node);
+    for(const node of parents)setNarrowLayout(node,{display:'contents',height:'auto','min-height':'0','max-height':'none',overflow:'visible'});
+    setNarrowLayout(figure,{display:'contents',flex:'0 0 auto',order:'0',width:'100%',height:'auto','min-height':'0','max-height':'none',overflow:'visible'});
+    setNarrowLayout(graphic,{position:'relative',flex:'0 0 260px',order:'0',width:'100%',height:'260px','min-height':'260px','max-height':'none'});
+    const guide=figure.querySelector('.r8-guidance');
+    for(const node of [guide,guide?.querySelector('.r9-content')])setNarrowLayout(node,{order:'2',height:'auto','max-height':'none',overflow:'visible'});
+    const panels=[...new Set([figure.parentElement,...parents.map(n=>n.parentElement)].flatMap(n=>[...n.children]).filter(n=>n.matches('#controls,#controls-panel,#controls-area,.controls,.controls-panel,#sidebar')))];
+    panels.push(...document.querySelectorAll('body>#controls,body>#nav-controls,body>#step-nav,body>.nav-controls,body>.step-nav'));
+    for(const panel of panels){
+      setNarrowLayout(panel,{position:'relative',inset:'auto',left:'auto',right:'auto',top:'auto',bottom:'auto',transform:'none',order:'1',flex:'0 0 auto',width:'100%','min-width':'0','max-width':'100%',height:'auto','min-height':'0','max-height':'none',overflow:'visible'});
+      if(panel.id==='sidebar'){
+        const hidden=panel.classList.contains('collapsed')||document.body.dataset.activityPoint==='GH-01-K03'&&!panel.classList.contains('open');
+        setNarrowLayout(panel,{display:hidden?'none':'flex'});
+      }
+    }
+    for(const toggle of document.querySelectorAll('#sidebarToggle,#sidebar-toggle,.sidebar-toggle'))setNarrowLayout(toggle,{position:'relative',inset:'auto',transform:'none',order:'1','align-self':'flex-end'});
+    const nestedControls=graphic.querySelector(':scope > #controls');
+    if(type==='mindMap'&&nestedControls){
+      setNarrowLayout(graphic,{display:'flex','flex-direction':'column',height:'auto',flex:'0 0 auto'});
+      setNarrowLayout(graphic.querySelector(':scope > svg'),{height:'260px','min-height':'260px',flex:'0 0 260px',order:'0'});
+      for(const panel of [nestedControls,graphic.querySelector(':scope > #step-info')])setNarrowLayout(panel,{position:'relative',inset:'auto',transform:'none',order:'1',width:'100%'});
+    }
   }
 
   function repairDisplacementOverlays() {
@@ -1267,6 +1357,17 @@
     }
     if (event.source !== PARENT || !event.data || typeof event.data !== "object") return;
     const type = String(event.data.type || "");
+    if(type==='cq:progress-config'){
+      progressChannel=typeof event.data.channel==='string'?event.data.channel.slice(0,100):'';
+      const saved=event.data.saved;
+      pendingProgress=saved?.version===1&&Array.isArray(saved.fields)?saved:null;
+      restoreProgress(pendingProgress); return;
+    }
+    if(type==='cq:progress-save-error'&&event.data.channel===progressChannel){
+      let notice=document.getElementById('cq-progress-save-error');
+      if(!notice){notice=document.createElement('p');notice.id='cq-progress-save-error';notice.setAttribute('role','alert');notice.style.cssText='position:sticky;top:0;z-index:40;margin:0;padding:10px;background:#fff1df;color:#793b00;font:14px/1.5 sans-serif';document.body.prepend(notice);}
+      notice.textContent='当前浏览器未能保存这页草稿。请先保留输入内容，暂时不要刷新或关闭页面。';return;
+    }
     if (type === "cq:playback-widget") { applyAuthoredWidget(event.data); return; }
     if (type === "cq:playback-clear") { clearAuthoredMarks(); return; }
     if (type === "cq:context-pick-begin") {
@@ -1307,6 +1408,12 @@
   document.addEventListener("change", reportParameterCommit, true);
   document.addEventListener("change", reportGenericChange, true);
   document.addEventListener("submit", reportSubmit, true);
+  document.addEventListener('input',saveProgress,true);
+  document.addEventListener('change',saveProgress,true);
+  document.addEventListener('toggle',saveProgress,true);
+  document.addEventListener('click',()=>setTimeout(saveProgress,0),true);
+  for(const type of ['pointerup','mouseup','touchend'])document.addEventListener(type,()=>setTimeout(saveProgress,0),true);
+  window.addEventListener('blur',()=>setTimeout(saveProgress,0));
   document.addEventListener("click", scheduleCoursewareLayoutRepair, true);
   window.addEventListener("resize", scheduleCoursewareLayoutRepair);
   window.addEventListener("cq:host-layout", scheduleCoursewareLayoutRepair);

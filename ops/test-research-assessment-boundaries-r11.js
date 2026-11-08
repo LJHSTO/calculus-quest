@@ -12,12 +12,12 @@ const source=fs.readFileSync(require.resolve('../app/main/agentic-path.js'),'utf
 const begin=source.indexOf('async function agenticAfterQuizSubmit('),end=source.indexOf('function agenticBuildPostRelearnExtensionPlan(',begin);
 assert(begin>=0&&end>begin);
 (async()=>{
- for(const version of [7,10,11])for(const phase of ['pre','post']){
+ for(const version of [7,10,11,12])for(const phase of ['pre','post']){
   const pending={pendingPlan:{type:'old'},pendingAt:'old'};let unlocked=0,finished=0,saved=0;
   const context=vm.createContext({ensureAgenticPath:()=>pending,agenticUnlockDefaultNext:()=>unlocked++,LearnerSetup:{afterPosttest:()=>finished++},saveState:()=>saved++});
   vm.runInContext(source.slice(begin,end),context);
   await context.agenticAfterQuizSubmit({id:'V14-C1-'+phase,assessmentPhase:phase},[{question:{id:`fl-r${version}-${phase}-X-1`}}]);
   assert.equal(pending.pendingPlan,null);assert.equal(saved,1);assert.equal(unlocked,phase==='pre'?1:0);assert.equal(finished,phase==='post'?1:0);
  }
- console.log('研究测量边界通过：r11固定题序、短答不进AI自动判分，r7/r10/r11前后测不生成学情干预分支。');
+ console.log('研究测量边界通过：当前题库固定题序、短答不进AI自动判分，r7/r10/r11/r12前后测不生成学情干预分支。');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -10,6 +10,7 @@
   let lastUnitId = "";
   let lastScene = "";
   let lastSurfaceOwner = "";
+  let cursorRestoredFor = '';
   let canvasMode = "slide";
   let playbackRate = 1;
   let toolsCollapsed = true;
@@ -503,7 +504,10 @@
 
   function nextLectureButton() {
     const pane = $('.multi-scene-slide-panel:not([hidden])');
-    return pane?.querySelector('.openmaic-page-nav button:last-of-type,[data-slide-action="next"]') || null;
+    if(!pane)return null;
+    const pager=$('.classroom-controlbar .openmaic-page-nav');
+    return (pager?.dataset.lectureUnit===getUnit()?.id?pager.querySelector('button:last-of-type'):null)
+      || pane.querySelector('[data-slide-action="next"]') || null;
   }
 
   function knowledgePrimaryAction(unit = typeof getUnit === 'function' ? getUnit() : null) {
@@ -629,13 +633,15 @@
     const unit = typeof getUnit === "function" ? getUnit() : null;
     const surface = activeSurface();
     const playback = $("#classroom-playback");
+    const pager=$('.classroom-controlbar .openmaic-page-nav');
+    if(pager){if(pager.dataset.lectureUnit!==unit?.id)pager.remove();else pager.hidden=canvasMode!=='slide';}
     playback.hidden = !surface || unit?.type !== "knowledge";
     if (playback.hidden) return;
     const sources = Array.from(surface.querySelectorAll(".coach-line[data-playback-speech], .coach-line[data-audio-src]"));
     const lecturePage=surface.querySelector('[data-openmaic-page]');
     const supplementalActions=global.LessonPlayback?.lecture(surface)?.teachingActions||[];
     const textOnly=Number(lecturePage?.dataset.openmaicPage||1)>1&&!supplementalActions.length;
-    playback.hidden = sources.length === 0 && !textOnly;
+    playback.hidden = sources.length === 0 && !textOnly && !(pager?.isConnected&&!pager.hidden);
     $(".classroom-lecture-label").textContent = textOnly ? "讲解 · 文字" : sources.length ? (sources.some(source => source.dataset.audioSrc) ? "讲解 · 合成语音" : "讲解 · 文字") : "互动操作";
     const authored = textOnly ? null : global.LessonPlayback?.snapshot(surface);
     const toolbar = surface.querySelector(".coach-toolbar[data-narration-unit]");
@@ -842,6 +848,7 @@
     syncPlayback();
     syncFullscreenHint();
     syncKnowledgePrimaryAction();
+    if(typeof rememberLearningUiCursor==='function')rememberLearningUiCursor({surface:mode,sceneType:mode==='interactive'?selectedKnowledgeSceneType(getUnit()):''});
     if (changed && typeof saveState === 'function') saveState();
   }
 
@@ -849,11 +856,20 @@
     // Bootstrap can render cached units before auth/snapshot hydration has completed.
     if (state.authToken && typeof learningSnapshotReady !== 'undefined' && !learningSnapshotReady) return;
     const unit = typeof getUnit === "function" ? getUnit() : null;
-    const scene = unit?.type === "knowledge" ? selectedKnowledgeSceneType(unit) : "";
+    let scene = unit?.type === "knowledge" ? selectedKnowledgeSceneType(unit) : "";
     const owner = `${state.participant?.participantId || ''}:${typeof learningSnapshotGeneration === 'undefined' ? '' : learningSnapshotGeneration}`;
     const resetPanels = unit?.id !== lastUnitId || owner !== lastSurfaceOwner;
     const restored = typeof learningSurfaceRestoreFor === 'function' ? learningSurfaceRestoreFor(unit?.id) : null;
-    if (restored) {
+    const cursorScope=owner+':'+(global.ThreeArmStudyUI?.run?.id||'ordinary')+':'+(unit?.id||'');
+    const cursorPending=cursorRestoredFor!==cursorScope;
+    const cursor=cursorPending&&typeof readLearningUiCursor==='function'?readLearningUiCursor(unit?.id):null;
+    if(cursorPending&&typeof learningUiCursorContext==='function'&&learningUiCursorContext(unit?.id))cursorRestoredFor=cursorScope;
+    if(cursor?.surface&&(!cursor.sceneType||typeof agenticUnitCompletionAllowed!=='function'||agenticUnitCompletionAllowed(unit.id))){
+      const refreshScene=cursor.sceneType&&cursor.sceneType!==scene;
+      if(cursor.sceneType){state.selectedKnowledgeScenes[unit.id]=cursor.sceneType;scene=cursor.sceneType;}
+      canvasMode=cursor.surface==='interactive'&&scene?'interactive':'slide';
+      if(refreshScene){lastUnitId=unit.id;lastScene=scene;lastSurfaceOwner=owner;learningSurfaceRestore=null;renderAll();return;}
+    } else if (restored) {
       canvasMode = unit?.type === 'knowledge' && (restored.surface === 'slide'
         || scene && scene === restored.sceneType) ? restored.surface : 'slide';
       if (canvasMode !== restored.surface) learningSurfaceRestore = null;
@@ -999,6 +1015,11 @@
   });
   $("#workspace-note-new").addEventListener("click", () => global.KnowledgeAssistant?.editWorkspaceNote?.());
   global.addEventListener("cq:lesson-rendered", sync);
+  global.addEventListener('cq:proactive-state',()=>{
+    const unit=typeof getUnit==='function'?getUnit():null;
+    const scope=`${state.participant?.participantId||''}:${typeof learningSnapshotGeneration==='undefined'?'':learningSnapshotGeneration}:${global.ThreeArmStudyUI?.run?.id||'ordinary'}:${unit?.id||''}`;
+    if(unit?.type==='knowledge'&&cursorRestoredFor!==scope&&typeof learningUiCursorContext==='function'&&learningUiCursorContext(unit.id))sync();
+  });
   global.addEventListener("cq:workspace-data-change", renderTools);
   global.addEventListener("cq:participant-change", renderTools);
   global.addEventListener("cq:participant-change", () => {

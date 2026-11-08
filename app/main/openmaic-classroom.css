@@ -441,3 +441,8 @@
 }
 
 .openmaic-page-nav{display:flex;align-items:center;justify-content:center;gap:12px;flex:0 0 auto;padding:6px 10px;color:#263d56;background:#f6f8fc}.openmaic-page-nav button{font:inherit;padding:7px 12px;min-height:38px;cursor:pointer;border:1px solid #ccd7e6;border-radius:6px;background:white;color:inherit}.openmaic-page-nav button:focus-visible{outline:3px solid #7b6ccc;outline-offset:2px}.openmaic-page-nav button:disabled{opacity:.5;cursor:default}.openmaic-page-nav span{font-size:13px;white-space:nowrap}
+.classroom-controlbar .openmaic-page-nav{gap:5px;margin:0;padding:0;border:0;background:transparent;min-width:0}
+.classroom-controlbar .openmaic-page-nav[hidden]{display:none}
+.classroom-controlbar .openmaic-page-nav button{min-height:30px;padding:4px 7px;font-size:12px}
+.classroom-controlbar .openmaic-page-nav span{font-size:12px;font-variant-numeric:tabular-nums}
+@media(max-width:700px){.classroom-controlbar .openmaic-page-nav{margin-left:auto}.classroom-controlbar .classroom-controls{flex-wrap:wrap}}

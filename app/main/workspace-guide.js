@@ -3,10 +3,23 @@
   const VERSION='workspace-tour-v4',FIRST='GH-01-K01',seen=new Set();
   let panel=null,finish=null,owner='',step=0,ready=false,requiredTour=false,returnUnit='',highlight=null,description=null,observer=null,positionFrame=0;
   let noteFrame=null,noteRect=null;
+  let progressKey='',completedActions={};
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   const identity=()=>{const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();return s?.signedIn?s.ownerKey+':'+s.generation:'';};
   const read=key=>{try{return localStorage.getItem(VERSION+':'+key)==='done';}catch{return false;}};
   const mark=key=>{seen.add(key);try{localStorage.setItem(VERSION+':'+key,'done');}catch{}};
+  function currentProgressKey(){
+    const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();
+    if(!s?.signedIn||!s.ownerKey)return '';
+    const generation=typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:s.generation;
+    const run=global.ThreeArmStudyUI?.run?.id||global.LearnerSetup?.enrollment?.id||'ordinary';
+    return VERSION+':progress:'+s.ownerKey+':'+generation+':'+run;
+  }
+  function readProgress(key){try{const saved=JSON.parse(localStorage.getItem(key)||'null');return saved?.version===1&&Number.isInteger(saved.step)&&saved.step>=0&&saved.step<steps.length?saved:null;}catch{return null;}}
+  function saveProgress(){
+    if(!panel?.isConnected||owner!==identity()||!progressKey||progressKey!==currentProgressKey())return;
+    try{localStorage.setItem(progressKey,JSON.stringify({version:1,step,actions:completedActions,returnUnit,updatedAt:new Date().toISOString()}));}catch{}
+  }
   function log(action,data={}){if(typeof trackLearningEvent==='function')trackLearningEvent('operation_guide_'+action,{guideVersion:VERSION,...data},false).catch(()=>{});}
   const preparing=()=>global.LearnerSetup?.preparation?.stage==='configuration'||global.LearnerSetup?.enrollment?.stage==='configuration';
   function canPreview(unit){return unit?.id===FIRST&&preparing()&&owner===identity()&&Boolean(panel?.isConnected||seen.has(owner)||read(owner));}
@@ -57,9 +70,9 @@
     }
     if(highlight){description=highlight.getAttribute('aria-describedby');highlight.classList.add('operation-guide-target');highlight.setAttribute('aria-describedby','operation-guide-copy');rect||=highlight.getBoundingClientRect();place(rect);}
   }
-  function acknowledge(action){if(!panel?.isConnected)return;ready=true;panel.querySelector('[data-guide-next]').disabled=false;panel.querySelector('[data-guide-feedback]').textContent=({path:'路径显示已切换。',lecture:'播放操作已执行，可在播放栏查看状态。',scenes:'当前选择已应用到下方课件。',assistant:'知点入口已打开。',notes:'笔记操作已结束。'})[steps[step][0]]||'';log('action',{step:steps[step][0],action});}
+  function acknowledge(action){if(!panel?.isConnected)return;ready=true;completedActions[steps[step][0]]=true;saveProgress();panel.querySelector('[data-guide-next]').disabled=false;panel.querySelector('[data-guide-feedback]').textContent=({path:'路径显示已切换。',lecture:'播放操作已执行，可在播放栏查看状态。',scenes:'当前选择已应用到下方课件。',assistant:'知点入口已打开。',notes:'笔记操作已结束。'})[steps[step][0]]||'';log('action',{step:steps[step][0],action});}
   function close(completed=false){
-    if(!panel)return;const same=owner===identity();if(completed&&same)mark(owner);
+    if(!panel)return;const same=owner===identity();if(completed&&same){mark(owner);try{localStorage.removeItem(progressKey);}catch{}}else saveProgress();
     if(same)log(completed?'completed':'paused',{step:steps[step][0]});clearHighlight();observer?.disconnect();observer=null;cancelAnimationFrame(positionFrame);positionFrame=0;noteFrame=null;noteRect=null;panel.remove();panel=null;
     const dock=document.querySelector('#learning-action-dock');if(dock)dock.inert=false;
     document.body.classList.remove('operation-guide-active');global.removeEventListener('click',onAction);global.removeEventListener('keydown',onKey);document.removeEventListener('scroll',schedule,true);
@@ -83,28 +96,30 @@
     schedule();
   }
   function draw(){
-    if(!panel)return;const [key,title,text]=steps[step];ready=step>=5;
+    if(!panel)return;const [key,title,text]=steps[step];ready=step>=5||completedActions[key]===true;
     panel.dataset.step=key;panel.querySelector('[data-guide-title]').textContent=title;panel.querySelector('[data-guide-copy]').textContent=text;
-    panel.querySelector('[data-guide-progress]').textContent='操作指引 '+(step+1)+' / '+steps.length;panel.querySelector('[data-guide-feedback]').textContent='';
+    panel.querySelector('[data-guide-progress]').textContent='操作指引 '+(step+1)+' / '+steps.length;panel.querySelector('[data-guide-feedback]').textContent=completedActions[key]?'这一步已操作过，可以继续。':'';
     panel.querySelector('[data-guide-next]').disabled=!ready;panel.querySelector('[data-guide-back]').disabled=step===0;
     panel.querySelector('[data-guide-next]').textContent=step===steps.length-1?(!requiredTour?'完成指引':global.ThreeArmStudyUI?.run?.arm==='A'?'确认统一设置，开始学习':'进入六维配置'):'下一步';
     const settings=panel.querySelector('[data-guide-settings]');settings.hidden=step!==6;settings.replaceChildren();
     panel.querySelector('[data-guide-note-blank]').hidden=step!==4;
     if(step===6)for(const d of global.LearnerPreferences.dimensions)settings.append(el('li',d.short+'：'+d.options.find(o=>o[0]===d.default)[1]));
-    if(step===6)panel.querySelector('[data-guide-copy]').textContent+=!requiredTour?' 下面是初始默认值示例；重看指引不会覆盖你已保存的设置。':global.ThreeArmStudyUI?.run?.arm==='A'?' 本组使用下面统一的六项设置；它们不是对你能力的判断。':' 下面是初始默认值，下一步可以逐项查看、选择并说明理由，也可以保留默认。';
+    if(step===6)panel.querySelector('[data-guide-copy]').textContent+=!requiredTour?' 下面是初始默认值示例；重看指引不会覆盖你已保存的设置。':global.ThreeArmStudyUI?.run?.arm==='A'?' 本次学习使用下面统一的六项设置；它们不是对你能力的判断。':' 下面是初始默认值，下一步可以逐项查看、选择并说明理由，也可以保留默认。';
     if(step===0&&typeof setLessonRailCollapsed==='function')setLessonRailCollapsed(false,{persist:false,focusCurrent:false});
     if(step===1)document.querySelector('[data-workspace-canvas="slide"]')?.click();
     if(step===2)global.LearningWorkspace?.showInteractive();
     if(step===4){global.KnowledgeAssistant?.close?.();document.querySelector('[data-workspace-canvas="slide"]')?.click();}
     if(step!==1&&typeof pauseNarrationQueue==='function')pauseNarrationQueue();
-    requestAnimationFrame(()=>{target();panel.querySelector('[data-guide-title]')?.focus({preventScroll:true});});log('step_viewed',{step:key});
+    saveProgress();requestAnimationFrame(()=>{target();panel.querySelector('[data-guide-title]')?.focus({preventScroll:true});});log('step_viewed',{step:key});
   }
   async function open({required=false}={}){
     if(panel)return false;owner=identity();if(!owner)return false;
     if(required&&(seen.has(owner)||read(owner)))return true;
     const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();if(s?.locked||s?.check||(!preparing()&&global.LearnerSetup?.preparation?.required&&global.LearnerSetup.preparation.stage!=='ready'))return false;
     await ensureChapterLoaded('V14-C1',{showLoading:false});if(owner!==identity())return false;
-    requiredTour=required;returnUnit=typeof currentUnitId==='string'?currentUnitId:'';step=0;clearScene();
+    progressKey=currentProgressKey();const saved=readProgress(progressKey);
+    requiredTour=required;returnUnit=saved?.returnUnit&&getUnit(saved.returnUnit)?saved.returnUnit:typeof currentUnitId==='string'?currentUnitId:'';step=saved?.step||0;
+    completedActions=Object.fromEntries(steps.filter(([key])=>saved?.actions?.[key]===true).map(([key])=>[key,true]));clearScene();
     panel=el('section');panel.id='workspace-operation-tour';panel.className='operation-guide-overlay';panel.setAttribute('aria-labelledby','operation-guide-title');
     panel.innerHTML='<div data-guide-shade></div><div data-guide-shade></div><div data-guide-shade></div><div data-guide-shade></div><div data-guide-ring aria-hidden="true"></div><div data-guide-card><header><strong data-guide-progress></strong><button type="button" data-guide-pause>稍后继续</button></header><h2 id="operation-guide-title" data-guide-title tabindex="-1"></h2><p id="operation-guide-copy" data-guide-copy></p><button type="button" data-guide-note-blank hidden>也可以直接打开笔记</button><ul data-guide-settings hidden></ul><footer><span data-guide-feedback role="status"></span><button type="button" data-guide-back>上一步</button><button type="button" data-guide-next>下一步</button></footer></div>';
     (document.fullscreenElement||document.body).append(panel);document.body.classList.add('operation-guide-active');
@@ -132,6 +147,7 @@
   global.addEventListener('cq:lesson-rendered',()=>requestAnimationFrame(()=>{target();sceneGuide();}));
   global.addEventListener('cq:classroom-surface-change',()=>requestAnimationFrame(()=>{target();sceneGuide();}));
   global.addEventListener('resize',schedule);
+  global.addEventListener('pagehide',saveProgress);
   global.addEventListener('message',event=>{
     if(!panel||step!==4||event.source!==noteFrame?.contentWindow)return;
     if(event.data?.type==='cq:guide-text-target'){

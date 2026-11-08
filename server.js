@@ -48,7 +48,7 @@ const representationChoice = require("./lib/proactive-policy/representation-choi
 const proactivity = require("./lib/proactive-policy/proactivity");
 const outcomeRegistry = process.env.PROACTIVE_EXPERIMENT_CHAPTER_ID === "V14-C3"
   ? require("./lib/proactive-outcomes/v14-c3")
-  : require("./lib/proactive-outcomes/functions-limits-r11");
+  : require("./lib/proactive-outcomes/functions-limits-r12");
 const proactiveOutcomes = outcomeRegistry.forVersion(
   process.env.PROACTIVE_OUTCOME_INSTRUMENT_VERSION || outcomeRegistry.version
 );
@@ -77,7 +77,7 @@ const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferenc
   if(!threeArmRuntimeManifest){
     const route=JSON.parse(fs.readFileSync(path.join(root,'data/multi-scene-learning-route.json'),'utf8'));
     const content=route.chapters.find(c=>c.id==='V14-C1').modules.flatMap(m=>m.knowledgePoints).flatMap(p=>p.resourceCandidates).map(r=>r.root&&r.file?'resources/'+r.root+'/'+r.file:r.path||r.src).filter(Boolean);
-    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
+    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/functions-limits-r12.js','lib/assessments/functions-limits-delayed-r12.js','lib/assessments/functions-limits-probes-r12.js','lib/proactive-outcomes/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r12.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
     files.push(proSupplementAssets.manifestPath,...Object.keys(proSupplementAssets.files));
     threeArmRuntimeManifest={appVersion:process.env.APP_VERSION||'development',proactiveFingerprint:proactiveProtocolFingerprint,proactiveDefinition:proactiveProtocolDefinition,files:Object.fromEntries([...new Set(files)].map(f=>[f,protocolSourceDigest(f)]))};
   }
@@ -271,7 +271,8 @@ function mathVersionFor(user){
   const run=user?threeArmStudy.get(user):null;
   if(run){const version=mathInstruments.versionForRun(run);if(!version)throw Object.assign(new Error('本轮数学测量版本不可用，原记录保留。'),{status:409});return version;}
   const ids=user?db.getQuizResultsByUser(user).map(r=>r.question_id||''):[];
-  if(ids.some(id=>/^fl-r11-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r12-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r11-/.test(id)))return 'functions-limits-integrated-r11-20261107';
   if(ids.some(id=>/^fl-r10-/.test(id)))return mathInstruments.legacyVersion;
   // Ordinary learning and its pre-existing snapshots retain the archived bank.
   // The r11 rollout is explicit in a newly created study run.
@@ -427,6 +428,7 @@ const proactiveStoppingRules = Object.freeze({
       firstSessionBudget:protocolSourceDigest('lib/first-session-budget.js'),
       quizSnapshotReconciliation:protocolSourceDigest('lib/quiz-reconciliation.js'),
       courseAssessmentScoring:protocolSourceDigest('lib/course-assessment.js'),
+      quizQuestionOrder:protocolSourceDigest('lib/quiz-question-order.js'),
       databaseLifecycle:protocolSourceDigest('db.js'),
       proSupplementIntegrity:protocolSourceDigest('lib/courseware/pro-supplement-integrity-r11.js'),
       exposureMeasurement: protocolSourceDigest("app/main/proactive-exposure.js"),
@@ -454,6 +456,8 @@ const proactiveStoppingRules = Object.freeze({
       supportSurfaceStyle: protocolSourceDigest("app/main/proactive-hud.css"),
       courseStructure: protocolSourceDigest("app/main/core.js"),
       coursewareBridge: protocolSourceDigest("app/main/courseware-bridge.js"),
+      coursewareContext: protocolSourceDigest("app/main/courseware-context.js"),
+      coursewareEvidenceClient: protocolSourceDigest("app/main/courseware-learning-evidence.js"),
       conceptExploration: protocolSourceDigest("resources/open-maic/主动探索证据/exploration-model.js"),
       conceptExplorationUI: protocolSourceDigest("resources/open-maic/主动探索证据/exploration-runtime.js"),
       freeExploration: protocolSourceDigest("resources/open-maic/主动探索证据/free-exploration.js"),
@@ -477,7 +481,12 @@ const proactiveStoppingRules = Object.freeze({
       functionsLimitsAssessmentR11:protocolSourceDigest('lib/assessments/functions-limits-r11.js'),
       functionsLimitsAssessmentRegistry:protocolSourceDigest('lib/assessments/functions-limits-registry.js'),
       functionsLimitsDelayedR11:protocolSourceDigest('lib/assessments/functions-limits-delayed-r11.js'),
+      functionsLimitsR12:protocolSourceDigest('lib/assessments/functions-limits-r12.js'),
+      functionsLimitsDelayedR12:protocolSourceDigest('lib/assessments/functions-limits-delayed-r12.js'),
+      functionsLimitsProbesR12:protocolSourceDigest('lib/assessments/functions-limits-probes-r12.js'),
       functionsLimitsOutcomesR11:protocolSourceDigest('lib/proactive-outcomes/functions-limits-r11.js'),
+      functionsLimitsOutcomesR12:protocolSourceDigest('lib/proactive-outcomes/functions-limits-r12.js'),
+      functionsLimitsAdapterR12:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r12.js'),
       functionsLimitsFiguresR11:protocolSourceDigest('lib/assessments/assessment-figures-r11.js'),
       functionsLimitsAdapterR11:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r11.js'),
       functionsLimitsProbesR6: protocolSourceDigest("lib/assessments/functions-limits-probes-r10.js"),
@@ -565,6 +574,15 @@ const localAdminAuthBypassEnabled = (
 
 function isLoopbackAdminRequest(req) {
   if (!localAdminAuthBypassEnabled) return false;
+  if (req.headers["sec-fetch-site"] === "cross-site") return false;
+  const origin = req.headers.origin;
+  if (origin) {
+    try {
+      if (new URL(origin).host !== req.headers.host) return false;
+    } catch {
+      return false;
+    }
+  }
   const forwardedFor = String(req.headers["x-forwarded-for"] || "")
     .split(",")[0]
     .trim();
@@ -762,7 +780,7 @@ function sendPublicLearningRoute(req, res) {
 }
 function assessmentReceipt(row){
   const id=row.questionId||row.question_id||'';
-  if(!/^fl-r(?:7|10|11)-(pre|post)-/.test(id))return row;
+  if(!/^fl-r(?:7|10|11|12)-(pre|post)-/.test(id))return row;
   const out={...row,status:'submitted',isCorrect:null,is_correct:-1,score:null,feedbackPolicy:'acknowledgement_only'};
   for(const key of ['answer','answerText','analysis','commentPrompt','rubric','referenceAnswer','optionFeedback','ai_score','aiScore','ai_feedback','aiFeedback','aiReasoning','ai_reasoning','aiWeakConcepts'])delete out[key];
   return out;
@@ -1779,10 +1797,11 @@ function proactiveProtocolPayload(experimentId = proactiveStudyConfig.experiment
 
 function assignedAssessmentEntry(entry,userId){
   if(entry.chapterId==='V14-C1'&&['pre','post','formative'].includes(entry.phase)){
-    const current=mathVersionFor(userId)===mathInstruments.version;
-    if(/^fl-r11-/.test(entry.question.id)!==current)return false;
+    const assigned=/-r(11|12)-/.exec(mathVersionFor(userId))?.[1]||'legacy';
+    const actual=/^fl-r(11|12)-/.exec(entry.question.id)?.[1]||'legacy';
+    if(actual!==assigned)return false;
   }
-  if(!/^fl-r(?:7|10|11)-(pre|post)-/.test(entry.question.id))return true;
+  if(!/^fl-r(?:7|10|11|12)-(pre|post)-/.test(entry.question.id))return true;
   const order=(userId?threeArmStudy.get(userId)?.assessmentOrder:null)||'XY';
   return entry.question.form===order[entry.phase==='pre'?0:1];
 }
@@ -8782,7 +8801,7 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
-      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10|11)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
+      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10|11|12)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
       // Only a complete, server-recorded pretest opens discussion before setup.
       const completedPretest = resolved.isQuiz && resolved.unit.phase === "pre"
         && resolved.unit.quizQuestions.length > 0
@@ -9254,7 +9273,7 @@ async function handleApi(req, res, url) {
       expectedEntries=expectedEntries.filter(entry=>assignedAssessmentEntry(entry,auth.participant.id));
       if(chapterId==='V14-C1'&&['pre','post'].includes(phase)){
         const order=studyRun?.assessmentOrder||'XY',form=order[phase==='pre'?0:1];
-        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10|11)-/.test(e.question.id)||e.question.form===form);
+        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10|11|12)-/.test(e.question.id)||e.question.form===form);
       }
       if (expectedEntries.some((entry) => entry.assessmentStatus === "archived")) {
         sendJson(res, 409, {

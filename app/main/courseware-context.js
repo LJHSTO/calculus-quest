@@ -446,6 +446,33 @@
       return Array.from(resolveRoot()?.querySelectorAll?.("iframe.embed-frame, iframe[data-courseware-frame]") || []);
     }
 
+    const progressFrames = new WeakMap();
+    function progressIdentity(frame) {
+      const scope = options.getProgressScope?.(), meta = currentCourseMeta();
+      if (!scope?.owner || !scope.runId || !Number.isInteger(scope.generation) || scope.generation<1 || !meta.unitId) return null;
+      if (meta.isQuiz || win.KnowledgeAssistant?.pendingIndependentCheck?.()
+        || win.FirstSessionBudget?.closed || win.ThreeArmStudyUI?.judgmentActive) return null;
+      let url;try{url=new URL(frame.src,win.location.href);}catch{return null;}
+      if (url.origin !== win.location.origin || !url.pathname.includes('/resources/open-maic/')) return null;
+      return 'cq-courseware-progress-r12:' + JSON.stringify([scope.owner,scope.generation,scope.runId,meta.unitId,url.pathname,meta.resourceFingerprint||'']);
+    }
+    function configureProgress(frame) {
+      const key = progressIdentity(frame); if (!key) return;
+      const channel = win.crypto.randomUUID(); progressFrames.set(frame,{key,channel});
+      let saved = null; try { saved = JSON.parse(win.localStorage.getItem(key)||'null'); } catch {}
+      postFrame(frame,{type:'cq:progress-config',channel,saved});
+    }
+    function syncProgressFrames() {
+      for(const frame of resolveRoot()?.querySelectorAll?.('iframe')||[]){
+        const key=progressIdentity(frame);
+        if(!key||!bridgeFrames.has(frame)||progressFrames.get(frame)?.key===key)continue;
+        if(progressFrames.has(frame)){
+          // 换账号或新轮次先清空旧文档，不能把屏上旧输入归入新身份。
+          progressFrames.delete(frame);bridgeFrames.delete(frame);frame.src=frame.src;
+        }else configureProgress(frame);
+      }
+    }
+
     function frameMatchesScope(frame, ref = {}) {
       const scope = frame?.dataset?.contextScope;
       return !scope || !["slide", "interactive"].includes(ref?.scope) || scope === ref.scope;
@@ -1126,6 +1153,14 @@
       const type = String(event.data.type || "");
       if (!type.startsWith("cq:")) return;
 
+      if (type === 'cq:progress-save') {
+        const binding = progressFrames.get(frame);
+        if (!binding || binding.channel !== event.data.channel || binding.key !== progressIdentity(frame)) return;
+        try { const value=JSON.stringify(event.data.saved); if(value.length>24000)throw Error('progress_size');win.localStorage.setItem(binding.key,value); }
+        catch {postFrame(frame,{type:'cq:progress-save-error',channel:binding.channel});}
+        return;
+      }
+
       if (type === 'cq:note-text-drag') {
         const mode = noteDropFrames.get(frame);
         if (!mode || event.data.channel !== mode.channel || mode.unitId !== currentCourseMeta().unitId
@@ -1151,6 +1186,8 @@
 
       if (type === "cq:bridge-ready") {
         bridgeFrames.add(frame);
+        progressFrames.delete(frame);
+        configureProgress(frame);
         frame.dataset.cqContextBridge = "ready";
         frame.parentElement?.querySelector(":scope > .cq-frame-pick-fallback")?.remove();
         if (picker.getState().phase === "picking") {
@@ -1241,6 +1278,8 @@
     }
 
     win.addEventListener("message", handleBridgeMessage);
+    win.addEventListener('cq:proactive-state',syncProgressFrames);
+    win.addEventListener('cq:three-arm-state',syncProgressFrames);
     doc.addEventListener("pointerup", handleDocumentPointerUp, true);
     doc.addEventListener("keyup", handleDocumentKeyUp, true);
     doc.addEventListener("selectionchange", handleDocumentSelectionChange);
@@ -1266,6 +1305,7 @@
         clearSelectedElement();
       },
       syncUnit() {
+        syncProgressFrames();
         setNoteDropEnabled(false);
         notify("onTextSelectionCleared", { source: "navigation" });
         const current = currentCourseMeta();
@@ -1289,6 +1329,8 @@
         pickPreview?.remove();
         pickPreview = null;
         win.removeEventListener("message", handleBridgeMessage);
+        win.removeEventListener('cq:proactive-state',syncProgressFrames);
+        win.removeEventListener('cq:three-arm-state',syncProgressFrames);
         doc.removeEventListener("pointerup", handleDocumentPointerUp, true);
         doc.removeEventListener("keyup", handleDocumentKeyUp, true);
         doc.removeEventListener("selectionchange", handleDocumentSelectionChange);

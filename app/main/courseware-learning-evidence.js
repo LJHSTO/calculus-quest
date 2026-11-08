@@ -177,6 +177,7 @@
     }
 
     function post(payload) {
+      if (windowRef?.__cqRestoringProgress) return null;
       // Authored widget demonstrations can invoke the same handlers as a
       // learner. Keep that origin explicit and never call them independent.
       if (windowRef?.__cqAuthoredPlayback) payload = { ...payload, source: "authored_playback", independent: false, counts_as_student_evidence: false };
