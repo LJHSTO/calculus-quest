@@ -42,6 +42,7 @@ const mathInstruments=require('./lib/assessments/functions-limits-registry');
 const firstSession=require('./lib/first-session-budget');
 const learningAssistant = require("./lib/learning-assistant");
 const learnerMemory = require("./lib/learner-memory");
+const researchFeedback = require("./lib/research-feedback");
 const proactivePolicy = require("./lib/proactive-policy");
 const proactiveEvidenceAudit = require("./lib/proactive-policy/evidence-audit");
 const representationChoice = require("./lib/proactive-policy/representation-choice");
@@ -466,6 +467,7 @@ const proactiveStoppingRules = Object.freeze({
       coursewareTaskSupport: protocolSourceDigest("app/main/courseware-task-support.js"),
       taskSupport: protocolSourceDigest("app/main/task-support.js"),
       learnerMemory: protocolSourceDigest("lib/learner-memory.js"),
+      researchFeedback: protocolSourceDigest("lib/research-feedback.js"),
       agentRuntime: protocolSourceDigest("lib/proactive-agent-runtime.js"),
       behaviorFeatures: protocolSourceDigest("lib/proactive-policy/behavior-features.js"),
       designSpaceProjection: protocolSourceDigest("lib/proactive-policy/design-space.js"),
@@ -780,7 +782,7 @@ function sendPublicLearningRoute(req, res) {
 }
 function assessmentReceipt(row){
   const id=row.questionId||row.question_id||'';
-  if(!/^fl-r(?:7|10|11|12)-(pre|post)-/.test(id))return row;
+  if(!researchFeedback.isProtectedQuestionId(id))return row;
   const out={...row,status:'submitted',isCorrect:null,is_correct:-1,score:null,feedbackPolicy:'acknowledgement_only'};
   for(const key of ['answer','answerText','analysis','commentPrompt','rubric','referenceAnswer','optionFeedback','ai_score','aiScore','ai_feedback','aiFeedback','aiReasoning','ai_reasoning','aiWeakConcepts'])delete out[key];
   return out;
@@ -1698,7 +1700,6 @@ function publicProactiveAssignment(assignment = null) {
   return {
     experimentId: assignment.experiment_id || "",
     cohort: assignment.cohort || "",
-    stratum: assignment.stratum || "unstratified",
     assignmentVersion: assignment.assignment_version || "",
     assignedAt: assignment.assigned_at || ""
   };
@@ -3371,7 +3372,7 @@ function proactiveStudyState(userId, chapterId) {
     researchControls: protectedMeasurement?null:researchControlStore.describe(userId),
     supportCycles: protectedMeasurement ? [] : publicSupportCycles(userId,db.currentLearningGeneration(userId)),
     agentRuntime: protectedMeasurement || mainLearningStudy.manages(userId) ? null : agentRuntime.state(userId, db.currentLearningGeneration(userId)),
-    pretest,
+    pretest: researchFeedback.publicPretest(pretest),
     outcomeSession: publicProactiveOutcomeSession(activeOutcomeSession),
     agentAssistanceBlocked: protectedMeasurement,
     learningMemory: protectedMeasurement ? null : learningMemoryFor(userId, chapterId),
@@ -10109,7 +10110,7 @@ async function handleApi(req, res, url) {
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
-      const sourceResults = db.getQuizResultsByUser(auth.participant.id, 500);
+      const sourceResults = researchFeedback.learningRows(db.getQuizResultsByUser(auth.participant.id, 500));
       const filtered = sourceResults.filter((row) => {
         const unitId = row.unit_id || row.unitId || "";
         const cid = row.chapter_id || row.chapterId || unitId.split("-scene-")[0];

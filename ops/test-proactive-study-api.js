@@ -2228,13 +2228,9 @@ async function main() {
         false,
         "学生状态接口不得暴露随机条件"
       );
-      assert.equal(state.payload.data.assignment.stratum, "pre-high");
+      assert.equal(Object.hasOwn(state.payload.data.assignment, "stratum"), false);
       assert.equal(state.payload.data.pretest.ready, true);
-      assert.equal(state.payload.data.pretest.accuracy, 1);
-      assert.equal(
-        state.payload.data.pretest.basis,
-        "server_scored_objective_items"
-      );
+      assert.deepEqual(Object.keys(state.payload.data.pretest).sort(), ["expected", "ready", "submitted"]);
       assert.equal(state.payload.data.studentPreference, "standard");
     }
 

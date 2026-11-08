@@ -60,12 +60,12 @@
     if(controller.signal.aborted||!loading.open)return;
     setRun(data.run);const d=modal(run.linkedFeedback?'学习回顾与配置关联':'学习回顾');
     d.append(button('返回学习',()=>d.close()));
-    d.append(el('p',data.pendingStage?`“${data.pendingStage.title}”三个知识点已完成。回顾这段经历，再决定接下来三个知识点怎样接受帮助。`:'这里汇总你已完成的独立检测。'));
-    d.append(el('p',`已完成 ${data.ordinary.answered} 题，答对 ${data.ordinary.correct} 题${data.ordinary.scored<data.ordinary.answered?`，另有 ${data.ordinary.answered-data.ordinary.scored} 题等待评分`:''}。`));
+    d.append(el('p',data.pendingStage?`“${data.pendingStage.title}”三个知识点已完成。回顾这段经历，再决定接下来三个知识点怎样接受帮助。`:'这里汇总知识点检测记录；前测和后测按研究安排另行反馈。'));
+    d.append(el('p',`已完成 ${data.ordinary.answered} 道知识点检测题，答对 ${data.ordinary.correct} 题${data.ordinary.scored<data.ordinary.answered?`，另有 ${data.ordinary.answered-data.ordinary.scored} 题等待评分`:''}。`));
     const results=el('div');results.className='study-review-results';
     for(const id of [...new Set(data.results.map(r=>r.unitId))]){const unit=typeof getUnit==='function'?getUnit(id):null,rows=data.results.filter(r=>r.unitId===id);const p=el('p',`${(unit?.label||'知识点检测').replace(/^检测[：:]/,'')}：${rows.filter(r=>r.correct===true).length} / ${rows.length} 题正确`);results.append(p);}
     if(!data.results.length)results.append(el('p','完成知识点检测后，这里会出现独立作答记录。'));
-    if(data.linked)d.append(linkedReview(data),el('h3','全部独立检测记录'));
+    if(data.linked)d.append(linkedReview(data),el('h3','知识点检测记录'));
     d.append(results);
     const actions=el('footer');
     if(data.pendingStage){
@@ -114,7 +114,6 @@
     }
     root.append(grid);
     const guidance=el('aside');guidance.className='study-review-reading';guidance.append(el('h4',data.pendingStage?'怎样据此做决定？':'怎样理解这次学习？'),el('p','先回想：帮助出现时你是否需要？形式是否方便？独立答题时能否自己说清理由？'+(data.pendingStage?'有依据时只调整一两项，也可以保持设置，再观察下一段。':'结合具体经历，想一想以后需要怎样的帮助。')),el('p','两阶段学习的知识点和题目不同。正确数的变化只能描述这次经历，不能直接说明哪版设置更有效；提示更多也不一定学得更好。'));root.append(guidance);
-    const post=data.results.filter(r=>r.phase==='post');if(post.length)root.append(el('p',`整章后测：${post.filter(r=>r.correct===true).length} / ${post.filter(r=>r.correct!==null).length} 道已判定题正确。这份后测覆盖整段学习，不归到某一版配置。`));
     return root;
   }
 
