@@ -75,6 +75,9 @@ async function main() {
     }
     const exhausted = await fetch(baseUrl + "/api/research/config", { headers });
     assert.equal(exhausted.status, 429);
+    const limited = await exhausted.json();
+    assert.equal(limited.retryAfterSeconds, 1, "the short active window must report one remaining second");
+    assert.equal(exhausted.headers.get("retry-after"), String(limited.retryAfterSeconds));
 
     await new Promise((resolve) => setTimeout(resolve, 220));
     const reset = await fetch(baseUrl + "/api/research/config", { headers });

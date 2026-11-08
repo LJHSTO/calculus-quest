@@ -1126,15 +1126,17 @@ const RATE_LIMIT_MAX = Math.max(
 function checkRateLimit(req, pathname = "") {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
   // Students on a classroom NAT must not consume one another's API budget.
-  // Only verified sessions get an account bucket; login and invalid tokens
-  // retain the anonymous network bucket. Different sessions share one user key.
-  const account = pathname.startsWith('/api/auth/') ? null : authenticate(req)?.participant.id;
+  // Login/registration stay bounded by network; verified session checks share
+  // the account read budget even when auth/me is called with POST.
+  const authRoute = pathname.startsWith('/api/auth/');
+  const sessionCheck = pathname === '/api/auth/me';
+  const account = authRoute && !sessionCheck ? null : authenticate(req)?.participant.id;
   // Polling and event/snapshot synchronization must not spend the quota needed
   // to submit answers or save preferences. Every bucket remains bounded, and
   // all sessions of the same verified account still share those limits.
   const traffic = ['/api/learning/event','/api/learning/events','/api/learning/snapshot'].includes(pathname)
-    ? 'sync' : req.method === 'GET' ? 'read' : 'action';
-  const key = account ? 'user:'+account+':'+traffic : 'ip:'+ip;
+    ? 'sync' : sessionCheck || req.method === 'GET' ? 'read' : 'action';
+  const key = account ? 'user:'+account+':'+traffic : 'ip:'+ip+':'+(authRoute ? 'auth' : traffic);
   const now = Date.now();
   let entry = rateLimitMap.get(key);
   if (!entry || now >= entry.resetAt) {
@@ -1142,7 +1144,9 @@ function checkRateLimit(req, pathname = "") {
     rateLimitMap.set(key, entry);
   }
   entry.count++;
-  if (entry.count > RATE_LIMIT_MAX) return false;
+  req.rateLimitRetryAfterSeconds = entry.count > RATE_LIMIT_MAX
+    ? Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) : 0;
+  if (req.rateLimitRetryAfterSeconds) return false;
 
  // Cleanup stale entries periodically
  if (rateLimitMap.size > 5000) {
@@ -4977,7 +4981,9 @@ async function handleManagedProactiveIntervention({
 
 async function handleApi(req, res, url) {
   if (!checkRateLimit(req, url.pathname)) {
-    sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。" });
+    const retryAfterSeconds = req.rateLimitRetryAfterSeconds;
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。", retryAfterSeconds });
     return;
   }
   try {
