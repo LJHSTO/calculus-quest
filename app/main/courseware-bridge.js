@@ -16,6 +16,7 @@
   function restoreProgress(saved) {
     if (!saved || saved.version!==1 || !Array.isArray(saved.fields)) return;
     if(document.readyState==='loading'||saved.custom&&!window.CQCoursewareProgress?.set||saved.native&&!window.CQNativeProgress?.set||saved.simulation&&!window.CQSimulationProgress?.set)return;
+    if(saved.custom?.version==='game-ui-r12-v1'&&!window.__cqGameRuntimeReady)return;
     window.__cqRestoringProgress=true;
     try {
       window.CQCoursewareProgress?.set?.(saved.custom);

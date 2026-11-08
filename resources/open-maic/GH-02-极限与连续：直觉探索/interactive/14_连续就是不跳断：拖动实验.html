@@ -2555,7 +2555,8 @@ CQSimulationState.install('GH-02-K03',{
   const clearOldFeedback=()=>{const mirror=document.getElementById('cq-visible-feedback');if(mirror)mirror.hidden=true;};
   window.R7Continue=function(next){const current=panel.querySelector('.screen.active')||panel;const feedback=[...current.querySelectorAll('[id*="feedback"],.feedback')].find(e=>!e.closest('.r7-learning')&&e.getBoundingClientRect().height>0);const host=feedback||current;host.querySelector('.r7-continue')?.remove();const button=document.createElement('button');button.className='r7-continue';button.type='button';button.textContent='读完反馈，继续';button.addEventListener('click',()=>{button.remove();next();clearOldFeedback();},{once:true});host.append(button);};
   if(activity.game){let active=panel.querySelector('.screen.active');const observer=new MutationObserver(()=>{const next=panel.querySelector('.screen.active');if(next!==active){active=next;clearOldFeedback();}});panel.querySelectorAll('.screen').forEach(screen=>observer.observe(screen,{attributes:true,attributeFilter:['class']}));}
-  if(activity.game&&typeof window.startGame==='function'){window.startGame();const reset=window.resetGame;if(reset)window.resetGame=function(){reset();window.startGame();};}
+  if(activity.game&&typeof window.startGame==='function'){if(!window.__cqGameProgressRestored)window.startGame();const reset=window.resetGame;if(reset)window.resetGame=function(){reset();window.startGame();};}
+  if(activity.game){window.__cqGameRuntimeReady=true;window.dispatchEvent(new Event('cq:progress-ready'));}
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
