@@ -195,14 +195,17 @@ async function testDatabaseReconciliation(db, objectiveEntry, shortEntry) {
   const graded = db.reconcileQuizResults(gradedRows);
   assert.deepEqual(
     { inserted: graded.inserted, updated: graded.updated },
-    { inserted: 0, updated: 1 },
-    "a completed short-answer review must update the pending row"
+    { inserted: 0, updated: 0 },
+    "客户端快照不能将自报AI评分升级为正式分数"
   );
   const repeatedGrade = db.reconcileQuizResults(gradedRows);
   assert.deepEqual(
     { inserted: repeatedGrade.inserted, updated: repeatedGrade.updated },
     { inserted: 0, updated: 0 }
   );
+  db.getDbSync().run("UPDATE quiz_results SET status='ai_reviewed',is_correct=1,score=?,ai_score=?,ai_confidence=.97,ai_error_type='',ai_feedback='服务端已核验评分' WHERE id=?",[shortEntry.question.points,shortEntry.question.points,pendingShort.id]);
+  db.reconcileQuizResults(gradedRows);
+  assert.equal(queryRows(db,'SELECT ai_score FROM quiz_results WHERE id=?',[pendingShort.id])[0].ai_score,shortEntry.question.points,'快照不得覆盖合法服务端评分');
 
   const generationTwo = buildRows({
     userId,
@@ -355,15 +358,15 @@ async function testSnapshotApi(baseUrl, objectiveEntry, shortEntry) {
       inserted: reviewed.payload.quizReconciliation?.inserted,
       updated: reviewed.payload.quizReconciliation?.updated
     },
-    { inserted: 0, updated: 1 }
+    { inserted: 0, updated: 0 }
   );
 
   const stored = await requestJson(baseUrl, "/api/learning/quiz-results", { token });
   assert.equal(stored.response.status, 200, JSON.stringify(stored.payload));
   const reviewedRow = stored.payload.data.find((row) => row.question_id === shortEntry.question.id);
   assert.ok(reviewedRow);
-  assert.equal(reviewedRow.status, "ai_reviewed");
-  assert.equal(Number(reviewedRow.ai_score), Number(shortEntry.question.points || 0));
+  assert.equal(reviewedRow.status, "submitted",'前测回执不提前揭示评分');
+  assert.equal(reviewedRow.ai_score, undefined);
 }
 
 async function testStartupRecovery(dbPath, db, objectiveEntry, shortEntry) {
@@ -415,6 +418,8 @@ async function testStartupRecovery(dbPath, db, objectiveEntry, shortEntry) {
     assert.equal(exported.response.status, 200, JSON.stringify(exported.payload));
     const startupRows = exported.payload.data.quizResults.filter((row) => row.user_id === userId);
     assert.equal(startupRows.length, 2, "startup must restore submitted rows from stored snapshots");
+    const serverReviewed=exported.payload.data.quizResults.find(row=>row.user_id==='reconcile-db-user'&&row.question_id===shortEntry.question.id);
+    assert.equal(serverReviewed.status,'ai_reviewed');assert.equal(Number(serverReviewed.ai_score),shortEntry.question.points,'重启与导出保留合法服务端评分');
     await testSnapshotApi(baseUrl, objectiveEntry, shortEntry);
   } finally {
     await stopChild(child);

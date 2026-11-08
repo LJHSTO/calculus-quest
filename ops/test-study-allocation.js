@@ -69,8 +69,10 @@ async function main() {
   ];
   for (const [i, fixture] of statuses.entries()) {
     const id = `reason-${i}`, view = practice.start(id, { acknowledged: true });
+    const frozenProbe=practice.exportData().protocolArchives.flatMap(row=>row.archive.instruments.flatMap(item=>item.probes)).find(probe=>probe.id===view.session.probe.id);
+    assert.ok(frozenProbe,'理由状态测试必须对准本轮冻结的实际题目');
     const input = { action: "answer", fingerprint: view.protocol.fingerprint, revision: view.session.revision,
-      probeId: view.session.probe.id, response: "1", confidence: 0 };
+      probeId: view.session.probe.id, response: frozenProbe.answerKey, confidence: 0 };
     for (const bad of [
       { explanation: 0 }, { explanation: {}, explanationMissingReason: null },
       { explanation: "有理由", explanationMissingReason: "cannot_explain" },

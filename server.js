@@ -38,6 +38,8 @@ const agentRuntime = require("./lib/proactive-agent-runtime").createRuntime({db,
     && proactiveParticipationForUser(user,{createImplicit:false})?.status!=="withdrawn"});
 const { extractBehaviorFeatures } = require("./lib/proactive-policy/behavior-features");
 const courseAssessment = require("./lib/course-assessment");
+const mathInstruments=require('./lib/assessments/functions-limits-registry');
+const firstSession=require('./lib/first-session-budget');
 const learningAssistant = require("./lib/learning-assistant");
 const learnerMemory = require("./lib/learner-memory");
 const proactivePolicy = require("./lib/proactive-policy");
@@ -46,7 +48,7 @@ const representationChoice = require("./lib/proactive-policy/representation-choi
 const proactivity = require("./lib/proactive-policy/proactivity");
 const outcomeRegistry = process.env.PROACTIVE_EXPERIMENT_CHAPTER_ID === "V14-C3"
   ? require("./lib/proactive-outcomes/v14-c3")
-  : require("./lib/proactive-outcomes/functions-limits-r10");
+  : require("./lib/proactive-outcomes/functions-limits-r11");
 const proactiveOutcomes = outcomeRegistry.forVersion(
   process.env.PROACTIVE_OUTCOME_INSTRUMENT_VERSION || outcomeRegistry.version
 );
@@ -61,6 +63,7 @@ const quizReconciliation = require("./lib/quiz-reconciliation");
 const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
+const proSupplementAssets=require('./lib/courseware/pro-supplement-integrity-r11').verify(root);
 const researchSitesHttp = require("./lib/research-sites/http").createHttp({ db, root, readJsonBody, sendJson, authenticate, checkAdmin,
   providerInfo: assistantProviderInfo, complete: llm.completeChat, consumeQuota: consumeAssistantQuota, releaseQuota: releaseAssistantQuota,
   canUseStandalone:user=>learnerEnrollment(user)?.status!=='active'&&!threeArmStudy.get(user) });
@@ -74,30 +77,56 @@ const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferenc
   if(!threeArmRuntimeManifest){
     const route=JSON.parse(fs.readFileSync(path.join(root,'data/multi-scene-learning-route.json'),'utf8'));
     const content=route.chapters.find(c=>c.id==='V14-C1').modules.flatMap(m=>m.knowledgePoints).flatMap(p=>p.resourceCandidates).map(r=>r.root&&r.file?'resources/'+r.root+'/'+r.file:r.path||r.src).filter(Boolean);
-    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js',...content];
+    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
+    files.push(proSupplementAssets.manifestPath,...Object.keys(proSupplementAssets.files));
     threeArmRuntimeManifest={appVersion:process.env.APP_VERSION||'development',proactiveFingerprint:proactiveProtocolFingerprint,proactiveDefinition:proactiveProtocolDefinition,files:Object.fromEntries([...new Set(files)].map(f=>[f,protocolSourceDigest(f)]))};
   }
   return threeArmRuntimeManifest;
 }});
 const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
+const regulationTransfer=require('./lib/regulation-transfer-session').createStore({db,study:threeArmStudy,eligibility:regulationEligibility});
+function regulationEligibility(user){
+  const outcome=proactiveOutcomeState(user,proactiveStudyConfig.chapterId),unlockAt=outcome.retentionWindow?.unlockAt;
+  const complete=['retention','transfer'].every(id=>outcome.stages.find(s=>s.id===id)?.status==='submitted');
+  return {eligible:Boolean(unlockAt&&Date.now()>=Date.parse(unlockAt)&&complete),unlockAt,reason:'满72小时并提交保持与数学迁移测验后开放14分钟调节任务。'};
+}
+function recordFirstSessionLimit(user){
+  const run=threeArmStudy.get(user),budget=firstSession.project(run);
+  if(!budget?.enforce||!budget.expired||threeArmStudy.readRecord(user,'time_limit_cleanup'))return budget;
+  threeArmStudy.record(user,'time_limit_end','once',{reason:'first_session_time_limit',deadlineAt:budget.deadlineAt,observedAt:nowIso(),completed:false,missingNotScoredAsZero:true});
+  const generation=db.currentLearningGeneration(user);
+  supportCycles.cancel(user,generation,'first_session_time_limit');
+  db.closeOpenProactiveInterventionsForUser({userId:user,experimentId:proactiveStudyConfig.experimentId,resolution:'first_session_time_limit',resolvedAt:nowIso(),followupOutcome:{outcome:'first_session_time_limit'}});
+  for(const row of db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId)){
+    const life=proactivePolicy.lifecycle.normalize(parseStoredJson(row.lifecycle_json||'{}',{}));
+    if(!['accepted_pending_response','awaiting_independent_attempt'].includes(life.phase))continue;
+    db.upsertProactivePolicyState(proactivePolicyStateRecord(row,{userId:user,scopeKey:row.scope_key,updatedAt:nowIso(),lastReasonCode:'first_session_time_limit',lifecycle:{...life,phase:'closed',lastOutcome:'time_limit',lastOutcomeAt:nowIso()}}));
+  }
+  threeArmStudy.record(user,'time_limit_cleanup','once',{reason:'first_session_time_limit',deadlineAt:budget.deadlineAt,completedAt:nowIso(),completed:true});
+  db.saveNow();return budget;
+}
+function assertFirstSessionOpen(user){recordFirstSessionLimit(user);firstSession.assertOpen(threeArmStudy.get(user));}
+function rejectFirstSessionClosed(res,user){try{assertFirstSessionOpen(user);return false;}catch(error){sendJson(res,error.status||409,{ok:false,code:error.code,message:error.message});return true;}}
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
 function ordinaryPreparation(user){
-  const chapterId=proactiveStudyConfig.chapterId,questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===chapterId)?.flow?.preQuiz?.questions||[];
+  const chapterId=proactiveStudyConfig.chapterId,questions=mathIndexesForUser(user).route.chapters.find(c=>c.id===chapterId)?.flow?.preQuiz?.questions||[];
   const run=threeArmStudy.get(user);
-  if(run){const assigned=chapterId==='V14-C1'?require('./lib/assessments/functions-limits-r10').questions('pre',(run.assessmentOrder||'XY')[0]):questions;const results=db.getQuizResultsByUser(user);const complete=assigned.every(q=>results.some(r=>r.phase==='pre'&&r.question_id===q.id&&r.chapter_id===chapterId));return {required:true,chapterId,stage:!run.baselineAt?'baseline':!complete?'pretest':run.configuredAt?'ready':'configuration',configured:Boolean(run.configuredAt),version:'three-arm-common-preparation-r7'};}
+  if(run){const assigned=chapterId==='V14-C1'?mathInstruments.forVersion(mathInstruments.versionForRun(run)).questions('pre',(run.assessmentOrder||'XY')[0]):questions;const results=db.getQuizResultsByUser(user);const complete=assigned.every(q=>results.some(r=>r.phase==='pre'&&r.question_id===q.id&&r.chapter_id===chapterId));return {required:true,chapterId,stage:!run.baselineAt?'baseline':!complete?'pretest':run.configuredAt?'ready':'configuration',configured:Boolean(run.configuredAt),version:'three-arm-common-preparation-r11'};}
   return require('./lib/learner-journey').preparation({required:process.env.LEARNER_ONBOARDING_REQUIRED==='true'&&researchControlStore.enabled,enrollment:learnerEnrollment(user),chapterId,questionIds:questions.map(q=>q.id),results:db.getQuizResultsByUser(user),record:learnerPreferences.read(user),generation:db.currentLearningGeneration(user),entry:learnerPreferences.readEntry(user),entryRequired:true});
 }
 function pilotAdmission(user,version){
-  const questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===proactiveStudyConfig.chapterId)?.flow?.preQuiz?.questions||[];
+  const questions=mathIndexesForUser(user).route.chapters.find(c=>c.id===proactiveStudyConfig.chapterId)?.flow?.preQuiz?.questions||[];
   return require('./lib/learner-journey').admission(db.getQuizResultsByUser(user).filter(q=>q.chapter_id===proactiveStudyConfig.chapterId),questions.map(q=>q.id),version.allowPretestReuse===true,version.useMode==='internal_rehearsal');
 }
 function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolean(e&&(e.status!=='active'||e.generation!==db.currentLearningGeneration(user)||e.stage!=='ready'||e.arm==='control'));}
-function rejectUnpreparedLearner(res,user,assessment){
+function rejectUnpreparedLearner(res,user,assessment,{manualConceptAfterPretest=false}={}){
+  if(rejectFirstSessionClosed(res,user))return true;
   const e=learnerEnrollment(user),p=ordinaryPreparation(user),chapter=proactiveStudyConfig.chapterId;
   const pretest=assessment?.phase==='pre'&&assessment?.chapterId===chapter&&assessment?.unitId===chapter+'-pre';
   const ordinaryBlocked=p.required&&p.stage!=='ready'&&(!pretest||['entry','baseline'].includes(p.stage))&&(!assessment?.chapterId||assessment.chapterId===chapter);
+  const manualConceptAllowed=manualConceptAfterPretest===true&&p.required&&p.stage==='configuration';
   const allowedPretest=pretest&&(e?.stage==='pretest'||(assessment?.existingPretestGrade===true&&e?.stage==='configuration'));
-  if(ordinaryBlocked||(e?.status==='active'&&((e.stage!=='ready'&&!allowedPretest)||e.generation!==db.currentLearningGeneration(user)))){
+  if(ordinaryBlocked&&!manualConceptAllowed||(e?.status==='active'&&((e.stage!=='ready'&&!allowedPretest)||e.generation!==db.currentLearningGeneration(user)))){
     sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage||e?.stage,message:p.stage==='entry'?'请先输入加入码并确认参加，或选择普通学习，再完成知识前测。':ordinaryBlocked?'请先完成知识前测，点击“开始学习”，按引导确认学习方式后继续。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
   }return false;
 }
@@ -134,10 +163,19 @@ function pilotRuntime(user) {
     model:assistantProviderInfo().model,
     rules:{maximumInquiriesPerKnowledgePoint:2,clientRecheckSeconds:10},notCalibrated:true};
 }
+function hasPendingProactiveCheck(row) {
+  const life=proactivePolicy.lifecycle.normalize(parseStoredJson(row?.lifecycle_json||"{}",{}));
+  // A wrong answer can leave the support episode awaiting a new offer. It is
+  // not an unanswered check: only a separately issued, unsubmitted item locks help.
+  return life.phase==="awaiting_independent_attempt"
+    && (life.activeVerificationCheckId ? life.activeVerificationCheckId!==life.lastVerificationCheckId
+      : !life.lastVerificationCheckId || !life.lastOutcome);
+}
+const proactiveCheckSubmissions=new Map();
 function pilotProtection(user,generation) {
-  return Boolean(threeArmStudy.protects(user)||researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
+  return Boolean(regulationTransfer.protects(user)||threeArmStudy.protects(user)||researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
     ||supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId)
-      .some(s=>parseStoredJson(s.lifecycle_json||"{}",{}).phase==="awaiting_independent_attempt"));
+      .some(hasPendingProactiveCheck));
 }
 function pilotFacts(user,scope,unitId,generation) {
   const events=db.recentInteractionEventsForUnit(user,unitId,40).filter(r=>Number(r.learning_generation||1)===generation)
@@ -226,8 +264,30 @@ let flowTestRouteJson = "";
 let assessmentIndex = new Map();
 let courseAssessmentFingerprint = "";
 let assistantContextIndex = { routeVersion: "", units: new Map(), questions: new Map() };
+let archivedLearningRoute=null;
+const mathRouteIndexes=new Map();
+const assessmentFigureDigests=mathInstruments.verifyFigureAssets(root);
+function mathVersionFor(user){
+  const run=user?threeArmStudy.get(user):null;
+  if(run){const version=mathInstruments.versionForRun(run);if(!version)throw Object.assign(new Error('本轮数学测量版本不可用，原记录保留。'),{status:409});return version;}
+  const ids=user?db.getQuizResultsByUser(user).map(r=>r.question_id||''):[];
+  if(ids.some(id=>/^fl-r11-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r10-/.test(id)))return mathInstruments.legacyVersion;
+  // Ordinary learning and its pre-existing snapshots retain the archived bank.
+  // The r11 rollout is explicit in a newly created study run.
+  return mathInstruments.legacyVersion;
+}
+function mathIndexesForVersion(version){
+  if(!mathRouteIndexes.has(version)){
+    const route=mathInstruments.routeFor(archivedLearningRoute,version);
+    mathRouteIndexes.set(version,{route,assessmentIndex:courseAssessment.buildAssessmentIndex(route),assistantContextIndex:learningAssistant.buildCourseContextIndex(route),fingerprint:courseAssessment.assessmentFingerprint(route)});
+  }return mathRouteIndexes.get(version);
+}
+function mathIndexesForUser(user){return mathIndexesForVersion(mathVersionFor(user));}
+function assistantIndexForUser(user){return mathIndexesForUser(user).assistantContextIndex;}
 try {
-  learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
+  archivedLearningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
+  learningRoute = mathInstruments.routeFor(archivedLearningRoute,mathInstruments.version);
   courseAssessmentFingerprint = courseAssessment.assessmentFingerprint(learningRoute);
   const publicLearningRoute = proactivePolicy.projectRoute(
     learningRoute,
@@ -239,6 +299,7 @@ try {
   });
   flowTestRouteJson = JSON.stringify(learningRoute);
   assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
+  for(const [id,entry] of courseAssessment.buildAssessmentIndex(archivedLearningRoute))if(!assessmentIndex.has(id))assessmentIndex.set(id,entry);
   assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
 } catch (error) {
   console.warn("Multi-scene learning route load skipped:", error.message);
@@ -307,6 +368,9 @@ const proactiveStoppingRules = Object.freeze({
     courseRouteVersion: learningRoute?.versionId || "",
     courseRouteDigest: protocolSourceDigest("data/multi-scene-learning-route.json"),
     courseAssessmentFingerprint,
+    assessmentVersions:mathInstruments.versions,
+    assessmentFigureDigests,
+    proSupplementAssets,
     courseAssessmentVersion: learningRoute?.chapters?.find(
       (chapter) => chapter.id === proactiveStudyConfig.chapterId
     )?.assessmentRevision?.version || "",
@@ -359,6 +423,12 @@ const proactiveStoppingRules = Object.freeze({
       policyKernel: protocolSourceDigest("lib/proactive-policy/index.js"),
       evidenceAudit: protocolSourceDigest("lib/proactive-policy/evidence-audit.js"),
       evidenceServer: protocolSourceDigest("server.js"),
+      regulationTransferSession:protocolSourceDigest('lib/regulation-transfer-session.js'),
+      firstSessionBudget:protocolSourceDigest('lib/first-session-budget.js'),
+      quizSnapshotReconciliation:protocolSourceDigest('lib/quiz-reconciliation.js'),
+      courseAssessmentScoring:protocolSourceDigest('lib/course-assessment.js'),
+      databaseLifecycle:protocolSourceDigest('db.js'),
+      proSupplementIntegrity:protocolSourceDigest('lib/courseware/pro-supplement-integrity-r11.js'),
       exposureMeasurement: protocolSourceDigest("app/main/proactive-exposure.js"),
       lifecycle: protocolSourceDigest("lib/proactive-policy/lifecycle.js"),
       // The representation chooser decides which activity type the agent offers.
@@ -404,6 +474,12 @@ const proactiveStoppingRules = Object.freeze({
       assessmentFeedback: protocolSourceDigest("lib/assessments/v14-c3-feedback-r1.js"),
       supportActivity: protocolSourceDigest("lib/support-activity.js"),
       functionsLimitsAssessment: protocolSourceDigest("lib/assessments/functions-limits-r10.js"),
+      functionsLimitsAssessmentR11:protocolSourceDigest('lib/assessments/functions-limits-r11.js'),
+      functionsLimitsAssessmentRegistry:protocolSourceDigest('lib/assessments/functions-limits-registry.js'),
+      functionsLimitsDelayedR11:protocolSourceDigest('lib/assessments/functions-limits-delayed-r11.js'),
+      functionsLimitsOutcomesR11:protocolSourceDigest('lib/proactive-outcomes/functions-limits-r11.js'),
+      functionsLimitsFiguresR11:protocolSourceDigest('lib/assessments/assessment-figures-r11.js'),
+      functionsLimitsAdapterR11:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r11.js'),
       functionsLimitsProbesR6: protocolSourceDigest("lib/assessments/functions-limits-probes-r10.js"),
       functionsLimitsDelayedR6: protocolSourceDigest("lib/assessments/functions-limits-delayed-r10.js"),
       functionsLimitsMathR6: protocolSourceDigest("lib/courseware/functions-limits-r10/native-model.js"),
@@ -608,7 +684,7 @@ const publicOutcomeFigureFiles = new Set([
   outcomeRegistry.forVersion("v14-c3-outcomes-v2")
 ].filter(Boolean).flatMap((instrument) => instrument.stageIds.flatMap((stageId) => (
   instrument.publicStage(stageId).items.flatMap((item) => item.figure ? [item.figure.src] : [])
-))));
+))).concat(mathInstruments.figurePaths));
 const publicResourceExtensions = new Set([
   ".html",
   ".htm",
@@ -679,13 +755,14 @@ function shouldCompress(req, type, size) {
 
 function sendPublicLearningRoute(req, res) {
   const auth=authenticate(req),order=auth?.study?.assessmentOrder||'XY';
-  const json=JSON.stringify({...courseAssessment.buildPublicLearningRoute(proactivePolicy.projectRoute(learningRoute,proactiveStudyConfig),order),courseAssessmentFingerprint});
+  const selected=mathIndexesForUser(auth?.participant.id);
+  const json=JSON.stringify({...courseAssessment.buildPublicLearningRoute(proactivePolicy.projectRoute(selected.route,proactiveStudyConfig),order),courseAssessmentFingerprint:selected.fingerprint});
   const compressed=acceptsGzip(req),body=compressed?zlib.gzipSync(json):json;
-  send(res,200,req.method==='HEAD'?'':body,'application/json; charset=utf-8',{'Cache-Control':'private, no-store, max-age=0','Content-Length':String(Buffer.byteLength(body)),Vary:'Authorization, X-Study-Arm, Accept-Encoding',...(compressed?{'Content-Encoding':'gzip'}:{})});
+  send(res,200,req.method==='HEAD'?'':body,'application/json; charset=utf-8',{'Cache-Control':'private, no-store, max-age=0','Content-Length':String(Buffer.byteLength(body)),Vary:'Authorization, X-Study-Arm, X-Study-Run, Accept-Encoding',...(compressed?{'Content-Encoding':'gzip'}:{})});
 }
 function assessmentReceipt(row){
   const id=row.questionId||row.question_id||'';
-  if(!/^fl-r(?:7|10)-(pre|post)-/.test(id))return row;
+  if(!/^fl-r(?:7|10|11)-(pre|post)-/.test(id))return row;
   const out={...row,status:'submitted',isCorrect:null,is_correct:-1,score:null,feedbackPolicy:'acknowledgement_only'};
   for(const key of ['answer','answerText','analysis','commentPrompt','rubric','referenceAnswer','optionFeedback','ai_score','aiScore','ai_feedback','aiFeedback','aiReasoning','ai_reasoning','aiWeakConcepts'])delete out[key];
   return out;
@@ -1174,6 +1251,8 @@ const sessionTouchIntervalMs = 60 * 1000;
 
 function studyRunForRequest(req,participant){
   const choice=String(req.headers['x-study-arm']||'');
+  const bound=String(req.headers['x-study-run']||'');
+  if(choice&&bound)return threeArmStudy.resolveBound(participant,bound,choice);
   return choice?threeArmStudy.resolve(participant,choice):null;
 }
 function publicParticipantForRequest(req,participant){
@@ -1335,14 +1414,17 @@ function parseSnapshotDataValue(value) {
 
 function reconcileSnapshotQuizResultsForUser(userId, snapshot, generation, fallbackTimestamp = "") {
   const resolvedGeneration = Number(generation) > 0 ? Number(generation) : 1;
+  const budget=firstSession.project(threeArmStudy.get(userId));
+  const receivedAt=Date.parse(fallbackTimestamp||'');
+  if(budget?.enforce&&Number.isFinite(receivedAt)&&receivedAt>Date.parse(budget.deadlineAt))return {inserted:0,updated:0,skipped:0,total:0,candidates:0,reason:'first_session_time_limit_draft_only'};
   return quizReconciliation.reconcileSnapshotQuizResults({
     db,
     userId,
     generation: resolvedGeneration,
     snapshot: db.normalizeLearningSnapshot(parseSnapshotDataValue(snapshot)),
-    assessmentIndex,
+    assessmentIndex:mathIndexesForUser(userId).assessmentIndex,
     courseAssessment,
-    assessmentFingerprint: courseAssessmentFingerprint,
+    assessmentFingerprint: mathIndexesForUser(userId).fingerprint,
     fallbackTimestamp
   });
 }
@@ -1692,7 +1774,11 @@ function proactiveProtocolPayload(experimentId = proactiveStudyConfig.experiment
 }
 
 function assignedAssessmentEntry(entry,userId){
-  if(!/^fl-r(?:7|10)-(pre|post)-/.test(entry.question.id))return true;
+  if(entry.chapterId==='V14-C1'&&['pre','post','formative'].includes(entry.phase)){
+    const current=mathVersionFor(userId)===mathInstruments.version;
+    if(/^fl-r11-/.test(entry.question.id)!==current)return false;
+  }
+  if(!/^fl-r(?:7|10|11)-(pre|post)-/.test(entry.question.id))return true;
   const order=(userId?threeArmStudy.get(userId)?.assessmentOrder:null)||'XY';
   return entry.question.form===order[entry.phase==='pre'?0:1];
 }
@@ -2039,8 +2125,13 @@ function proactiveOutcomeState(
   const posttest = managed
     ? proactiveAssessmentCompletion(userId, "post")
     : { ready: false, completedAt: "", submitted: 0, expected: 0 };
-  const postCompletedAt = Date.parse(posttest.completedAt || "");
-  const isThreeArm=Boolean(threeArmStudy.get(userId));
+  const outcomeRun=threeArmStudy.get(userId),firstClock=firstSession.project(outcomeRun,now);
+  const timedOutMissingPost=Boolean(outcomeRun?.regulationVersion&&firstClock?.enforce&&firstClock.expired&&!posttest.ready);
+  const followupEligible=posttest.ready||timedOutMissingPost;
+  const postCompletedAt = Date.parse(timedOutMissingPost?firstClock.deadlineAt:posttest.completedAt||'');
+  const isThreeArm=Boolean(outcomeRun);
+  const followupAnchor={kind:timedOutMissingPost?'first_session_deadline_after_time_limit':'posttest_completed',at:Number.isFinite(postCompletedAt)?new Date(postCompletedAt).toISOString():null,posttestMissing:!posttest.ready};
+  if(timedOutMissingPost)threeArmStudy.record(userId,'followup_anchor','once',followupAnchor);
   const retentionUnlockAt = Number.isFinite(postCompletedAt)
     ? postCompletedAt + proactiveRetentionDelayHours * 60 * 60 * 1000
     : NaN;
@@ -2094,7 +2185,8 @@ function proactiveOutcomeState(
     attemptByStage.has(stageId)
     || terminalSessionStatuses.has(sessionByStage.get(stageId)?.status)
   );
-  const frozenOutcomeVersion=threeArmStudy.get(userId)?.runtimeManifest?.proactiveDefinition?.outcomeInstrumentVersion;
+  const frozenRun=threeArmStudy.get(userId);
+  const frozenOutcomeVersion=frozenRun?.delayedVersion||frozenRun?.runtimeManifest?.proactiveDefinition?.outcomeInstrumentVersion||mathInstruments.delayedVersion(mathVersionFor(userId));
   const priorVersion = sessions[0]?.instrument_version || attempts[0]?.instrument_version || frozenOutcomeVersion;
   const priorWorkflow=priorVersion?outcomeRegistry.forVersion(priorVersion):null;
   const legacyPostWithoutVersion=!priorVersion&&!posttest.ready&&proactiveOutcomes.version==='functions-limits-delayed-r10'
@@ -2131,7 +2223,7 @@ function proactiveOutcomeState(
   const nextReminderHours = proactiveRetentionReminderHours.find(
     (hours) => hours > elapsedRetentionHours && !shownReminderHours.has(hours)
   );
-  const retentionWindowStatus = !posttest.ready
+  const retentionWindowStatus = !followupEligible
     ? "not_scheduled"
     : stageTerminal("retention")
       ? attemptByStage.has("retention") ? "completed" : sessionByStage.get("retention")?.status || "closed"
@@ -2180,7 +2272,7 @@ function proactiveOutcomeState(
       reason = "加入本章研究并完成章前测后开放。";
     } else if (!assignment) {
       reason = "完成章前测并进入本章实验后开放。";
-    } else if (!posttest.ready) {
+    } else if (!followupEligible) {
       reason = "完成章后测后开放。";
     } else if (
       stageId === "representation_transfer"
@@ -2249,6 +2341,7 @@ function proactiveOutcomeState(
   return {
     managed,
     chapterId,
+    followupAnchor,
     instrumentVersion: versionUnavailable ? (priorVersion || null) : workflow.version,
     versionUnavailable,
     protocolFingerprint: proactiveProtocolFingerprint,
@@ -2424,9 +2517,14 @@ function activeProactiveOutcomeSession(userId) {
   );
 }
 
-function rejectAgentAssistanceDuringOutcome(res, userId) {
-  if(supportCycles.protects(userId,db.currentLearningGeneration(userId))) {
+function rejectAgentAssistanceDuringOutcome(res, userId, { completingCheck=false, checkRoute=false }={}) {
+  if(rejectFirstSessionClosed(res,userId))return true;
+  if(regulationTransfer.protects(userId)){sendJson(res,409,{ok:false,code:'regulation_transfer_protected',message:'调节任务进行中，请在任务内使用规定的固定线索。'});return true;}
+  if(!completingCheck && supportCycles.protects(userId,db.currentLearningGeneration(userId))) {
     sendJson(res,409,{ok:false,code:"support_cycle_check_protected",message:"独立检查进行中，请先完成或跳过，期间暂停学习帮助。"});return true;
+  }
+  if(!checkRoute && db.listProactivePolicyStates(userId,proactiveStudyConfig.experimentId).some(hasPendingProactiveCheck)) {
+    sendJson(res,409,{ok:false,code:"independent_check_in_progress",message:"请先完成或暂不检查已有的独立题，再继续使用学习帮助。"});return true;
   }
   if (researchSitesHttp.store.protects(userId) || studyWorkbench.protects(userId) || mainLearningStudy.protects(userId) || mainLearningStudy.manages(userId)) {
     sendJson(res, 409, { ok: false, code: "common_probe_protected", message: "共同探针作答期间暂不提供助教解答，请完成或跳过当前题目。" });
@@ -3090,41 +3188,23 @@ function publicProactivePolicyState(row = {}, options = {}) {
   // 一道题只要已经发给学生，就必须**把同一道题还给他**——中途换题会让学生答的题和
   // 判分的题不是同一道（判分是按 checkId 查题库的，换了题就等于判了另一道题）。
   const scopeKeyForCheck = row.scope_key || "";
-  const issuedChecks= row.user_id ? supportCycles.issuedChecks(row.user_id,scopeKeyForCheck,db.currentLearningGeneration(row.user_id)) : [];
   const issuedCheckId = lifecycleState.activeVerificationCheckId || "";
-  const pendingCheck = studentPreference !== "off"
-    && lifecycleState.phase === "awaiting_independent_attempt";
-  const resolvedIssued = pendingCheck && issuedCheckId
-    ? adapter?.publicVerificationCheck?.(scopeKeyForCheck, checkLevel, issuedCheckId)
+  const pendingCheck = hasPendingProactiveCheck(row);
+  // Read-only projections replay a bound item; new items are chosen only by start.
+  const legacyCheckId = `${scopeKeyForCheck}-probe-${String(checkLevel).toLowerCase()}-v1`;
+  const verificationCheck = pendingCheck
+    ? adapter?.publicVerificationCheck?.(scopeKeyForCheck, checkLevel, issuedCheckId || legacyCheckId)
+      || (!issuedCheckId ? adapter?.publicVerificationCheck?.(scopeKeyForCheck,checkLevel) : null)
     : null;
-  let candidateCheck = null;
-  if (pendingCheck && resolvedIssued) {
-    // 本回合签发过题：没答过就原样回放；答过了才换一道没做过的平行题。
-    // 同一 (知识点, 等级) 的第二次支架回合若拿到做过的题，近端结果不是被练习效应
-    // 污染，而是整条缺失——旧逻辑遇到同 id 干脆不发题（实测踩过）。
-    candidateCheck = issuedCheckId !== lifecycleState.lastVerificationCheckId
-      ? resolvedIssued
-      : adapter?.nextVerificationCheck?.(
-          scopeKeyForCheck,
-          checkLevel,
-          issuedCheckId,issuedChecks
-        );
-  } else if (pendingCheck) {
-    // 没有签发 id 的旧等待回合（v2 之前不落这个字段）：回放当时那张固定题。
-    // 这里不能"轮转到新题"，因为学生看到的是那张固定题，换掉就不是同一道题了。
-    const legacyCheckId = `${scopeKeyForCheck}-probe-${String(checkLevel).toLowerCase()}-v1`;
-    candidateCheck = adapter?.publicVerificationCheck?.(scopeKeyForCheck, checkLevel, legacyCheckId)
-      || adapter?.nextVerificationCheck?.(
-          scopeKeyForCheck,
-          checkLevel,
-          lifecycleState.lastVerificationCheckId,issuedChecks
-        )
-      || null;
-  }
-  const verificationCheck = candidateCheck
-    && candidateCheck.id !== lifecycleState.lastVerificationCheckId
-    ? candidateCheck
-    : null;
+  const decision = pendingCheck && row.user_id
+    ? db.getProactiveDecisionForUser(row.user_id,lifecycleState.activeDecisionId) : null;
+  const intervention = decision ? db.getProactiveIntervention(lifecycleState.activeInterventionId) : null;
+  const presentation = intervention && intervention.user_id===row.user_id
+    ? parseStoredJson(intervention.presentation||"{}",{}) : {};
+  const checkContext = pendingCheck ? {
+    unitId:decision?.unit_id || scopeKeyForCheck, sceneType:decision?.scene_type || "slide",
+    questionId:presentation.questionId || presentation.questionContext?.questionId || ""
+  } : null;
   return {
     scopeKey: row.scope_key || "",
     dismissStreak: Number(row.dismiss_streak || 0),
@@ -3148,12 +3228,12 @@ function publicProactivePolicyState(row = {}, options = {}) {
       lastOutcome: lifecycleState.lastOutcome,
       lastOutcomeAt: lifecycleState.lastOutcomeAt,
       lastVerificationCheckId: lifecycleState.lastVerificationCheckId,
-      activeVerificationCheckId: lifecycleState.activeVerificationCheckId,
+      activeVerificationCheckId: verificationCheck?.id || lifecycleState.activeVerificationCheckId,
       attemptCount: lifecycleState.attemptCount,
       successEvidenceCount: lifecycleState.successEvidenceCount,
       frictionEvidenceCount: lifecycleState.frictionEvidenceCount
     },
-    verificationCheck,
+    verificationCheck, checkContext,
     updatedAt: row.updated_at || ""
   };
 }
@@ -3248,6 +3328,7 @@ function proactiveStudyState(userId, chapterId) {
   const activeOutcomeSession = managed
     ? activeProactiveOutcomeSession(userId)
     : null;
+  const protectedMeasurement=Boolean(activeOutcomeSession||regulationTransfer.protects(userId));
   const studentPreference = managed
     ? proactiveGlobalPreference(userId)
     : "standard";
@@ -3264,18 +3345,18 @@ function proactiveStudyState(userId, chapterId) {
     runtime: runtime ? publicProactiveRuntime(runtime) : null,
     studentPreference,
     globalPreferenceControlEnabled: proactiveGlobalPreferenceControlEnabled,
-    researchControls: researchControlStore.describe(userId),
-    supportCycles: activeOutcomeSession ? [] : publicSupportCycles(userId,db.currentLearningGeneration(userId)),
-    agentRuntime: activeOutcomeSession || mainLearningStudy.manages(userId) ? null : agentRuntime.state(userId, db.currentLearningGeneration(userId)),
+    researchControls: protectedMeasurement?null:researchControlStore.describe(userId),
+    supportCycles: protectedMeasurement ? [] : publicSupportCycles(userId,db.currentLearningGeneration(userId)),
+    agentRuntime: protectedMeasurement || mainLearningStudy.manages(userId) ? null : agentRuntime.state(userId, db.currentLearningGeneration(userId)),
     pretest,
     outcomeSession: publicProactiveOutcomeSession(activeOutcomeSession),
-    agentAssistanceBlocked: Boolean(activeOutcomeSession),
-    learningMemory: activeOutcomeSession ? null : learningMemoryFor(userId, chapterId),
+    agentAssistanceBlocked: protectedMeasurement,
+    learningMemory: protectedMeasurement ? null : learningMemoryFor(userId, chapterId),
     candidateCollectionEnabled: Boolean(
       managed
       && proactiveStudyConfig.mode !== "off"
       && runtime?.status !== "paused"
-      && !activeOutcomeSession
+      && !protectedMeasurement
       && participation?.status === "enrolled"
     ),
     policyStates: assignment
@@ -4389,6 +4470,15 @@ async function handleManagedProactiveIntervention({
     runtime: policyRuntime,
     now: evaluationTime
   });
+  // Recording a submitted item is independent of whether another hint may be
+  // delivered (for example after the learner disables proactive help).
+  if(responseExtras.checkResult && !policyDecision.stateTransition) {
+    const life=proactivePolicy.lifecycle.normalize(parseStoredJson(policyState.lifecycle_json||"{}",{}));
+    policyDecision={...policyDecision,followupOutcome:{outcome:responseExtras.checkResult.status,checkId:responseExtras.checkResult.checkId},
+      stateTransition:{currentLevel:policyState.current_level,lifecycle:{...life,phase:"closed",
+        activeVerificationCheckId:"",lastVerificationCheckId:responseExtras.checkResult.checkId,
+        lastOutcome:responseExtras.checkResult.status,attemptCount:life.attemptCount+1}}};
+  }
   const waitingForBoundary = policyDecision.reasonCodes.includes(
     "quiet_dwell_waiting_for_boundary"
   );
@@ -4727,12 +4817,12 @@ async function handleManagedProactiveIntervention({
       updatedAt: policyDecision.createdAt
     });
   }
-  if (policyDecision.followupOutcome && evidence.independentAttemptVerified===true
+  if (policyDecision.followupOutcome && (evidence.independentAttemptVerified===true || evidence.independentAttemptDeclined===true)
       && evidence.verificationCheckId) {
     agentRuntime.remember({user:auth.participant.id,scope:policyScopeKey,generation,
       sourceId:`${generation}:${priorLifecycle.activeInterventionId}:${evidence.verificationCheckId}`,
-      outcome:{...policyDecision.followupOutcome,checkId:evidence.verificationCheckId,
-        success:evidence.independentAttemptSuccess===true},reviewHours:agentProfile.reviewAfterHours});
+      outcome:{...policyDecision.followupOutcome,...responseExtras.checkResult,checkId:evidence.verificationCheckId,
+        success:evidence.independentAttemptDeclined===true?null:evidence.independentAttemptSuccess===true},reviewHours:agentProfile.reviewAfterHours});
   }
   if (policyDecision.stateTransition) {
     const transition = policyDecision.stateTransition;
@@ -4891,6 +4981,11 @@ async function handleApi(req, res, url) {
     return;
   }
   try {
+  if(['/api/learning/support-cycle','/api/learning/assistant','/api/learning/proactive/outcomes','/api/learning/notes','/api/learning/agent-runtime','/api/learning/learner-preferences'].some(prefix=>url.pathname===prefix||url.pathname.startsWith(prefix+'/'))){
+    const auth=authenticate(req);
+    if(auth&&regulationTransfer.protects(auth.participant.id)){sendJson(res,409,{ok:false,code:'regulation_transfer_protected',message:'调节任务期间暂停原学习帮助与回顾，请使用任务内的规定材料。'});return;}
+  }
+
     if(/^\/api\/learning\/(assistant|support-cycle|agent-runtime|proactive)\b/.test(url.pathname)){
       const owner=authenticate(req);if(owner&&threeArmStudy.protects(owner.participant.id)){sendJson(res,409,{ok:false,code:'configuration_judgment_protected',message:'配置判断任务正在独立作答，完成后恢复学习帮助。'});return;}
     }
@@ -4929,10 +5024,11 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/research/config") {
-      const courseVersion = String(learningRoute?.versionId || "").slice(0, 120);
+      const selected=mathIndexesForUser(authenticate(req)?.participant.id);
+      const courseVersion = String(selected.route?.versionId || "").slice(0, 120);
       sendJson(res, 200, {
         ok: true,
-        data: { ...researchConfig, courseVersion, courseAssessmentFingerprint }
+        data: { ...researchConfig, courseVersion, courseAssessmentFingerprint:selected.fingerprint }
       });
       return;
     }
@@ -5659,7 +5755,7 @@ async function handleApi(req, res, url) {
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
-          index: assistantContextIndex,
+          index: assistantIndexForUser(auth.participant.id),
           chapterId,
           unitId,
           sceneType,
@@ -5765,7 +5861,9 @@ async function handleApi(req, res, url) {
     if(url.pathname.startsWith('/api/admin/three-arm')){
       if(!checkAdmin(req)){sendJson(res,403,{ok:false,message:'需要管理员身份'});return;}
       try{let data;
-        if(req.method==='GET'&&url.pathname.endsWith('/export'))data=threeArmStudy.exportData();
+        if(req.method==='GET'&&url.pathname.endsWith('/export'))data={...threeArmStudy.exportData(),regulationTransfer:regulationTransfer.exportRecords()};
+        else if(req.method==='GET'&&url.pathname.endsWith('/regulation-rating'))data=regulationTransfer.ratingPacket(url.searchParams.get('runId'));
+        else if(req.method==='POST'&&url.pathname.endsWith('/regulation-rating')){const input=await readJsonBody(req);data=regulationTransfer.rate(input.runId,input);}
         else if(req.method==='GET'&&url.pathname.endsWith('/replay'))data=threeArmStudy.replay({mode:url.searchParams.get('mode')||'formal',fingerprint:url.searchParams.get('fingerprint')||undefined});
         else if(req.method==='GET'&&url.pathname.endsWith('/rating'))data=threeArmStudy.ratingCases();
         else if(req.method==='POST'&&url.pathname.endsWith('/rating'))data=threeArmStudy.rateJudgment(await readJsonBody(req));
@@ -5791,9 +5889,22 @@ async function handleApi(req, res, url) {
           sendJson(res,200,{ok:true,data:threeArmStudy.publicRun(threeArmStudy.enroll(auth.account,body))});return;
         }
         if(!run){sendJson(res,404,{ok:false,message:'请从本次实验入口进入'});return;}
+        if(url.pathname==='/api/study/preview/new'&&req.method==='POST'){
+          if(body.previousRunId!==user)throw Object.assign(new Error('当前体验轮次已变化，请重新打开'),{status:409});
+          sendJson(res,200,{ok:true,data:{run:threeArmStudy.publicRun(threeArmStudy.startCurrentPreview(auth.account,user))}});return;
+        }
+        recordFirstSessionLimit(user);
+        if(url.pathname==='/api/study/regulation'){
+          if(req.method==='POST'&&body.action==='start'&&!regulationTransfer.protects(user)){
+            if(pilotProtection(user,generation))throw Object.assign(new Error('请先完成当前独立测量'),{status:409});
+            cancelLearnerSupport(user,generation);
+          }
+          sendJson(res,200,{ok:true,data:req.method==='POST'?regulationTransfer.action(user,body):regulationTransfer.state(user)});return;
+        }
+        if(req.method==='POST'&&url.pathname!=='/api/study/judgment')assertFirstSessionOpen(user);
         const cycles=publicSupportCycles(user,generation);
         if(url.pathname==='/api/study/state'&&req.method==='GET'){
-          sendJson(res,200,{ok:true,data:{run:threeArmStudy.publicRun(run),preparation:ordinaryPreparation(user),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,probe:threeArmStudy.probe(user,cycles),judgment:threeArmStudy.judgmentState(user)}});return;
+          sendJson(res,200,{ok:true,data:{run:{...threeArmStudy.publicRun(run),regulationActive:regulationTransfer.protects(user)},preparation:ordinaryPreparation(user),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,probe:threeArmStudy.probe(user,cycles),judgment:run.regulationVersion?null:threeArmStudy.judgmentState(user),regulation:run.regulationVersion?regulationTransfer.state(user):null}});return;
         }
         if(url.pathname==='/api/study/confirm-defaults'&&req.method==='POST'){
           if(run.arm!=='A'||ordinaryPreparation(user).stage!=='configuration')throw Object.assign(new Error('请先完成前测，再确认本组默认设置'),{status:409});
@@ -5805,10 +5916,16 @@ async function handleApi(req, res, url) {
           sendJson(res,200,{ok:true,data});return;
         }
         if(url.pathname==='/api/study/judgment'){
+          if(run.regulationVersion)throw Object.assign(new Error('本轮使用14分钟调节任务，请从后续任务进入。'),{status:409});
           if(req.method==='POST'&&body.action==='start'){if(pilotProtection(user,generation))throw Object.assign(new Error('请先完成当前独立测量'),{status:409});cancelLearnerSupport(user,generation);}
           sendJson(res,200,{ok:true,data:req.method==='POST'?threeArmStudy.judgment(user,body):threeArmStudy.judgmentState(user)});return;
         }
         if(pilotProtection(user,generation))throw Object.assign(new Error('独立检查结束后再打开学习回顾'),{status:409});
+        if(url.pathname==='/api/study/previous'&&req.method==='GET'){
+          const previous=run.previousRunId?threeArmStudy.get(run.previousRunId):null;
+          if(!previous||previous.ownerId!==auth.account.id)throw Object.assign(new Error('没有可查看的上一轮记录'),{status:404});
+          sendJson(res,200,{ok:true,data:{run:threeArmStudy.publicRun(previous),readOnly:true,results:db.getQuizResultsByUser(previous.id).map(assessmentReceipt)}});return;
+        }
         if(url.pathname==='/api/study/review'&&req.method==='GET'){
           const results=db.getQuizResultsByUser(user),submitted=studyStages.order.filter(id=>studyStages.completed({points:[id]},results)).map(id=>id+'-formative');
           if(proactiveAssessmentCompletion(user,'post').ready)submitted.push('V14-C1-post');
@@ -5844,6 +5961,7 @@ async function handleApi(req, res, url) {
         const preparation=ordinaryPreparation(user);
         const enabled=researchControlStore.canEdit(user)&&(!preparation.required||!['entry','baseline','pretest'].includes(preparation.stage))&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
         if(req.method==='POST'){
+          assertFirstSessionOpen(user);
           if(!enabled)throw Object.assign(new Error(preparation.stage==='pretest'?'请先完成知识前测，再设置学习方式。':window.message||'当前预试条件不能修改学习偏好'),{status:403});
           if(pilotProtection(user,generation))throw Object.assign(new Error('请先结束独立测量或当前帮助，再修改偏好'),{status:409});
           const input=await readJsonBody(req);const record=learnerPreferences.save(user,{...input,generation,experimental:Boolean(run)||e?.arm==='configurable',configurationWindow:window});
@@ -5884,7 +6002,7 @@ async function handleApi(req, res, url) {
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/opportunity") {
           if(pilotStudy.enrolled(user,generation)) {
             const scope=boundedLearningText(input.scope,100),unitId=boundedLearningText(input.unitId,100),blockers=[];
-            const resolved=learningAssistant.resolveAssistantContext({index:assistantContextIndex,chapterId:proactiveStudyConfig.chapterId,
+            const resolved=learningAssistant.resolveAssistantContext({index:assistantIndexForUser(auth.participant.id),chapterId:proactiveStudyConfig.chapterId,
               unitId,sceneType:boundedLearningText(input.sceneType,80),contextRef:{kind:"lesson",scope:"lesson"},quizSubmitted:false});
             if(resolved.isQuiz||scope!==(resolved.unit.knowledgePointId||resolved.unit.id)||!supportGoals.CURRICULUM[scope])blockers.push("outside_learning_task");
             if(pilotProtection(user,generation))blockers.push("independent_assessment");
@@ -5943,13 +6061,14 @@ async function handleApi(req, res, url) {
       if(rejectUnpreparedLearner(res,user))return;
       try {
         if(pilotStudy.activeProbe(user,generation)&&["report","advance"].includes(body.action))throw Object.assign(new Error("请先回答或跳过这次预试记录，再继续请求帮助。"),{status:409});
-        const resolved=learningAssistant.resolveAssistantContext({index:assistantContextIndex,chapterId:proactiveStudyConfig.chapterId,
+        const resolved=learningAssistant.resolveAssistantContext({index:assistantIndexForUser(auth.participant.id),chapterId:proactiveStudyConfig.chapterId,
           unitId,sceneType:boundedLearningText(body.sceneType,80),contextRef:{kind:"lesson",scope:"lesson"},quizSubmitted:false});
         if(resolved.isQuiz || (resolved.unit.knowledgePointId||resolved.unit.id)!==scope || !supportGoals.CURRICULUM[scope])throw Object.assign(new Error("请在对应知识点的学习任务中使用帮助"),{status:409});
         if(!proactiveAssignmentForUser(user))throw Object.assign(new Error("请先完成本章前测"),{status:409});
         const protectedNow=()=>Boolean(activeProactiveOutcomeSession(user) || mainLearningStudy.manages(user) || studyWorkbench.protects(user)
-          || db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(s=>parseStoredJson(s.lifecycle_json||"{}",{}).phase==="awaiting_independent_attempt"));
-        if(protectedNow())throw Object.assign(new Error("独立测量期间暂停学习帮助"),{status:409});
+          || db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(hasPendingProactiveCheck));
+        const finishingCheck=["submit_check","skip_check"].includes(body.action);
+        if(protectedNow() && (!finishingCheck || activeProactiveOutcomeSession(user) || mainLearningStudy.manages(user) || studyWorkbench.protects(user)))throw Object.assign(new Error("独立测量期间暂停学习帮助"),{status:409});
         const record=researchControlStore.read(user),profile={...researchControls.defaults,...record?.profile},revision=record?.revision||0;
         const adapter=proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId);
         supportCycles.leaveScene(user,scope,generation,boundedLearningText(body.sceneType,80)||'slide');
@@ -5965,8 +6084,8 @@ async function handleApi(req, res, url) {
           if(!owned || owned.id!==body.id)throw Object.assign(new Error("帮助记录与当前知识点不匹配"),{status:409});
           if(body.action==="start_check" && supportCycles.protects(user,generation))throw Object.assign(new Error("请先完成已有的独立检查"),{status:409});
           cycle=supportCycles.act(user,body.id,generation,body,{adapter});
-          if(cycle.checkResult && body.action==="submit_check")agentRuntime.remember({user,scope,generation,sourceId:`support-cycle:${cycle.id}:${cycle.checkResult.checkId}`,
-            outcome:{...cycle.checkResult,success:cycle.checkResult.correct===true},reviewHours:profile.reviewAfterHours});
+          if(cycle.checkResult && finishingCheck)agentRuntime.remember({user,scope,generation,sourceId:`support-cycle:${cycle.id}:${cycle.checkResult.checkId}`,
+            outcome:{...cycle.checkResult,success:cycle.checkResult.correct},reviewHours:profile.reviewAfterHours});
         }
         if(["report","advance"].includes(body.action)) {
           const pendingInquiry=supportCycles.current(user,scope,generation);
@@ -7333,7 +7452,7 @@ async function handleApi(req, res, url) {
       const snapshotRaw=db.getLearningSnapshotState(user,nowIso()).snapshot?.data;
       const snapshot=typeof snapshotRaw==='string'?parseStoredJson(snapshotRaw,{}):snapshotRaw||{};
       const scene=snapshot.learningSurface==='slide'?'slide':snapshot.selectedKnowledgeScenes?.[snapshot.currentUnitId]||'slide';
-      const protectedCheck=supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(row=>parseStoredJson(row.lifecycle_json||'{}',{}).phase==='awaiting_independent_attempt');
+      const protectedCheck=supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(hasPendingProactiveCheck);
       if(!access.ok||protectedCheck||!acceptedOpen||!intervention||!['offered','shown','accepted'].includes(intervention.status)||decision.action==='switch_representation'||revision!==(record?.revision||0)||record?.profile?.proactivity==='reactive'||!['A2','A3','A4'].includes(record?.profile?.authorityLevel)||body.unitId!==decision.unit_id||body.chapterId!==decision.chapter_id||body.sceneType!==decision.scene_type||snapshot.currentUnitId!==body.unitId||scene!==body.sceneType){
         sendJson(res,409,{ok:false,message:'学习位置、帮助权限或本轮状态已变化，请回到当前任务。'});return;
       }
@@ -7579,7 +7698,7 @@ async function handleApi(req, res, url) {
         sendJson(res, 401, { ok: false, message: "请先登录。" });
         return;
       }
-      if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id)) {
+      if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id,{completingCheck:body.action!=="start",checkRoute:true})) {
         return;
       }
       const unitId = boundedLearningText(body.unitId, 180);
@@ -7610,12 +7729,20 @@ async function handleApi(req, res, url) {
         });
         return;
       }
+      const submissionKey=`${auth.participant.id}:${db.currentLearningGeneration(auth.participant.id)}:${boundedLearningText(body.checkId,180)}`;
+      if(body.action!=='start' && proactiveCheckSubmissions.has(submissionKey))await proactiveCheckSubmissions.get(submissionKey);
       const policyState = db.getProactivePolicyState(
         auth.participant.id,
         proactiveStudyConfig.experimentId,
         scopeKey
       );
       if(body.action==='start'){
+        const existing=db.listProactivePolicyStates(auth.participant.id,proactiveStudyConfig.experimentId).find(hasPendingProactiveCheck);
+        if(existing){
+          const saved=publicProactivePolicyState(existing);
+          if(existing.scope_key===scopeKey && saved.checkContext?.unitId===unitId && saved.checkContext?.sceneType===(sceneType||'slide')){sendJson(res,200,{ok:true});return;}
+          sendJson(res,409,{ok:false,code:'independent_check_in_progress',message:'请先完成或跳过已有的独立检查。',checkContext:saved.checkContext});return;
+        }
         const life=proactivePolicy.lifecycle.normalize(parseStoredJson(policyState?.lifecycle_json||'{}',{}));
         const decision=db.getProactiveDecisionForUser(auth.participant.id,life.activeDecisionId);
         const intervention=db.getProactiveIntervention(life.activeInterventionId);
@@ -7625,7 +7752,7 @@ async function handleApi(req, res, url) {
           sendJson(res,409,{ok:false,code:'proactive_check_not_ready',message:'这条帮助已经结束，请返回当前学习内容。'});return;
         }
         const at=nowIso(),next=proactivePolicy.lifecycle.afterStudentResponse({lifecycle:life,interventionId:life.activeInterventionId,respondedAt:at});
-        const check=proactivePolicy.adapterForChapter(chapterId)?.publicVerificationCheck?.(scopeKey,next.supportLevel);
+        const check=proactivePolicy.adapterForChapter(chapterId)?.nextVerificationCheck?.(scopeKey,next.supportLevel,life.lastVerificationCheckId,supportCycles.issuedChecks(auth.participant.id,scopeKey,db.currentLearningGeneration(auth.participant.id)));
         if(!check){sendJson(res,409,{ok:false,message:'当前没有可用的独立检查。'});return;}
         next.activeVerificationCheckId=check.id;
         db.upsertProactivePolicyState(proactivePolicyStateRecord(policyState,{userId:auth.participant.id,scopeKey,updatedAt:at,lastReasonCode:'student_requested_check',lifecycle:next}));
@@ -7633,6 +7760,9 @@ async function handleApi(req, res, url) {
         db.saveNow();
         sendJson(res,200,{ok:true});return;
       }
+      const completed=agentRuntime.state(auth.participant.id,db.currentLearningGeneration(auth.participant.id)).memory
+        .find(row=>row.scope===scopeKey && row.payload.outcome.checkId===body.checkId && row.payload.outcome.unitId===unitId && row.payload.outcome.status);
+      if(completed){sendJson(res,200,{ok:true,replayed:true,checkResult:completed.payload.outcome,study:proactiveStudyState(auth.participant.id,chapterId)});return;}
       const publicState = publicProactivePolicyState(policyState || {});
       const expectedCheck = publicState.verificationCheck;
       if (!policyState || !expectedCheck) {
@@ -7659,7 +7789,7 @@ async function handleApi(req, res, url) {
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
-          index: assistantContextIndex,
+          index: assistantIndexForUser(auth.participant.id),
           chapterId,
           unitId,
           sceneType,
@@ -7721,6 +7851,9 @@ async function handleApi(req, res, url) {
       );
       const verificationResult = {
         attemptId,
+        at: submittedAt, unitId, sceneType:sceneType||'slide', questionId:publicState.checkContext?.questionId||'',
+        prompt:expectedCheck.prompt,response:grade?.response??null,responseLabel:grade?.responseLabel||'',
+        correctLabel:grade?.correctLabel||'',explanation:grade?.explanation||'',
         checkId: expectedCheck.id,
         stage: expectedCheck.stage,
         supportLevel: expectedCheck.supportLevel,
@@ -7803,7 +7936,9 @@ async function handleApi(req, res, url) {
         },
         created_at: submittedAt
       });
-      await handleManagedProactiveIntervention({
+      let finishSubmission;
+      proactiveCheckSubmissions.set(submissionKey,new Promise(resolve=>{finishSubmission=resolve;}));
+      try { await handleManagedProactiveIntervention({
         res,
         auth,
         resolved,
@@ -7818,7 +7953,7 @@ async function handleApi(req, res, url) {
         responseExtras: {
           checkResult: verificationResult
         }
-      });
+      }); } finally { proactiveCheckSubmissions.delete(submissionKey);finishSubmission(); }
       return;
     }
 
@@ -7857,7 +7992,7 @@ async function handleApi(req, res, url) {
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
-          index: assistantContextIndex,
+          index: assistantIndexForUser(auth.participant.id),
           chapterId,
           unitId,
           sceneType,
@@ -8340,7 +8475,7 @@ async function handleApi(req, res, url) {
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
-          index: assistantContextIndex,
+          index: assistantIndexForUser(auth.participant.id),
           chapterId,
           unitId,
           sceneType,
@@ -8486,7 +8621,7 @@ async function handleApi(req, res, url) {
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
-          index: assistantContextIndex,
+          index: assistantIndexForUser(auth.participant.id),
           chapterId,
           unitId,
           sceneType,
@@ -8621,7 +8756,7 @@ async function handleApi(req, res, url) {
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
-          index: assistantContextIndex,
+          index: assistantIndexForUser(auth.participant.id),
           chapterId,
           unitId,
           sceneType,
@@ -8640,14 +8775,16 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
-      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
+      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10|11)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
       // Only a complete, server-recorded pretest opens discussion before setup.
       const completedPretest = resolved.isQuiz && resolved.unit.phase === "pre"
         && resolved.unit.quizQuestions.length > 0
         && resolved.unit.quizQuestions.every(q => quizResults.some(r => r.question_id === q.id));
       if(rejectUnpreparedLearner(res,auth.participant.id,completedPretest
         ? {phase:"pre",chapterId:resolved.unit.chapterId,unitId:resolved.unit.id,existingPretestGrade:true}
-        : null))return;
+        : null,{manualConceptAfterPretest:!resolved.isQuiz&&resolved.unit.chapterId===proactiveStudyConfig.chapterId
+          &&!resolved.contextRef?.questionId&&resolved.contextRef?.scope!=='quiz'
+          &&Boolean(proactivePolicy.adapterForChapter(resolved.unit.chapterId)?.knowledgePoint(resolved.unit.knowledgePointId||resolved.unit.id))}))return;
       attachAssistantQuizAttempt(resolved, quizResults);
       const proactiveIntervention = proactiveInterventionId
         ? getAssistantIntervention(auth.participant.id, unitId, proactiveInterventionId)
@@ -8655,7 +8792,7 @@ async function handleApi(req, res, url) {
       const independentCheckState = db.getProactivePolicyState(
         auth.participant.id, proactiveStudyConfig.experimentId, resolved.unit.knowledgePointId || resolved.unit.id
       );
-      if (parseStoredJson(independentCheckState?.lifecycle_json || "{}", {}).phase === "awaiting_independent_attempt") {
+      if (hasPendingProactiveCheck(independentCheckState)) {
         sendJson(res, 409, { ok: false, code: "independent_check_in_progress", message: "请先完成或跳过当前独立检查，之后再继续使用学习帮助。" });
         return;
       }
@@ -9095,7 +9232,7 @@ async function handleApi(req, res, url) {
       if(studyRun&&phase==='post'){
         const results=db.getQuizResultsByUser(auth.participant.id);
         const pending=studyStages.stages.some(s=>!studyStages.completed(s,results))||studyStages.reviews.some(s=>!(studyRun.reviewedStages||[]).includes(s.id));
-        if(pending){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成六个知识点的三题检测，以及两次阶段学习回顾，再提交后测。'});return;}
+        if(pending){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成六个知识点的共同检测及阶段学习回顾，再提交后测。'});return;}
       }
       const answers = Array.isArray(body.answers) ? body.answers.slice(0, 50) : [];
       if (!unitId || !chapterId || !phase || !answers.length) {
@@ -9107,9 +9244,10 @@ async function handleApi(req, res, url) {
         unitId,
         phase
       });
+      expectedEntries=expectedEntries.filter(entry=>assignedAssessmentEntry(entry,auth.participant.id));
       if(chapterId==='V14-C1'&&['pre','post'].includes(phase)){
         const order=studyRun?.assessmentOrder||'XY',form=order[phase==='pre'?0:1];
-        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10)-/.test(e.question.id)||e.question.form===form);
+        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10|11)-/.test(e.question.id)||e.question.form===form);
       }
       if (expectedEntries.some((entry) => entry.assessmentStatus === "archived")) {
         sendJson(res, 409, {

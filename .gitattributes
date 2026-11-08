@@ -1,1 +1,6 @@
 *.sh text eol=lf
+# 校验清单记录的是 LF 字节，Windows 检出也保持一致。
+assets/courseware-modules/*.js text eol=lf
+assets/assessment/**/*.svg text eol=lf
+resources/open-maic/pro-supplements-r11/*.html text eol=lf
+resources/open-maic/pro-supplements-r11/provenance.json text eol=lf

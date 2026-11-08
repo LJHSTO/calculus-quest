@@ -381,10 +381,10 @@
                 },
                 "lecturePages": [
                   {
-                    "title": "先确定范围，再检查对应",
-                    "summary": "f(x)=x²，允许−2≤x≤2。\n输入−2和2都得到4，输入0得到0。相同输出不违反函数要求。\n每个允许输入按平方规则只有一个结果；实际输出从0到4，所以值域是[0,4]。\n如果把定义域换成全部实数，规则表达式没变，函数的输入范围和值域都变了。\n判断一个函数，必须同时看定义域和对应规则。",
+                    "title": "对照：多对一仍是函数，一进多出不是",
+                    "summary": "这一页用一张对照图把两种情形分开看。上面这一组：规则已经给定为 g(x)=x²，负二到二里每个输入都只有一个平方值；负二和输入二都送到同一个输出四，仍然是函数。图里只画了三个输入。\n下面这一组就不行了：同一个输入二同时连到三和五，这个输入的输出不唯一，所以不是函数。常函数把每个输入都送到同一个数，也仍然是一个输入一个输出。\n再看定义域和值域：g(x)=x² 的定义域是负二到二，是可以使用的输入；值域是实际取到的输出，因为平方不超过四，所以是零到四。两个集合说的不是一件事。",
                     "canvas": {
-                      "id": "GH-01-K01-r10-example-1",
+                      "id": "GH-01-K01-pro-r11-example",
                       "theme": {
                         "shadow": {
                           "h": 0,
@@ -410,103 +410,58 @@
                       },
                       "elements": [
                         {
-                          "id": "GH-01-K01-r10-example-1-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-1-title",
+                          "id": "GH-01-K01-pro-r11-example-title",
                           "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">先确定范围，再检查对应</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-1-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
+                          "left": 40,
+                          "top": 30,
+                          "width": 920,
                           "height": 65,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">f(x)=x²，允许−2≤x≤2。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：多对一仍是函数，一进多出不是</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K01-r10-example-1-step-0",
+                          "id": "GH-01-K01-pro-r11-example-step-0",
                           "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 115,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 输入−2和2都得到4，输入0得到0。相同输出不违反函数要求。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">这一页用一张对照图把两种情形分开看。上面这一组：规则已经给定为 g(x)=x²，负二到二里每个输入都只有一个平方值；负二和输入二都送到同一个输出四，仍然是函数。图里只画了三个输入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K01-r10-example-1-step-1",
+                          "id": "GH-01-K01-pro-r11-example-step-1",
                           "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 240,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 每个允许输入按平方规则只有一个结果；实际输出从0到4，所以值域是[0,4]。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">下面这一组就不行了：同一个输入二同时连到三和五，这个输入的输出不唯一，所以不是函数。常函数把每个输入都送到同一个数，也仍然是一个输入一个输出。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K01-r10-example-1-step-2",
+                          "id": "GH-01-K01-pro-r11-example-step-2",
                           "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 365,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 如果把定义域换成全部实数，规则表达式没变，函数的输入范围和值域都变了。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">再看定义域和值域：g(x)=x² 的定义域是负二到二，是可以使用的输入；值域是实际取到的输出，因为平方不超过四，所以是零到四。两个集合说的不是一件事。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K01-r10-example-1-conclusion",
+                          "id": "GH-01-K01-pro-r11-example-fallback",
                           "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
+                          "left": 55,
+                          "top": 515,
+                          "width": 890,
+                          "height": 30,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">判断一个函数，必须同时看定义域和对应规则。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-1-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">输入、输出和函数规则 · 推理 1/2</p>",
-                          "defaultColor": "#59758a",
+                          "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         }
                       ],
@@ -516,160 +471,36 @@
                       },
                       "viewportSize": 1000,
                       "viewportRatio": 0.5625,
-                      "animations": []
+                      "animations": [],
+                      "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-01-K01.html"
                     },
                     "lessonId": "GH-01-K01",
-                    "kind": "worked_example",
+                    "kind": "pro_authored_worked_example",
                     "sourceRefs": [
                       "CN-TJ-1.1",
                       "CN-SC-1.1",
                       "CN-SCZ-1.1"
-                    ]
-                  },
-                  {
-                    "title": "多条公式也可以给出唯一输出",
-                    "summary": "0≤x≤1时y=x+2；1≤x≤3时y=2x+1。\n边界x=1同时适用两条公式，但两式都得到3。\n其余允许输入各适用一条规则，所以仍然是函数。\n若第二条改为y=2x+2，x=1就同时得到3和4，必须修改边界或规则。\n同一输入有几条适用公式不是关键；它们最终是否给出同一个输出才是关键。",
-                    "canvas": {
-                      "id": "GH-01-K01-r10-example-2",
-                      "theme": {
-                        "shadow": {
-                          "h": 0,
-                          "v": 0,
-                          "blur": 10,
-                          "color": "#000000"
-                        },
-                        "outline": {
-                          "color": "#d14424",
-                          "style": "solid",
-                          "width": 2
-                        },
-                        "fontName": "Microsoft YaHei",
-                        "fontColor": "#333333",
-                        "themeColors": [
-                          "#5b9bd5",
-                          "#ed7d31",
-                          "#a5a5a5",
-                          "#ffc000",
-                          "#4472c4"
-                        ],
-                        "backgroundColor": "#ffffff"
+                    ],
+                    "audioRoot": "open-maic/pro-supplements-r11",
+                    "teachingActions": [
+                      {
+                        "id": "p1-s1",
+                        "type": "speech",
+                        "text": "这一页用一张对照图把两种情形分开看。上面这一组：规则已经给定为 g(x)=x²，负二到二里每个输入都只有一个平方值；负二和输入二都送到同一个输出四，仍然是函数。图里只画了三个输入。",
+                        "audioRef": "audio/audio-1.mp3"
                       },
-                      "elements": [
-                        {
-                          "id": "GH-01-K01-r10-example-2-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-title",
-                          "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">多条公式也可以给出唯一输出</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
-                          "height": 65,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">0≤x≤1时y=x+2；1≤x≤3时y=2x+1。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-step-0",
-                          "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 边界x=1同时适用两条公式，但两式都得到3。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-step-1",
-                          "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 其余允许输入各适用一条规则，所以仍然是函数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-step-2",
-                          "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 若第二条改为y=2x+2，x=1就同时得到3和4，必须修改边界或规则。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-conclusion",
-                          "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">同一输入有几条适用公式不是关键；它们最终是否给出同一个输出才是关键。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K01-r10-example-2-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">输入、输出和函数规则 · 推理 2/2</p>",
-                          "defaultColor": "#59758a",
-                          "defaultFontName": "Microsoft YaHei"
-                        }
-                      ],
-                      "background": {
-                        "type": "solid",
-                        "color": "#ffffff"
+                      {
+                        "id": "p1-s2",
+                        "type": "speech",
+                        "text": "下面这一组就不行了：同一个输入二同时连到三和五，这个输入的输出不唯一，所以不是函数。常函数把每个输入都送到同一个数，也仍然是一个输入一个输出。",
+                        "audioRef": "audio/audio-2.mp3"
                       },
-                      "viewportSize": 1000,
-                      "viewportRatio": 0.5625,
-                      "animations": []
-                    },
-                    "lessonId": "GH-01-K01",
-                    "kind": "worked_example",
-                    "sourceRefs": [
-                      "CN-TJ-1.1",
-                      "CN-SC-1.1",
-                      "CN-SCZ-1.1"
+                      {
+                        "id": "p1-s3",
+                        "type": "speech",
+                        "text": "再看定义域和值域：g(x)=x² 的定义域是负二到二，是可以使用的输入；值域是实际取到的输出，因为平方不超过四，所以是零到四。两个集合说的不是一件事。",
+                        "audioRef": "audio/audio-3.mp3"
+                      }
                     ]
                   }
                 ],
@@ -970,7 +801,7 @@
                     "animations": []
                   },
                   {
-                    "id": "GH-01-K01-r10-example-1",
+                    "id": "GH-01-K01-pro-r11-example",
                     "theme": {
                       "shadow": {
                         "h": 0,
@@ -996,103 +827,58 @@
                     },
                     "elements": [
                       {
-                        "id": "GH-01-K01-r10-example-1-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-1-title",
+                        "id": "GH-01-K01-pro-r11-example-title",
                         "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">先确定范围，再检查对应</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-1-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
+                        "left": 40,
+                        "top": 30,
+                        "width": 920,
                         "height": 65,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">f(x)=x²，允许−2≤x≤2。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：多对一仍是函数，一进多出不是</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K01-r10-example-1-step-0",
+                        "id": "GH-01-K01-pro-r11-example-step-0",
                         "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 115,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 输入−2和2都得到4，输入0得到0。相同输出不违反函数要求。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">这一页用一张对照图把两种情形分开看。上面这一组：规则已经给定为 g(x)=x²，负二到二里每个输入都只有一个平方值；负二和输入二都送到同一个输出四，仍然是函数。图里只画了三个输入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K01-r10-example-1-step-1",
+                        "id": "GH-01-K01-pro-r11-example-step-1",
                         "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 240,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 每个允许输入按平方规则只有一个结果；实际输出从0到4，所以值域是[0,4]。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">下面这一组就不行了：同一个输入二同时连到三和五，这个输入的输出不唯一，所以不是函数。常函数把每个输入都送到同一个数，也仍然是一个输入一个输出。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K01-r10-example-1-step-2",
+                        "id": "GH-01-K01-pro-r11-example-step-2",
                         "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 365,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 如果把定义域换成全部实数，规则表达式没变，函数的输入范围和值域都变了。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">再看定义域和值域：g(x)=x² 的定义域是负二到二，是可以使用的输入；值域是实际取到的输出，因为平方不超过四，所以是零到四。两个集合说的不是一件事。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K01-r10-example-1-conclusion",
+                        "id": "GH-01-K01-pro-r11-example-fallback",
                         "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
+                        "left": 55,
+                        "top": 515,
+                        "width": 890,
+                        "height": 30,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">判断一个函数，必须同时看定义域和对应规则。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-1-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">输入、输出和函数规则 · 推理 1/2</p>",
-                        "defaultColor": "#59758a",
+                        "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       }
                     ],
@@ -1102,145 +888,11 @@
                     },
                     "viewportSize": 1000,
                     "viewportRatio": 0.5625,
-                    "animations": []
-                  },
-                  {
-                    "id": "GH-01-K01-r10-example-2",
-                    "theme": {
-                      "shadow": {
-                        "h": 0,
-                        "v": 0,
-                        "blur": 10,
-                        "color": "#000000"
-                      },
-                      "outline": {
-                        "color": "#d14424",
-                        "style": "solid",
-                        "width": 2
-                      },
-                      "fontName": "Microsoft YaHei",
-                      "fontColor": "#333333",
-                      "themeColors": [
-                        "#5b9bd5",
-                        "#ed7d31",
-                        "#a5a5a5",
-                        "#ffc000",
-                        "#4472c4"
-                      ],
-                      "backgroundColor": "#ffffff"
-                    },
-                    "elements": [
-                      {
-                        "id": "GH-01-K01-r10-example-2-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-title",
-                        "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">多条公式也可以给出唯一输出</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
-                        "height": 65,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">0≤x≤1时y=x+2；1≤x≤3时y=2x+1。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-step-0",
-                        "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 边界x=1同时适用两条公式，但两式都得到3。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-step-1",
-                        "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 其余允许输入各适用一条规则，所以仍然是函数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-step-2",
-                        "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 若第二条改为y=2x+2，x=1就同时得到3和4，必须修改边界或规则。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-conclusion",
-                        "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">同一输入有几条适用公式不是关键；它们最终是否给出同一个输出才是关键。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K01-r10-example-2-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">输入、输出和函数规则 · 推理 2/2</p>",
-                        "defaultColor": "#59758a",
-                        "defaultFontName": "Microsoft YaHei"
-                      }
-                    ],
-                    "background": {
-                      "type": "solid",
-                      "color": "#ffffff"
-                    },
-                    "viewportSize": 1000,
-                    "viewportRatio": 0.5625,
-                    "animations": []
+                    "animations": [],
+                    "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-01-K01.html"
                   }
                 ],
-                "lectureVersion": "functions-limits-lessons-r10-v1"
+                "lectureVersion": "openmaic-pro-lessons-r11"
               },
               "resourceCandidates": [
                 {
@@ -2806,10 +2458,10 @@
                 },
                 "lecturePages": [
                   {
-                    "title": "化简没有给原式补一个点",
-                    "summary": "g(x)=(x²−9)/(x−3)，定义域为x≠3。\n先因式分解：x²−9=(x−3)(x+3)。\n仅在x≠3时约去x−3，得到g(x)=x+3。\n原函数在x=3处仍无定义；图像是直线y=x+3去掉(3,6)，这里画空心点。\n“附近公式相同”不等于“原函数在所有输入上都相同”。",
+                    "title": "对照：点(2,5)在图上，(2,4)不在",
+                    "summary": "规则是 y 等于 2x 加一。判断点在不在图像上，只看纵坐标是不是规则在这一处的输出。代入二，二乘二加一等于五，所以点二五在图像上。\n点二四不满足：横坐标是二时，规则给的是五，不是四，所以它不在图像上。图上过横坐标二的垂线，与图像只交于二五这一点。\n还要注意：有限个点不能唯一确定函数。把三个输入读清楚：输入零、一、二。规则 2x 加一，与 2x 加一再加上 x 乘以括号 x 减一、再乘以括号 x 减二，在这三个输入上都给出 1、3、5，取值完全相同；其余位置可能不同，所以点只提供线索。",
                     "canvas": {
-                      "id": "GH-01-K02-r10-example-1",
+                      "id": "GH-01-K02-pro-r11-example",
                       "theme": {
                         "shadow": {
                           "h": 0,
@@ -2835,103 +2487,58 @@
                       },
                       "elements": [
                         {
-                          "id": "GH-01-K02-r10-example-1-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-1-title",
+                          "id": "GH-01-K02-pro-r11-example-title",
                           "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">化简没有给原式补一个点</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-1-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
+                          "left": 40,
+                          "top": 30,
+                          "width": 920,
                           "height": 65,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">g(x)=(x²−9)/(x−3)，定义域为x≠3。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：点(2,5)在图上，(2,4)不在</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K02-r10-example-1-step-0",
+                          "id": "GH-01-K02-pro-r11-example-step-0",
                           "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 115,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 先因式分解：x²−9=(x−3)(x+3)。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">规则是 y 等于 2x 加一。判断点在不在图像上，只看纵坐标是不是规则在这一处的输出。代入二，二乘二加一等于五，所以点二五在图像上。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K02-r10-example-1-step-1",
+                          "id": "GH-01-K02-pro-r11-example-step-1",
                           "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 240,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 仅在x≠3时约去x−3，得到g(x)=x+3。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">点二四不满足：横坐标是二时，规则给的是五，不是四，所以它不在图像上。图上过横坐标二的垂线，与图像只交于二五这一点。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K02-r10-example-1-step-2",
+                          "id": "GH-01-K02-pro-r11-example-step-2",
                           "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 365,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 原函数在x=3处仍无定义；图像是直线y=x+3去掉(3,6)，这里画空心点。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">还要注意：有限个点不能唯一确定函数。把三个输入读清楚：输入零、一、二。规则 2x 加一，与 2x 加一再加上 x 乘以括号 x 减一、再乘以括号 x 减二，在这三个输入上都给出 1、3、5，取值完全相同；其余位置可能不同，所以点只提供线索。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K02-r10-example-1-conclusion",
+                          "id": "GH-01-K02-pro-r11-example-fallback",
                           "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
+                          "left": 55,
+                          "top": 515,
+                          "width": 890,
+                          "height": 30,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">“附近公式相同”不等于“原函数在所有输入上都相同”。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-1-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">坐标点与函数图像 · 推理 1/2</p>",
-                          "defaultColor": "#59758a",
+                          "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         }
                       ],
@@ -2941,160 +2548,36 @@
                       },
                       "viewportSize": 1000,
                       "viewportRatio": 0.5625,
-                      "animations": []
+                      "animations": [],
+                      "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-01-K02.html"
                     },
                     "lessonId": "GH-01-K02",
-                    "kind": "worked_example",
+                    "kind": "pro_authored_worked_example",
                     "sourceRefs": [
                       "CN-TJ-1.1",
                       "CN-SC-1.1",
                       "CN-SCZ-1.1"
-                    ]
-                  },
-                  {
-                    "title": "限制定义域、补点与单独赋值",
-                    "summary": "对比q(x)=x+3（全实数）与原g；原g在3处无定义。\n原g与q在x≠3处同值，但定义域不同，所以不是同一个函数。\n把q限制为x≠3，或把g补成g(3)=6，都能让两者成为同一个函数。\n另设h在3处取1、其他位置按x+3计算，应在(3,6)画空点，在(3,1)画实点。\n补点后画哪一个实心点，以新定义为准；化简本身不负责补点。",
-                    "canvas": {
-                      "id": "GH-01-K02-r10-example-2",
-                      "theme": {
-                        "shadow": {
-                          "h": 0,
-                          "v": 0,
-                          "blur": 10,
-                          "color": "#000000"
-                        },
-                        "outline": {
-                          "color": "#d14424",
-                          "style": "solid",
-                          "width": 2
-                        },
-                        "fontName": "Microsoft YaHei",
-                        "fontColor": "#333333",
-                        "themeColors": [
-                          "#5b9bd5",
-                          "#ed7d31",
-                          "#a5a5a5",
-                          "#ffc000",
-                          "#4472c4"
-                        ],
-                        "backgroundColor": "#ffffff"
+                    ],
+                    "audioRoot": "open-maic/pro-supplements-r11",
+                    "teachingActions": [
+                      {
+                        "id": "p2-s1",
+                        "type": "speech",
+                        "text": "规则是 y 等于 2x 加一。判断点在不在图像上，只看纵坐标是不是规则在这一处的输出。代入二，二乘二加一等于五，所以点二五在图像上。",
+                        "audioRef": "audio/audio-4.mp3"
                       },
-                      "elements": [
-                        {
-                          "id": "GH-01-K02-r10-example-2-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-title",
-                          "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">限制定义域、补点与单独赋值</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
-                          "height": 65,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">对比q(x)=x+3（全实数）与原g；原g在3处无定义。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-step-0",
-                          "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 原g与q在x≠3处同值，但定义域不同，所以不是同一个函数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-step-1",
-                          "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 把q限制为x≠3，或把g补成g(3)=6，都能让两者成为同一个函数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-step-2",
-                          "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 另设h在3处取1、其他位置按x+3计算，应在(3,6)画空点，在(3,1)画实点。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-conclusion",
-                          "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">补点后画哪一个实心点，以新定义为准；化简本身不负责补点。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K02-r10-example-2-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">坐标点与函数图像 · 推理 2/2</p>",
-                          "defaultColor": "#59758a",
-                          "defaultFontName": "Microsoft YaHei"
-                        }
-                      ],
-                      "background": {
-                        "type": "solid",
-                        "color": "#ffffff"
+                      {
+                        "id": "p2-s2",
+                        "type": "speech",
+                        "text": "点二四不满足：横坐标是二时，规则给的是五，不是四，所以它不在图像上。图上过横坐标二的垂线，与图像只交于二五这一点。",
+                        "audioRef": "audio/audio-5.mp3"
                       },
-                      "viewportSize": 1000,
-                      "viewportRatio": 0.5625,
-                      "animations": []
-                    },
-                    "lessonId": "GH-01-K02",
-                    "kind": "worked_example",
-                    "sourceRefs": [
-                      "CN-TJ-1.1",
-                      "CN-SC-1.1",
-                      "CN-SCZ-1.1"
+                      {
+                        "id": "p2-s3",
+                        "type": "speech",
+                        "text": "还要注意：有限个点不能唯一确定函数。把三个输入读清楚：输入零、一、二。规则 2x 加一，与 2x 加一再加上 x 乘以括号 x 减一、再乘以括号 x 减二，在这三个输入上都给出 1、3、5，取值完全相同；其余位置可能不同，所以点只提供线索。",
+                        "audioRef": "audio/audio-6.mp3"
+                      }
                     ]
                   }
                 ],
@@ -4199,7 +3682,7 @@
                     "animations": []
                   },
                   {
-                    "id": "GH-01-K02-r10-example-1",
+                    "id": "GH-01-K02-pro-r11-example",
                     "theme": {
                       "shadow": {
                         "h": 0,
@@ -4225,103 +3708,58 @@
                     },
                     "elements": [
                       {
-                        "id": "GH-01-K02-r10-example-1-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-1-title",
+                        "id": "GH-01-K02-pro-r11-example-title",
                         "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">化简没有给原式补一个点</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-1-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
+                        "left": 40,
+                        "top": 30,
+                        "width": 920,
                         "height": 65,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">g(x)=(x²−9)/(x−3)，定义域为x≠3。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：点(2,5)在图上，(2,4)不在</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K02-r10-example-1-step-0",
+                        "id": "GH-01-K02-pro-r11-example-step-0",
                         "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 115,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 先因式分解：x²−9=(x−3)(x+3)。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">规则是 y 等于 2x 加一。判断点在不在图像上，只看纵坐标是不是规则在这一处的输出。代入二，二乘二加一等于五，所以点二五在图像上。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K02-r10-example-1-step-1",
+                        "id": "GH-01-K02-pro-r11-example-step-1",
                         "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 240,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 仅在x≠3时约去x−3，得到g(x)=x+3。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">点二四不满足：横坐标是二时，规则给的是五，不是四，所以它不在图像上。图上过横坐标二的垂线，与图像只交于二五这一点。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K02-r10-example-1-step-2",
+                        "id": "GH-01-K02-pro-r11-example-step-2",
                         "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 365,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 原函数在x=3处仍无定义；图像是直线y=x+3去掉(3,6)，这里画空心点。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">还要注意：有限个点不能唯一确定函数。把三个输入读清楚：输入零、一、二。规则 2x 加一，与 2x 加一再加上 x 乘以括号 x 减一、再乘以括号 x 减二，在这三个输入上都给出 1、3、5，取值完全相同；其余位置可能不同，所以点只提供线索。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K02-r10-example-1-conclusion",
+                        "id": "GH-01-K02-pro-r11-example-fallback",
                         "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
+                        "left": 55,
+                        "top": 515,
+                        "width": 890,
+                        "height": 30,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">“附近公式相同”不等于“原函数在所有输入上都相同”。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-1-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">坐标点与函数图像 · 推理 1/2</p>",
-                        "defaultColor": "#59758a",
+                        "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       }
                     ],
@@ -4331,145 +3769,11 @@
                     },
                     "viewportSize": 1000,
                     "viewportRatio": 0.5625,
-                    "animations": []
-                  },
-                  {
-                    "id": "GH-01-K02-r10-example-2",
-                    "theme": {
-                      "shadow": {
-                        "h": 0,
-                        "v": 0,
-                        "blur": 10,
-                        "color": "#000000"
-                      },
-                      "outline": {
-                        "color": "#d14424",
-                        "style": "solid",
-                        "width": 2
-                      },
-                      "fontName": "Microsoft YaHei",
-                      "fontColor": "#333333",
-                      "themeColors": [
-                        "#5b9bd5",
-                        "#ed7d31",
-                        "#a5a5a5",
-                        "#ffc000",
-                        "#4472c4"
-                      ],
-                      "backgroundColor": "#ffffff"
-                    },
-                    "elements": [
-                      {
-                        "id": "GH-01-K02-r10-example-2-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-title",
-                        "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">限制定义域、补点与单独赋值</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
-                        "height": 65,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">对比q(x)=x+3（全实数）与原g；原g在3处无定义。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-step-0",
-                        "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 原g与q在x≠3处同值，但定义域不同，所以不是同一个函数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-step-1",
-                        "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 把q限制为x≠3，或把g补成g(3)=6，都能让两者成为同一个函数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-step-2",
-                        "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 另设h在3处取1、其他位置按x+3计算，应在(3,6)画空点，在(3,1)画实点。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-conclusion",
-                        "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">补点后画哪一个实心点，以新定义为准；化简本身不负责补点。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K02-r10-example-2-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">坐标点与函数图像 · 推理 2/2</p>",
-                        "defaultColor": "#59758a",
-                        "defaultFontName": "Microsoft YaHei"
-                      }
-                    ],
-                    "background": {
-                      "type": "solid",
-                      "color": "#ffffff"
-                    },
-                    "viewportSize": 1000,
-                    "viewportRatio": 0.5625,
-                    "animations": []
+                    "animations": [],
+                    "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-01-K02.html"
                   }
                 ],
-                "lectureVersion": "functions-limits-lessons-r10-v1"
+                "lectureVersion": "openmaic-pro-lessons-r11"
               },
               "resourceCandidates": [
                 {
@@ -5223,10 +4527,10 @@
                 },
                 "lecturePages": [
                   {
-                    "title": "负输出也可以先增大再减小",
-                    "summary": "输入0、1、2的输出依次为−4、−1、−3。\n从输入0到1：−4<−1，样本输出增大。\n从输入1到2：−1>−3，样本输出减小。\n三个输出都是负数，但两次变化方向不同。\n要看输出之间的大小关系，不是只看它们是正数还是负数。",
+                    "title": "对照：三点递增，区间里仍有下降",
+                    "summary": "这条直线上取了三个采样点，横坐标零、二、四，输出一、三、五，逐个变大。只看这三个点，很像一路上升。\n但另一条曲线，等于 x 加一，再加零点八倍的正弦项，它同样经过这三个点，却在零点八到一点二之间下降。采样只记录了这三处的输出，没有记录中间的走向。\n严格上升要求区间里任意两个输入：x₁ 小于 x₂ 时，f(x₁) 必须小于 f(x₂)。图上 x 从零点八到一点二，输出从约二点二七零二降到约一点七二九八，一个反例就否定了整段上升。连续只保证图像不断开，推不出方向。",
                     "canvas": {
-                      "id": "GH-01-K03-r10-example-1",
+                      "id": "GH-01-K03-pro-r11-example",
                       "theme": {
                         "shadow": {
                           "h": 0,
@@ -5252,103 +4556,58 @@
                       },
                       "elements": [
                         {
-                          "id": "GH-01-K03-r10-example-1-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-1-title",
+                          "id": "GH-01-K03-pro-r11-example-title",
                           "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">负输出也可以先增大再减小</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-1-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
+                          "left": 40,
+                          "top": 30,
+                          "width": 920,
                           "height": 65,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">输入0、1、2的输出依次为−4、−1、−3。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：三点递增，区间里仍有下降</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K03-r10-example-1-step-0",
+                          "id": "GH-01-K03-pro-r11-example-step-0",
                           "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 115,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 从输入0到1：−4&lt;−1，样本输出增大。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">这条直线上取了三个采样点，横坐标零、二、四，输出一、三、五，逐个变大。只看这三个点，很像一路上升。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K03-r10-example-1-step-1",
+                          "id": "GH-01-K03-pro-r11-example-step-1",
                           "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 240,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 从输入1到2：−1&gt;−3，样本输出减小。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">但另一条曲线，等于 x 加一，再加零点八倍的正弦项，它同样经过这三个点，却在零点八到一点二之间下降。采样只记录了这三处的输出，没有记录中间的走向。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K03-r10-example-1-step-2",
+                          "id": "GH-01-K03-pro-r11-example-step-2",
                           "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 365,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 三个输出都是负数，但两次变化方向不同。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">严格上升要求区间里任意两个输入：x₁ 小于 x₂ 时，f(x₁) 必须小于 f(x₂)。图上 x 从零点八到一点二，输出从约二点二七零二降到约一点七二九八，一个反例就否定了整段上升。连续只保证图像不断开，推不出方向。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-01-K03-r10-example-1-conclusion",
+                          "id": "GH-01-K03-pro-r11-example-fallback",
                           "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
+                          "left": 55,
+                          "top": 515,
+                          "width": 890,
+                          "height": 30,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">要看输出之间的大小关系，不是只看它们是正数还是负数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-1-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像的上升、下降与变化方向 · 推理 1/2</p>",
-                          "defaultColor": "#59758a",
+                          "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         }
                       ],
@@ -5358,160 +4617,36 @@
                       },
                       "viewportSize": 1000,
                       "viewportRatio": 0.5625,
-                      "animations": []
+                      "animations": [],
+                      "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-01-K03.html"
                     },
                     "lessonId": "GH-01-K03",
-                    "kind": "worked_example",
+                    "kind": "pro_authored_worked_example",
                     "sourceRefs": [
                       "CN-TJ-1.1",
                       "CN-SC-1.1",
                       "CN-SCZ-1.2"
-                    ]
-                  },
-                  {
-                    "title": "一个反例能说明多少",
-                    "summary": "有人断言f(x)=x²在[−3,3]上严格上升。\n取x₁=−2、x₂=−1，满足x₁<x₂。\nf(−2)=4，而f(−1)=1；较大输入反而对应较小输出。\n这一对已否定“整个区间严格上升”，但没有证明整个区间下降；0右侧的平方值仍在增大。\n反驳全称判断只需一个有效反例；证明全称判断需要覆盖整个区间的依据。",
-                    "canvas": {
-                      "id": "GH-01-K03-r10-example-2",
-                      "theme": {
-                        "shadow": {
-                          "h": 0,
-                          "v": 0,
-                          "blur": 10,
-                          "color": "#000000"
-                        },
-                        "outline": {
-                          "color": "#d14424",
-                          "style": "solid",
-                          "width": 2
-                        },
-                        "fontName": "Microsoft YaHei",
-                        "fontColor": "#333333",
-                        "themeColors": [
-                          "#5b9bd5",
-                          "#ed7d31",
-                          "#a5a5a5",
-                          "#ffc000",
-                          "#4472c4"
-                        ],
-                        "backgroundColor": "#ffffff"
+                    ],
+                    "audioRoot": "open-maic/pro-supplements-r11",
+                    "teachingActions": [
+                      {
+                        "id": "p3-s1",
+                        "type": "speech",
+                        "text": "这条直线上取了三个采样点，横坐标零、二、四，输出一、三、五，逐个变大。只看这三个点，很像一路上升。",
+                        "audioRef": "audio/audio-7.mp3"
                       },
-                      "elements": [
-                        {
-                          "id": "GH-01-K03-r10-example-2-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-title",
-                          "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">一个反例能说明多少</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
-                          "height": 65,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">有人断言f(x)=x²在[−3,3]上严格上升。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-step-0",
-                          "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 取x₁=−2、x₂=−1，满足x₁&lt;x₂。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-step-1",
-                          "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. f(−2)=4，而f(−1)=1；较大输入反而对应较小输出。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-step-2",
-                          "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 这一对已否定“整个区间严格上升”，但没有证明整个区间下降；0右侧的平方值仍在增大。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-conclusion",
-                          "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">反驳全称判断只需一个有效反例；证明全称判断需要覆盖整个区间的依据。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-01-K03-r10-example-2-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像的上升、下降与变化方向 · 推理 2/2</p>",
-                          "defaultColor": "#59758a",
-                          "defaultFontName": "Microsoft YaHei"
-                        }
-                      ],
-                      "background": {
-                        "type": "solid",
-                        "color": "#ffffff"
+                      {
+                        "id": "p3-s2",
+                        "type": "speech",
+                        "text": "但另一条曲线，等于 x 加一，再加零点八倍的正弦项，它同样经过这三个点，却在零点八到一点二之间下降。采样只记录了这三处的输出，没有记录中间的走向。",
+                        "audioRef": "audio/audio-8.mp3"
                       },
-                      "viewportSize": 1000,
-                      "viewportRatio": 0.5625,
-                      "animations": []
-                    },
-                    "lessonId": "GH-01-K03",
-                    "kind": "worked_example",
-                    "sourceRefs": [
-                      "CN-TJ-1.1",
-                      "CN-SC-1.1",
-                      "CN-SCZ-1.2"
+                      {
+                        "id": "p3-s3",
+                        "type": "speech",
+                        "text": "严格上升要求区间里任意两个输入：x₁ 小于 x₂ 时，f(x₁) 必须小于 f(x₂)。图上 x 从零点八到一点二，输出从约二点二七零二降到约一点七二九八，一个反例就否定了整段上升。连续只保证图像不断开，推不出方向。",
+                        "audioRef": "audio/audio-9.mp3"
+                      }
                     ]
                   }
                 ],
@@ -5798,7 +4933,7 @@
                     "animations": []
                   },
                   {
-                    "id": "GH-01-K03-r10-example-1",
+                    "id": "GH-01-K03-pro-r11-example",
                     "theme": {
                       "shadow": {
                         "h": 0,
@@ -5824,103 +4959,58 @@
                     },
                     "elements": [
                       {
-                        "id": "GH-01-K03-r10-example-1-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-1-title",
+                        "id": "GH-01-K03-pro-r11-example-title",
                         "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">负输出也可以先增大再减小</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-1-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
+                        "left": 40,
+                        "top": 30,
+                        "width": 920,
                         "height": 65,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">输入0、1、2的输出依次为−4、−1、−3。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：三点递增，区间里仍有下降</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K03-r10-example-1-step-0",
+                        "id": "GH-01-K03-pro-r11-example-step-0",
                         "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 115,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 从输入0到1：−4&lt;−1，样本输出增大。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">这条直线上取了三个采样点，横坐标零、二、四，输出一、三、五，逐个变大。只看这三个点，很像一路上升。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K03-r10-example-1-step-1",
+                        "id": "GH-01-K03-pro-r11-example-step-1",
                         "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 240,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 从输入1到2：−1&gt;−3，样本输出减小。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">但另一条曲线，等于 x 加一，再加零点八倍的正弦项，它同样经过这三个点，却在零点八到一点二之间下降。采样只记录了这三处的输出，没有记录中间的走向。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K03-r10-example-1-step-2",
+                        "id": "GH-01-K03-pro-r11-example-step-2",
                         "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 365,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 三个输出都是负数，但两次变化方向不同。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">严格上升要求区间里任意两个输入：x₁ 小于 x₂ 时，f(x₁) 必须小于 f(x₂)。图上 x 从零点八到一点二，输出从约二点二七零二降到约一点七二九八，一个反例就否定了整段上升。连续只保证图像不断开，推不出方向。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-01-K03-r10-example-1-conclusion",
+                        "id": "GH-01-K03-pro-r11-example-fallback",
                         "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
+                        "left": 55,
+                        "top": 515,
+                        "width": 890,
+                        "height": 30,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">要看输出之间的大小关系，不是只看它们是正数还是负数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-1-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像的上升、下降与变化方向 · 推理 1/2</p>",
-                        "defaultColor": "#59758a",
+                        "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       }
                     ],
@@ -5930,145 +5020,11 @@
                     },
                     "viewportSize": 1000,
                     "viewportRatio": 0.5625,
-                    "animations": []
-                  },
-                  {
-                    "id": "GH-01-K03-r10-example-2",
-                    "theme": {
-                      "shadow": {
-                        "h": 0,
-                        "v": 0,
-                        "blur": 10,
-                        "color": "#000000"
-                      },
-                      "outline": {
-                        "color": "#d14424",
-                        "style": "solid",
-                        "width": 2
-                      },
-                      "fontName": "Microsoft YaHei",
-                      "fontColor": "#333333",
-                      "themeColors": [
-                        "#5b9bd5",
-                        "#ed7d31",
-                        "#a5a5a5",
-                        "#ffc000",
-                        "#4472c4"
-                      ],
-                      "backgroundColor": "#ffffff"
-                    },
-                    "elements": [
-                      {
-                        "id": "GH-01-K03-r10-example-2-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-title",
-                        "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">一个反例能说明多少</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
-                        "height": 65,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">有人断言f(x)=x²在[−3,3]上严格上升。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-step-0",
-                        "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 取x₁=−2、x₂=−1，满足x₁&lt;x₂。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-step-1",
-                        "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. f(−2)=4，而f(−1)=1；较大输入反而对应较小输出。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-step-2",
-                        "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 这一对已否定“整个区间严格上升”，但没有证明整个区间下降；0右侧的平方值仍在增大。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-conclusion",
-                        "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">反驳全称判断只需一个有效反例；证明全称判断需要覆盖整个区间的依据。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-01-K03-r10-example-2-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像的上升、下降与变化方向 · 推理 2/2</p>",
-                        "defaultColor": "#59758a",
-                        "defaultFontName": "Microsoft YaHei"
-                      }
-                    ],
-                    "background": {
-                      "type": "solid",
-                      "color": "#ffffff"
-                    },
-                    "viewportSize": 1000,
-                    "viewportRatio": 0.5625,
-                    "animations": []
+                    "animations": [],
+                    "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-01-K03.html"
                   }
                 ],
-                "lectureVersion": "functions-limits-lessons-r10-v1"
+                "lectureVersion": "openmaic-pro-lessons-r11"
               },
               "resourceCandidates": [
                 {
@@ -7415,10 +6371,10 @@
                 },
                 "lecturePages": [
                   {
-                    "title": "从倍率1到倍率3",
-                    "summary": "x≠2时g(x)=3x+1，另设g(2)=0。要求附近输出与7的距离小于0.3。\n附近规则给出L=7；点值g(2)=0另看。\n|g(x)−7|=|3x+1−7|=3|x−2|：输出误差是输入误差的3倍。\n取0<|x−2|<0.1，就有|g(x)−7|<0.3。取更小的正半径也有效，不必取最大半径。\n本例应将允许的输出误差除以3；不能照搬倍率1时“输入误差等于输出误差”的数值。",
+                    "title": "对照：用数表看趋近，再用距离保证",
+                    "summary": "先看数表。x 从左侧取零点九、零点九九、零点九九九，输出是一点九、一点九九、一点九九九；从右侧取一点一、一点零一，输出二点一、二点零一。两侧都靠近二，而 x 等于一这一处没有定义。\n数表只是线索。把式子改写：x 不等于一时，分子是 x 平方减一，分母是 x 减一，整个分式等于 x 加一；于是输出与二的距离，正好等于输入与一的距离。要求输出误差小于零点零一，只要让输入满足零小于 x 减一的绝对值小于零点零一。\n换一条规则：f(x) 等于二加三倍的 x 减一，输出与二的距离是输入距离的三倍。同样零点零一的误差要求，输入就要满足零小于 x 减一的绝对值小于零点零一除以三；这个界约等于零点零零三三，取更小的窗口也足够。所以靠近的保证来自距离关系，不是表里那几行数。",
                     "canvas": {
-                      "id": "GH-02-K01-r10-example-1",
+                      "id": "GH-02-K01-pro-r11-example",
                       "viewportSize": 1000,
                       "viewportRatio": 0.5625,
                       "theme": {
@@ -7446,103 +6402,58 @@
                       },
                       "elements": [
                         {
-                          "id": "GH-02-K01-r10-example-1-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-1-title",
+                          "id": "GH-02-K01-pro-r11-example-title",
                           "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">从倍率1到倍率3</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-1-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
+                          "left": 40,
+                          "top": 30,
+                          "width": 920,
                           "height": 65,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">x≠2时g(x)=3x+1，另设g(2)=0。要求附近输出与7的距离小于0.3。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：用数表看趋近，再用距离保证</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K01-r10-example-1-step-0",
+                          "id": "GH-02-K01-pro-r11-example-step-0",
                           "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 115,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 附近规则给出L=7；点值g(2)=0另看。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">先看数表。x 从左侧取零点九、零点九九、零点九九九，输出是一点九、一点九九、一点九九九；从右侧取一点一、一点零一，输出二点一、二点零一。两侧都靠近二，而 x 等于一这一处没有定义。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K01-r10-example-1-step-1",
+                          "id": "GH-02-K01-pro-r11-example-step-1",
                           "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 240,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. |g(x)−7|=|3x+1−7|=3|x−2|：输出误差是输入误差的3倍。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">数表只是线索。把式子改写：x 不等于一时，分子是 x 平方减一，分母是 x 减一，整个分式等于 x 加一；于是输出与二的距离，正好等于输入与一的距离。要求输出误差小于零点零一，只要让输入满足零小于 x 减一的绝对值小于零点零一。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K01-r10-example-1-step-2",
+                          "id": "GH-02-K01-pro-r11-example-step-2",
                           "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 365,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 取0&lt;|x−2|&lt;0.1，就有|g(x)−7|&lt;0.3。取更小的正半径也有效，不必取最大半径。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">换一条规则：f(x) 等于二加三倍的 x 减一，输出与二的距离是输入距离的三倍。同样零点零一的误差要求，输入就要满足零小于 x 减一的绝对值小于零点零一除以三；这个界约等于零点零零三三，取更小的窗口也足够。所以靠近的保证来自距离关系，不是表里那几行数。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K01-r10-example-1-conclusion",
+                          "id": "GH-02-K01-pro-r11-example-fallback",
                           "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
+                          "left": 55,
+                          "top": 515,
+                          "width": 890,
+                          "height": 30,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">本例应将允许的输出误差除以3；不能照搬倍率1时“输入误差等于输出误差”的数值。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-1-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">从数表观察趋近 · 推理 1/2</p>",
-                          "defaultColor": "#59758a",
+                          "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         }
                       ],
@@ -7550,164 +6461,38 @@
                         "type": "solid",
                         "color": "#ffffff"
                       },
-                      "animations": []
+                      "animations": [],
+                      "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-02-K01.html"
                     },
                     "lessonId": "GH-02-K01",
-                    "kind": "worked_example",
+                    "kind": "pro_authored_worked_example",
                     "sourceRefs": [
                       "CN-TJ-1.3",
                       "CN-TJ-1.5",
                       "CN-SC-1.3",
                       "OS-2.5",
                       "GOOGLE-LOSS"
-                    ]
-                  },
-                  {
-                    "title": "“足够近”需要保证所有输入",
-                    "summary": "用ε表示给定的正输出误差，用δ表示待选的正输入范围半径。\n先给ε>0，再根据规则选择δ>0；不是先固定一批测试点。\n若附近f(x)=k(x−a)+L且k≠0，取0<δ≤ε/|k|，就能保证0<|x−a|<δ时，|f(x)−L|<ε。\nk=0时附近输出恒为L，误差为0；任何仍落在该规则适用邻域内的正δ都有效。\n一次试点合格不是范围保证。这里的线性公式为邻域内全部允许输入提供了依据。",
-                    "canvas": {
-                      "id": "GH-02-K01-r10-example-2",
-                      "viewportSize": 1000,
-                      "viewportRatio": 0.5625,
-                      "theme": {
-                        "backgroundColor": "#ffffff",
-                        "themeColors": [
-                          "#5b9bd5",
-                          "#ed7d31",
-                          "#a5a5a5",
-                          "#ffc000",
-                          "#4472c4"
-                        ],
-                        "fontColor": "#333333",
-                        "fontName": "Microsoft YaHei",
-                        "outline": {
-                          "color": "#d14424",
-                          "width": 2,
-                          "style": "solid"
-                        },
-                        "shadow": {
-                          "h": 0,
-                          "v": 0,
-                          "blur": 10,
-                          "color": "#000000"
-                        }
+                    ],
+                    "audioRoot": "open-maic/pro-supplements-r11",
+                    "teachingActions": [
+                      {
+                        "id": "p4-s1",
+                        "type": "speech",
+                        "text": "先看数表。x 从左侧取零点九、零点九九、零点九九九，输出是一点九、一点九九、一点九九九；从右侧取一点一、一点零一，输出二点一、二点零一。两侧都靠近二，而 x 等于一这一处没有定义。",
+                        "audioRef": "audio/audio-10.mp3"
                       },
-                      "elements": [
-                        {
-                          "id": "GH-02-K01-r10-example-2-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-title",
-                          "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">“足够近”需要保证所有输入</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
-                          "height": 65,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">用ε表示给定的正输出误差，用δ表示待选的正输入范围半径。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-step-0",
-                          "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 先给ε&gt;0，再根据规则选择δ&gt;0；不是先固定一批测试点。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-step-1",
-                          "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 若附近f(x)=k(x−a)+L且k≠0，取0&lt;δ≤ε/|k|，就能保证0&lt;|x−a|&lt;δ时，|f(x)−L|&lt;ε。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-step-2",
-                          "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. k=0时附近输出恒为L，误差为0；任何仍落在该规则适用邻域内的正δ都有效。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-conclusion",
-                          "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">一次试点合格不是范围保证。这里的线性公式为邻域内全部允许输入提供了依据。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K01-r10-example-2-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">从数表观察趋近 · 推理 2/2</p>",
-                          "defaultColor": "#59758a",
-                          "defaultFontName": "Microsoft YaHei"
-                        }
-                      ],
-                      "background": {
-                        "type": "solid",
-                        "color": "#ffffff"
+                      {
+                        "id": "p4-s2",
+                        "type": "speech",
+                        "text": "数表只是线索。把式子改写：x 不等于一时，分子是 x 平方减一，分母是 x 减一，整个分式等于 x 加一；于是输出与二的距离，正好等于输入与一的距离。要求输出误差小于零点零一，只要让输入满足零小于 x 减一的绝对值小于零点零一。",
+                        "audioRef": "audio/audio-11.mp3"
                       },
-                      "animations": []
-                    },
-                    "lessonId": "GH-02-K01",
-                    "kind": "worked_example",
-                    "sourceRefs": [
-                      "CN-TJ-1.3",
-                      "CN-TJ-1.5",
-                      "CN-SC-1.3",
-                      "OS-2.5",
-                      "GOOGLE-LOSS"
+                      {
+                        "id": "p4-s3",
+                        "type": "speech",
+                        "text": "换一条规则：f(x) 等于二加三倍的 x 减一，输出与二的距离是输入距离的三倍。同样零点零一的误差要求，输入就要满足零小于 x 减一的绝对值小于零点零一除以三；这个界约等于零点零零三三，取更小的窗口也足够。所以靠近的保证来自距离关系，不是表里那几行数。",
+                        "audioRef": "audio/audio-12.mp3"
+                      }
                     ]
                   }
                 ],
@@ -8168,7 +6953,7 @@
                     "animations": []
                   },
                   {
-                    "id": "GH-02-K01-r10-example-1",
+                    "id": "GH-02-K01-pro-r11-example",
                     "viewportSize": 1000,
                     "viewportRatio": 0.5625,
                     "theme": {
@@ -8196,103 +6981,58 @@
                     },
                     "elements": [
                       {
-                        "id": "GH-02-K01-r10-example-1-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-1-title",
+                        "id": "GH-02-K01-pro-r11-example-title",
                         "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">从倍率1到倍率3</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-1-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
+                        "left": 40,
+                        "top": 30,
+                        "width": 920,
                         "height": 65,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">x≠2时g(x)=3x+1，另设g(2)=0。要求附近输出与7的距离小于0.3。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：用数表看趋近，再用距离保证</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K01-r10-example-1-step-0",
+                        "id": "GH-02-K01-pro-r11-example-step-0",
                         "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 115,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 附近规则给出L=7；点值g(2)=0另看。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">先看数表。x 从左侧取零点九、零点九九、零点九九九，输出是一点九、一点九九、一点九九九；从右侧取一点一、一点零一，输出二点一、二点零一。两侧都靠近二，而 x 等于一这一处没有定义。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K01-r10-example-1-step-1",
+                        "id": "GH-02-K01-pro-r11-example-step-1",
                         "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 240,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. |g(x)−7|=|3x+1−7|=3|x−2|：输出误差是输入误差的3倍。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">数表只是线索。把式子改写：x 不等于一时，分子是 x 平方减一，分母是 x 减一，整个分式等于 x 加一；于是输出与二的距离，正好等于输入与一的距离。要求输出误差小于零点零一，只要让输入满足零小于 x 减一的绝对值小于零点零一。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K01-r10-example-1-step-2",
+                        "id": "GH-02-K01-pro-r11-example-step-2",
                         "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 365,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 取0&lt;|x−2|&lt;0.1，就有|g(x)−7|&lt;0.3。取更小的正半径也有效，不必取最大半径。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">换一条规则：f(x) 等于二加三倍的 x 减一，输出与二的距离是输入距离的三倍。同样零点零一的误差要求，输入就要满足零小于 x 减一的绝对值小于零点零一除以三；这个界约等于零点零零三三，取更小的窗口也足够。所以靠近的保证来自距离关系，不是表里那几行数。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K01-r10-example-1-conclusion",
+                        "id": "GH-02-K01-pro-r11-example-fallback",
                         "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
+                        "left": 55,
+                        "top": 515,
+                        "width": 890,
+                        "height": 30,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">本例应将允许的输出误差除以3；不能照搬倍率1时“输入误差等于输出误差”的数值。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-1-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">从数表观察趋近 · 推理 1/2</p>",
-                        "defaultColor": "#59758a",
+                        "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       }
                     ],
@@ -8300,145 +7040,11 @@
                       "type": "solid",
                       "color": "#ffffff"
                     },
-                    "animations": []
-                  },
-                  {
-                    "id": "GH-02-K01-r10-example-2",
-                    "viewportSize": 1000,
-                    "viewportRatio": 0.5625,
-                    "theme": {
-                      "backgroundColor": "#ffffff",
-                      "themeColors": [
-                        "#5b9bd5",
-                        "#ed7d31",
-                        "#a5a5a5",
-                        "#ffc000",
-                        "#4472c4"
-                      ],
-                      "fontColor": "#333333",
-                      "fontName": "Microsoft YaHei",
-                      "outline": {
-                        "color": "#d14424",
-                        "width": 2,
-                        "style": "solid"
-                      },
-                      "shadow": {
-                        "h": 0,
-                        "v": 0,
-                        "blur": 10,
-                        "color": "#000000"
-                      }
-                    },
-                    "elements": [
-                      {
-                        "id": "GH-02-K01-r10-example-2-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-title",
-                        "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">“足够近”需要保证所有输入</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
-                        "height": 65,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">用ε表示给定的正输出误差，用δ表示待选的正输入范围半径。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-step-0",
-                        "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 先给ε&gt;0，再根据规则选择δ&gt;0；不是先固定一批测试点。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-step-1",
-                        "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 若附近f(x)=k(x−a)+L且k≠0，取0&lt;δ≤ε/|k|，就能保证0&lt;|x−a|&lt;δ时，|f(x)−L|&lt;ε。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-step-2",
-                        "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. k=0时附近输出恒为L，误差为0；任何仍落在该规则适用邻域内的正δ都有效。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-conclusion",
-                        "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">一次试点合格不是范围保证。这里的线性公式为邻域内全部允许输入提供了依据。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K01-r10-example-2-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">从数表观察趋近 · 推理 2/2</p>",
-                        "defaultColor": "#59758a",
-                        "defaultFontName": "Microsoft YaHei"
-                      }
-                    ],
-                    "background": {
-                      "type": "solid",
-                      "color": "#ffffff"
-                    },
-                    "animations": []
+                    "animations": [],
+                    "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-02-K01.html"
                   }
                 ],
-                "lectureVersion": "functions-limits-lessons-r10-v1"
+                "lectureVersion": "openmaic-pro-lessons-r11"
               },
               "resourceCandidates": [
                 {
@@ -9281,10 +7887,10 @@
                 },
                 "lecturePages": [
                   {
-                    "title": "先算两侧，再选拼接参数",
-                    "summary": "x<1时f(x)=2x+k；x>1时f(x)=x+3；f(1)=9。\n从左侧靠近1，2x+k趋近2+k。\n从右侧靠近1，x+3趋近4。\n要有共同有限极限，令2+k=4，得k=2。此时左右都趋近4，公式不必相同。\n只改f(1)不会改变k=2这个条件；共同极限为4，点值9另看。",
+                    "title": "对照：两侧趋近 2，点值却是 4",
+                    "summary": "恰好 x 等于一时，函数值取四；在附近但不等于一时，按 x 加一取值。左侧零点九得一点九，零点九九得一点九九，越来越靠近二；右侧一点一得二点一，一点零一得二点零一，也靠近二。\n两侧靠向同一个数，双侧极限就是二。图上的一点二画空心点，表示图像不经过这一处；一点四画实心点，那是 f(1) 等于四，是另一条记录。\n极限和点值要分开写。如果左侧趋向一、右侧趋向二，两侧不相等，双侧极限就不存在，这时无论把 f(1) 改成什么数都补不上。",
                     "canvas": {
-                      "id": "GH-02-K02-r10-example-1",
+                      "id": "GH-02-K02-pro-r11-example",
                       "theme": {
                         "shadow": {
                           "h": 0,
@@ -9310,103 +7916,58 @@
                       },
                       "elements": [
                         {
-                          "id": "GH-02-K02-r10-example-1-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-1-title",
+                          "id": "GH-02-K02-pro-r11-example-title",
                           "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">先算两侧，再选拼接参数</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-1-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
+                          "left": 40,
+                          "top": 30,
+                          "width": 920,
                           "height": 65,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">x&lt;1时f(x)=2x+k；x&gt;1时f(x)=x+3；f(1)=9。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：两侧趋近 2，点值却是 4</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K02-r10-example-1-step-0",
+                          "id": "GH-02-K02-pro-r11-example-step-0",
                           "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 115,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 从左侧靠近1，2x+k趋近2+k。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">恰好 x 等于一时，函数值取四；在附近但不等于一时，按 x 加一取值。左侧零点九得一点九，零点九九得一点九九，越来越靠近二；右侧一点一得二点一，一点零一得二点零一，也靠近二。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K02-r10-example-1-step-1",
+                          "id": "GH-02-K02-pro-r11-example-step-1",
                           "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 240,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 从右侧靠近1，x+3趋近4。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">两侧靠向同一个数，双侧极限就是二。图上的一点二画空心点，表示图像不经过这一处；一点四画实心点，那是 f(1) 等于四，是另一条记录。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K02-r10-example-1-step-2",
+                          "id": "GH-02-K02-pro-r11-example-step-2",
                           "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 365,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 要有共同有限极限，令2+k=4，得k=2。此时左右都趋近4，公式不必相同。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">极限和点值要分开写。如果左侧趋向一、右侧趋向二，两侧不相等，双侧极限就不存在，这时无论把 f(1) 改成什么数都补不上。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K02-r10-example-1-conclusion",
+                          "id": "GH-02-K02-pro-r11-example-fallback",
                           "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
+                          "left": 55,
+                          "top": 515,
+                          "width": 890,
+                          "height": 30,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">只改f(1)不会改变k=2这个条件；共同极限为4，点值9另看。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-1-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像上的左右极限 · 推理 1/2</p>",
-                          "defaultColor": "#59758a",
+                          "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         }
                       ],
@@ -9416,160 +7977,36 @@
                       },
                       "viewportSize": 1000,
                       "viewportRatio": 0.5625,
-                      "animations": []
+                      "animations": [],
+                      "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-02-K02.html"
                     },
                     "lessonId": "GH-02-K02",
-                    "kind": "worked_example",
+                    "kind": "pro_authored_worked_example",
                     "sourceRefs": [
                       "CN-TJ-1.3",
                       "CN-SC-1.3",
                       "GOOGLE-THRESHOLD"
-                    ]
-                  },
-                  {
-                    "title": "“没有有限极限”有不同原因",
-                    "summary": "把下面三种情形分开判断。\n有限跳跃：左侧趋近1，右侧趋近3。两侧各自有有限极限，但不相等。\n无界：1/x²在两侧靠近0时越来越大，没有有限上界；不能把正无穷当作一个有限实数。\n不收敛：若两列都趋近0的正输入，其输出已由规则证明恒为1与−1，右侧不能趋近同一个数。\n结论“不存在”之后，还要说明有限性或相等性在哪一步失败。",
-                    "canvas": {
-                      "id": "GH-02-K02-r10-example-2",
-                      "theme": {
-                        "shadow": {
-                          "h": 0,
-                          "v": 0,
-                          "blur": 10,
-                          "color": "#000000"
-                        },
-                        "outline": {
-                          "color": "#d14424",
-                          "style": "solid",
-                          "width": 2
-                        },
-                        "fontName": "Microsoft YaHei",
-                        "fontColor": "#333333",
-                        "themeColors": [
-                          "#5b9bd5",
-                          "#ed7d31",
-                          "#a5a5a5",
-                          "#ffc000",
-                          "#4472c4"
-                        ],
-                        "backgroundColor": "#ffffff"
+                    ],
+                    "audioRoot": "open-maic/pro-supplements-r11",
+                    "teachingActions": [
+                      {
+                        "id": "p5-s1",
+                        "type": "speech",
+                        "text": "恰好 x 等于一时，函数值取四；在附近但不等于一时，按 x 加一取值。左侧零点九得一点九，零点九九得一点九九，越来越靠近二；右侧一点一得二点一，一点零一得二点零一，也靠近二。",
+                        "audioRef": "audio/audio-13.mp3"
                       },
-                      "elements": [
-                        {
-                          "id": "GH-02-K02-r10-example-2-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-title",
-                          "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">“没有有限极限”有不同原因</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
-                          "height": 65,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">把下面三种情形分开判断。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-step-0",
-                          "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 有限跳跃：左侧趋近1，右侧趋近3。两侧各自有有限极限，但不相等。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-step-1",
-                          "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 无界：1/x²在两侧靠近0时越来越大，没有有限上界；不能把正无穷当作一个有限实数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-step-2",
-                          "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 不收敛：若两列都趋近0的正输入，其输出已由规则证明恒为1与−1，右侧不能趋近同一个数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-conclusion",
-                          "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">结论“不存在”之后，还要说明有限性或相等性在哪一步失败。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K02-r10-example-2-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像上的左右极限 · 推理 2/2</p>",
-                          "defaultColor": "#59758a",
-                          "defaultFontName": "Microsoft YaHei"
-                        }
-                      ],
-                      "background": {
-                        "type": "solid",
-                        "color": "#ffffff"
+                      {
+                        "id": "p5-s2",
+                        "type": "speech",
+                        "text": "两侧靠向同一个数，双侧极限就是二。图上的一点二画空心点，表示图像不经过这一处；一点四画实心点，那是 f(1) 等于四，是另一条记录。",
+                        "audioRef": "audio/audio-14.mp3"
                       },
-                      "viewportSize": 1000,
-                      "viewportRatio": 0.5625,
-                      "animations": []
-                    },
-                    "lessonId": "GH-02-K02",
-                    "kind": "worked_example",
-                    "sourceRefs": [
-                      "CN-TJ-1.3",
-                      "CN-SC-1.3",
-                      "GOOGLE-THRESHOLD"
+                      {
+                        "id": "p5-s3",
+                        "type": "speech",
+                        "text": "极限和点值要分开写。如果左侧趋向一、右侧趋向二，两侧不相等，双侧极限就不存在，这时无论把 f(1) 改成什么数都补不上。",
+                        "audioRef": "audio/audio-15.mp3"
+                      }
                     ]
                   }
                 ],
@@ -9921,7 +8358,7 @@
                     "viewportRatio": 0.5625
                   },
                   {
-                    "id": "GH-02-K02-r10-example-1",
+                    "id": "GH-02-K02-pro-r11-example",
                     "theme": {
                       "shadow": {
                         "h": 0,
@@ -9947,103 +8384,58 @@
                     },
                     "elements": [
                       {
-                        "id": "GH-02-K02-r10-example-1-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-1-title",
+                        "id": "GH-02-K02-pro-r11-example-title",
                         "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">先算两侧，再选拼接参数</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-1-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
+                        "left": 40,
+                        "top": 30,
+                        "width": 920,
                         "height": 65,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">x&lt;1时f(x)=2x+k；x&gt;1时f(x)=x+3；f(1)=9。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：两侧趋近 2，点值却是 4</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K02-r10-example-1-step-0",
+                        "id": "GH-02-K02-pro-r11-example-step-0",
                         "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 115,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 从左侧靠近1，2x+k趋近2+k。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">恰好 x 等于一时，函数值取四；在附近但不等于一时，按 x 加一取值。左侧零点九得一点九，零点九九得一点九九，越来越靠近二；右侧一点一得二点一，一点零一得二点零一，也靠近二。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K02-r10-example-1-step-1",
+                        "id": "GH-02-K02-pro-r11-example-step-1",
                         "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 240,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 从右侧靠近1，x+3趋近4。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">两侧靠向同一个数，双侧极限就是二。图上的一点二画空心点，表示图像不经过这一处；一点四画实心点，那是 f(1) 等于四，是另一条记录。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K02-r10-example-1-step-2",
+                        "id": "GH-02-K02-pro-r11-example-step-2",
                         "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 365,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 要有共同有限极限，令2+k=4，得k=2。此时左右都趋近4，公式不必相同。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">极限和点值要分开写。如果左侧趋向一、右侧趋向二，两侧不相等，双侧极限就不存在，这时无论把 f(1) 改成什么数都补不上。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K02-r10-example-1-conclusion",
+                        "id": "GH-02-K02-pro-r11-example-fallback",
                         "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
+                        "left": 55,
+                        "top": 515,
+                        "width": 890,
+                        "height": 30,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">只改f(1)不会改变k=2这个条件；共同极限为4，点值9另看。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-1-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像上的左右极限 · 推理 1/2</p>",
-                        "defaultColor": "#59758a",
+                        "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       }
                     ],
@@ -10053,145 +8445,11 @@
                     },
                     "viewportSize": 1000,
                     "viewportRatio": 0.5625,
-                    "animations": []
-                  },
-                  {
-                    "id": "GH-02-K02-r10-example-2",
-                    "theme": {
-                      "shadow": {
-                        "h": 0,
-                        "v": 0,
-                        "blur": 10,
-                        "color": "#000000"
-                      },
-                      "outline": {
-                        "color": "#d14424",
-                        "style": "solid",
-                        "width": 2
-                      },
-                      "fontName": "Microsoft YaHei",
-                      "fontColor": "#333333",
-                      "themeColors": [
-                        "#5b9bd5",
-                        "#ed7d31",
-                        "#a5a5a5",
-                        "#ffc000",
-                        "#4472c4"
-                      ],
-                      "backgroundColor": "#ffffff"
-                    },
-                    "elements": [
-                      {
-                        "id": "GH-02-K02-r10-example-2-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-title",
-                        "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">“没有有限极限”有不同原因</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
-                        "height": 65,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">把下面三种情形分开判断。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-step-0",
-                        "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 有限跳跃：左侧趋近1，右侧趋近3。两侧各自有有限极限，但不相等。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-step-1",
-                        "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 无界：1/x²在两侧靠近0时越来越大，没有有限上界；不能把正无穷当作一个有限实数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-step-2",
-                        "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 不收敛：若两列都趋近0的正输入，其输出已由规则证明恒为1与−1，右侧不能趋近同一个数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-conclusion",
-                        "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">结论“不存在”之后，还要说明有限性或相等性在哪一步失败。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K02-r10-example-2-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">图像上的左右极限 · 推理 2/2</p>",
-                        "defaultColor": "#59758a",
-                        "defaultFontName": "Microsoft YaHei"
-                      }
-                    ],
-                    "background": {
-                      "type": "solid",
-                      "color": "#ffffff"
-                    },
-                    "viewportSize": 1000,
-                    "viewportRatio": 0.5625,
-                    "animations": []
+                    "animations": [],
+                    "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-02-K02.html"
                   }
                 ],
-                "lectureVersion": "functions-limits-lessons-r10-v1"
+                "lectureVersion": "openmaic-pro-lessons-r11"
               },
               "resourceCandidates": [
                 {
@@ -11197,10 +9455,10 @@
                 },
                 "lecturePages": [
                   {
-                    "title": "先判断能否修，再决定补什么",
-                    "summary": "左侧趋近4，右侧趋近4，原点值为9；只允许改点值。\n原点值有定义；左右都有共同有限极限4。\n原点值9与极限4不同，所以原函数在该点不连续。\n把点值改为4，三项条件同时满足；附近的规则无需改动。\n补点的值来自共同极限，不是随意选一个“看起来居中”的数。",
+                    "title": "对照：改对点值就连续了吗",
+                    "summary": "左图里，f(1) 等于四有定义，两侧都趋向二，双侧共同有限极限 L 等于二存在；但二不等于四，第三条不成立，这一点不连续，是可去间断点。\n右图只把 f(1) 改成二：本例前两条本来就成立，改点值补齐的是第三条，图像接上，这一点连续。换到别处不一定：若原点没有定义，补一个点值可以满足第一条；若共同极限不存在，只改点值修不好第二条。\n两条边界：如果两侧趋向不同的数，极限不存在，改点值也补不上；另外，一张截图只显示这一处，不能据此说函数在其他位置也连续。",
                     "canvas": {
-                      "id": "GH-02-K03-r10-example-1",
+                      "id": "GH-02-K03-pro-r11-example",
                       "theme": {
                         "shadow": {
                           "h": 0,
@@ -11226,103 +9484,58 @@
                       },
                       "elements": [
                         {
-                          "id": "GH-02-K03-r10-example-1-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-1-title",
+                          "id": "GH-02-K03-pro-r11-example-title",
                           "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">先判断能否修，再决定补什么</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-1-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
+                          "left": 40,
+                          "top": 30,
+                          "width": 920,
                           "height": 65,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">左侧趋近4，右侧趋近4，原点值为9；只允许改点值。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：改对点值就连续了吗</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K03-r10-example-1-step-0",
+                          "id": "GH-02-K03-pro-r11-example-step-0",
                           "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 115,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 原点值有定义；左右都有共同有限极限4。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">左图里，f(1) 等于四有定义，两侧都趋向二，双侧共同有限极限 L 等于二存在；但二不等于四，第三条不成立，这一点不连续，是可去间断点。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K03-r10-example-1-step-1",
+                          "id": "GH-02-K03-pro-r11-example-step-1",
                           "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 240,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 原点值9与极限4不同，所以原函数在该点不连续。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">右图只把 f(1) 改成二：本例前两条本来就成立，改点值补齐的是第三条，图像接上，这一点连续。换到别处不一定：若原点没有定义，补一个点值可以满足第一条；若共同极限不存在，只改点值修不好第二条。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K03-r10-example-1-step-2",
+                          "id": "GH-02-K03-pro-r11-example-step-2",
                           "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
+                          "left": 55,
+                          "top": 365,
+                          "width": 890,
+                          "height": 115,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 把点值改为4，三项条件同时满足；附近的规则无需改动。</p>",
-                          "defaultColor": "#24384a",
+                          "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">两条边界：如果两侧趋向不同的数，极限不存在，改点值也补不上；另外，一张截图只显示这一处，不能据此说函数在其他位置也连续。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         },
                         {
-                          "id": "GH-02-K03-r10-example-1-conclusion",
+                          "id": "GH-02-K03-pro-r11-example-fallback",
                           "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
+                          "left": 55,
+                          "top": 515,
+                          "width": 890,
+                          "height": 30,
                           "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">补点的值来自共同极限，不是随意选一个“看起来居中”的数。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-1-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">连续就是不跳断 · 推理 1/2</p>",
-                          "defaultColor": "#59758a",
+                          "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                           "defaultFontName": "Microsoft YaHei"
                         }
                       ],
@@ -11332,160 +9545,36 @@
                       },
                       "viewportSize": 1000,
                       "viewportRatio": 0.5625,
-                      "animations": []
+                      "animations": [],
+                      "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-02-K03.html"
                     },
                     "lessonId": "GH-02-K03",
-                    "kind": "worked_example",
+                    "kind": "pro_authored_worked_example",
                     "sourceRefs": [
                       "CN-TJ-1.8",
                       "CN-TJ-1.9",
                       "OS-2.4"
-                    ]
-                  },
-                  {
-                    "title": "跳跃不能补一个点解决，尖角却可以连续",
-                    "summary": "对照两种容易混淆的图形。\n左侧趋近4、右侧趋近5时，没有共同极限。无论把点值设在哪里，都不能同时等于4和5。\ng(x)=|x|在0的左右极限都是0，g(0)=0，所以连续。\n|x|有尖角但不间断；是否可导是后续课程中的另一个问题。\n连续、光滑与可导不能当成同一个概念。",
-                    "canvas": {
-                      "id": "GH-02-K03-r10-example-2",
-                      "theme": {
-                        "shadow": {
-                          "h": 0,
-                          "v": 0,
-                          "blur": 10,
-                          "color": "#000000"
-                        },
-                        "outline": {
-                          "color": "#d14424",
-                          "style": "solid",
-                          "width": 2
-                        },
-                        "fontName": "Microsoft YaHei",
-                        "fontColor": "#333333",
-                        "themeColors": [
-                          "#5b9bd5",
-                          "#ed7d31",
-                          "#a5a5a5",
-                          "#ffc000",
-                          "#4472c4"
-                        ],
-                        "backgroundColor": "#ffffff"
+                    ],
+                    "audioRoot": "open-maic/pro-supplements-r11",
+                    "teachingActions": [
+                      {
+                        "id": "p6-s1",
+                        "type": "speech",
+                        "text": "左图里，f(1) 等于四有定义，两侧都趋向二，双侧共同有限极限 L 等于二存在；但二不等于四，第三条不成立，这一点不连续，是可去间断点。",
+                        "audioRef": "audio/audio-16.mp3"
                       },
-                      "elements": [
-                        {
-                          "id": "GH-02-K03-r10-example-2-header",
-                          "type": "shape",
-                          "left": 50,
-                          "top": 35,
-                          "width": 900,
-                          "height": 80,
-                          "rotate": 0,
-                          "fill": "#2C3E50",
-                          "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                          "viewBox": [
-                            1,
-                            1
-                          ],
-                          "fixedRatio": false
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-title",
-                          "type": "text",
-                          "left": 70,
-                          "top": 50,
-                          "width": 860,
-                          "height": 55,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">跳跃不能补一个点解决，尖角却可以连续</p>",
-                          "defaultColor": "#ffffff",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-setup",
-                          "type": "text",
-                          "left": 70,
-                          "top": 133,
-                          "width": 860,
-                          "height": 65,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">对照两种容易混淆的图形。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-step-0",
-                          "type": "text",
-                          "left": 90,
-                          "top": 211,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 左侧趋近4、右侧趋近5时，没有共同极限。无论把点值设在哪里，都不能同时等于4和5。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-step-1",
-                          "type": "text",
-                          "left": 90,
-                          "top": 284,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. g(x)=|x|在0的左右极限都是0，g(0)=0，所以连续。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-step-2",
-                          "type": "text",
-                          "left": 90,
-                          "top": 357,
-                          "width": 820,
-                          "height": 67,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. |x|有尖角但不间断；是否可导是后续课程中的另一个问题。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-conclusion",
-                          "type": "text",
-                          "left": 70,
-                          "top": 445,
-                          "width": 860,
-                          "height": 68,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">连续、光滑与可导不能当成同一个概念。</p>",
-                          "defaultColor": "#24384a",
-                          "defaultFontName": "Microsoft YaHei"
-                        },
-                        {
-                          "id": "GH-02-K03-r10-example-2-progress",
-                          "type": "text",
-                          "left": 70,
-                          "top": 530,
-                          "width": 860,
-                          "height": 22,
-                          "rotate": 0,
-                          "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">连续就是不跳断 · 推理 2/2</p>",
-                          "defaultColor": "#59758a",
-                          "defaultFontName": "Microsoft YaHei"
-                        }
-                      ],
-                      "background": {
-                        "type": "solid",
-                        "color": "#ffffff"
+                      {
+                        "id": "p6-s2",
+                        "type": "speech",
+                        "text": "右图只把 f(1) 改成二：本例前两条本来就成立，改点值补齐的是第三条，图像接上，这一点连续。换到别处不一定：若原点没有定义，补一个点值可以满足第一条；若共同极限不存在，只改点值修不好第二条。",
+                        "audioRef": "audio/audio-17.mp3"
                       },
-                      "viewportSize": 1000,
-                      "viewportRatio": 0.5625,
-                      "animations": []
-                    },
-                    "lessonId": "GH-02-K03",
-                    "kind": "worked_example",
-                    "sourceRefs": [
-                      "CN-TJ-1.8",
-                      "CN-TJ-1.9",
-                      "OS-2.4"
+                      {
+                        "id": "p6-s3",
+                        "type": "speech",
+                        "text": "两条边界：如果两侧趋向不同的数，极限不存在，改点值也补不上；另外，一张截图只显示这一处，不能据此说函数在其他位置也连续。",
+                        "audioRef": "audio/audio-18.mp3"
+                      }
                     ]
                   }
                 ],
@@ -11966,7 +10055,7 @@
                     "viewportRatio": 0.5625
                   },
                   {
-                    "id": "GH-02-K03-r10-example-1",
+                    "id": "GH-02-K03-pro-r11-example",
                     "theme": {
                       "shadow": {
                         "h": 0,
@@ -11992,103 +10081,58 @@
                     },
                     "elements": [
                       {
-                        "id": "GH-02-K03-r10-example-1-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-1-title",
+                        "id": "GH-02-K03-pro-r11-example-title",
                         "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">先判断能否修，再决定补什么</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-1-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
+                        "left": 40,
+                        "top": 30,
+                        "width": 920,
                         "height": 65,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">左侧趋近4，右侧趋近4，原点值为9；只允许改点值。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:27px;color:#1e3a8a;font-weight:700\">对照：改对点值就连续了吗</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K03-r10-example-1-step-0",
+                        "id": "GH-02-K03-pro-r11-example-step-0",
                         "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 115,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 原点值有定义；左右都有共同有限极限4。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">左图里，f(1) 等于四有定义，两侧都趋向二，双侧共同有限极限 L 等于二存在；但二不等于四，第三条不成立，这一点不连续，是可去间断点。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K03-r10-example-1-step-1",
+                        "id": "GH-02-K03-pro-r11-example-step-1",
                         "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 240,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. 原点值9与极限4不同，所以原函数在该点不连续。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">右图只把 f(1) 改成二：本例前两条本来就成立，改点值补齐的是第三条，图像接上，这一点连续。换到别处不一定：若原点没有定义，补一个点值可以满足第一条；若共同极限不存在，只改点值修不好第二条。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K03-r10-example-1-step-2",
+                        "id": "GH-02-K03-pro-r11-example-step-2",
                         "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
+                        "left": 55,
+                        "top": 365,
+                        "width": 890,
+                        "height": 115,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. 把点值改为4，三项条件同时满足；附近的规则无需改动。</p>",
-                        "defaultColor": "#24384a",
+                        "content": "<p style=\"font-size:20px;line-height:1.5;color:#334155\">两条边界：如果两侧趋向不同的数，极限不存在，改点值也补不上；另外，一张截图只显示这一处，不能据此说函数在其他位置也连续。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       },
                       {
-                        "id": "GH-02-K03-r10-example-1-conclusion",
+                        "id": "GH-02-K03-pro-r11-example-fallback",
                         "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
+                        "left": 55,
+                        "top": 515,
+                        "width": 890,
+                        "height": 30,
                         "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">补点的值来自共同极限，不是随意选一个“看起来居中”的数。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-1-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">连续就是不跳断 · 推理 1/2</p>",
-                        "defaultColor": "#59758a",
+                        "content": "<p style=\"font-size:14px;color:#64748b\">交互页暂时未能加载，先阅读同页讲解；切回上一页后可重新进入。</p>",
                         "defaultFontName": "Microsoft YaHei"
                       }
                     ],
@@ -12098,145 +10142,11 @@
                     },
                     "viewportSize": 1000,
                     "viewportRatio": 0.5625,
-                    "animations": []
-                  },
-                  {
-                    "id": "GH-02-K03-r10-example-2",
-                    "theme": {
-                      "shadow": {
-                        "h": 0,
-                        "v": 0,
-                        "blur": 10,
-                        "color": "#000000"
-                      },
-                      "outline": {
-                        "color": "#d14424",
-                        "style": "solid",
-                        "width": 2
-                      },
-                      "fontName": "Microsoft YaHei",
-                      "fontColor": "#333333",
-                      "themeColors": [
-                        "#5b9bd5",
-                        "#ed7d31",
-                        "#a5a5a5",
-                        "#ffc000",
-                        "#4472c4"
-                      ],
-                      "backgroundColor": "#ffffff"
-                    },
-                    "elements": [
-                      {
-                        "id": "GH-02-K03-r10-example-2-header",
-                        "type": "shape",
-                        "left": 50,
-                        "top": 35,
-                        "width": 900,
-                        "height": 80,
-                        "rotate": 0,
-                        "fill": "#2C3E50",
-                        "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                        "viewBox": [
-                          1,
-                          1
-                        ],
-                        "fixedRatio": false
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-title",
-                        "type": "text",
-                        "left": 70,
-                        "top": 50,
-                        "width": 860,
-                        "height": 55,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:27px;line-height:1.4;color:#ffffff;margin:0\">跳跃不能补一个点解决，尖角却可以连续</p>",
-                        "defaultColor": "#ffffff",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-setup",
-                        "type": "text",
-                        "left": 70,
-                        "top": 133,
-                        "width": 860,
-                        "height": 65,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:23px;line-height:1.4;color:#24384a;margin:0\">对照两种容易混淆的图形。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-step-0",
-                        "type": "text",
-                        "left": 90,
-                        "top": 211,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">1. 左侧趋近4、右侧趋近5时，没有共同极限。无论把点值设在哪里，都不能同时等于4和5。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-step-1",
-                        "type": "text",
-                        "left": 90,
-                        "top": 284,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">2. g(x)=|x|在0的左右极限都是0，g(0)=0，所以连续。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-step-2",
-                        "type": "text",
-                        "left": 90,
-                        "top": 357,
-                        "width": 820,
-                        "height": 67,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:21px;line-height:1.4;color:#24384a;margin:0\">3. |x|有尖角但不间断；是否可导是后续课程中的另一个问题。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-conclusion",
-                        "type": "text",
-                        "left": 70,
-                        "top": 445,
-                        "width": 860,
-                        "height": 68,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:20px;line-height:1.4;color:#24384a;margin:0\">连续、光滑与可导不能当成同一个概念。</p>",
-                        "defaultColor": "#24384a",
-                        "defaultFontName": "Microsoft YaHei"
-                      },
-                      {
-                        "id": "GH-02-K03-r10-example-2-progress",
-                        "type": "text",
-                        "left": 70,
-                        "top": 530,
-                        "width": 860,
-                        "height": 22,
-                        "rotate": 0,
-                        "content": "<p style=\"font-size:13px;line-height:1.4;color:#59758a;margin:0\">连续就是不跳断 · 推理 2/2</p>",
-                        "defaultColor": "#59758a",
-                        "defaultFontName": "Microsoft YaHei"
-                      }
-                    ],
-                    "background": {
-                      "type": "solid",
-                      "color": "#ffffff"
-                    },
-                    "viewportSize": 1000,
-                    "viewportRatio": 0.5625,
-                    "animations": []
+                    "animations": [],
+                    "authoredHtml": "resources/open-maic/pro-supplements-r11/GH-02-K03.html"
                   }
                 ],
-                "lectureVersion": "functions-limits-lessons-r10-v1"
+                "lectureVersion": "openmaic-pro-lessons-r11"
               },
               "resourceCandidates": [
                 {
@@ -69107,7 +67017,7 @@
     "version": "knowledge-checks-v2",
     "questionSetPreserved": false,
     "selectionReplacements": [],
-    "questionSetFingerprint": "547b2cc9739133e60b8115cef0bd0c81573e026c842e8ea4387aba463a603a7a"
+    "questionSetFingerprint": "6780a201178da648af01dd2e31208666a81b758b7a8feab1581251c524010e6f"
   },
   "assessmentDesign": {
     "version": "knowledge-checks-v2",

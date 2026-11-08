@@ -1399,7 +1399,8 @@ function agenticQuizPathReady(unit) {
 function agenticCompletionCta(unit) {
   if (!unit) return { label: "完成本节", disabled: false };
   if(globalThis.StudyEntry&&unit.chapterId==='V14-C1'){
-    if(unit.type==='knowledge')return {label:(state.submittedQuizzes||[]).includes(unit.id+'-formative')?'继续下一节':'完成学习，进入三题检测',disabled:false};
+    if(unit.type==='knowledge')return window.LearningWorkspace?.knowledgePrimaryAction?.(unit)
+      || {label:'正在准备学习内容…',disabled:true};
     if(unit.assessmentPhase==='formative'&&(state.submittedQuizzes||[]).includes(unit.id))return {label: window.StudyStages?.reviewAfter(unit.id)?'完成本段，查看学习回顾':unit.id==='GH-02-K03-formative'?'进入独立后测':'下一节',disabled:false};
   }
   if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
@@ -2001,6 +2002,18 @@ function agenticIsCurrentPending(unitId = currentUnitId) {
 function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = false } = {}) {
   const target = getUnit(targetUnitId);
   if (!target) return false;
+  if (globalThis.RegulationTransferUI?.active || globalThis.ThreeArmStudyUI?.run?.regulationActive) {
+    if (!silent) globalThis.LearningWorkspace?.resumeRegulationTask?.();
+    return false;
+  }
+  const pendingCheck = globalThis.KnowledgeAssistant?.pendingIndependentCheck?.();
+  if (pendingCheck && targetUnitId !== pendingCheck.unitId) {
+    if (!silent) {
+      addLog('独立检查中，请先完成或选择“暂不检查”，再切换学习内容。');
+      globalThis.KnowledgeAssistant?.resumeIndependentCheck?.()?.catch?.(() => {});
+    }
+    return false;
+  }
   if(typeof window!=='undefined'&&window.OperationGuide?.canPreview(target))return true;
   const current = getUnit(currentUnitId);
   const path = ensureAgenticPath();
@@ -2983,7 +2996,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
 }
 
 async function agenticAfterQuizSubmit(unit, records) {
-  if(['pre','post'].includes(unit.assessmentPhase)&&records.some(r=>/^fl-r(?:7|10)-/.test(r.question?.id||''))){
+  if(['pre','post'].includes(unit.assessmentPhase)&&records.some(r=>/^fl-r(?:7|10|11)-/.test(r.question?.id||''))){
     const path=ensureAgenticPath();path.pendingPlan=null;path.pendingAt='';
     if(unit.assessmentPhase==='pre')agenticUnlockDefaultNext(unit.id,'independent_pretest_recorded');
     else globalThis.LearnerSetup?.afterPosttest?.(unit);

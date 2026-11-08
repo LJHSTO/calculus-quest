@@ -1,0 +1,101 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{chromium}=require('playwright-core');
+const root=path.resolve(__dirname,'..'),base=process.env.STUDENT_UX_BASE_URL||'',out=path.join(root,'output/playwright/r11-ui');
+assert.match(base,/^http:\/\/127\.0\.0\.1:/);fs.mkdirSync(out,{recursive:true});
+const assessmentVersion=process.env.STUDY_UI_ASSESSMENT_VERSION||'r11';
+assert(['r10','r11'].includes(assessmentVersion));
+const bank=require('../lib/assessments/functions-limits-'+assessmentVersion);
+async function main(){
+ const account={nickname:'界面诊断'+Date.now(),password:'Ui-flow-r11-synthetic'};
+ const api=async(url,body)=>{const res=await fetch(base+url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-Study-Arm':'B',...(account.token?{Authorization:'Bearer '+account.token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await res.json();assert.equal(res.status,200,url+': '+(data.message||res.status));return data;};
+ account.token=(await api('/api/auth/register',{nickname:account.nickname,password:account.password})).token;
+ let preferences=(await api('/api/learning/learner-preferences')).data;
+ const baseline=(await api('/api/study/survey?stage=baseline')).data;
+ await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,3]))});
+ await api('/api/learning/quiz/submit',{chapterId:'V14-C1',unitId:'V14-C1-pre',phase:'pre',answers:bank.questions('pre',preferences.study.assessmentOrder[0]).map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.answer[0]}))});
+ preferences=(await api('/api/learning/learner-preferences')).data;
+ await api('/api/learning/learner-preferences',{answers:preferences.record.answers,expectedRevision:preferences.record.revision});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,channel:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?undefined:'chrome',headless:true});
+ const page=await browser.newPage({viewport:{width:1400,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(20000);
+ try{
+  await page.goto(base+'/?study=B');await page.locator('#app-loader.hidden').waitFor({state:'attached'});
+  await page.locator('#login-identifier').fill(account.nickname);await page.locator('#login-password').fill(account.password);await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});
+  await page.locator('[data-view=learn]').first().click();
+  await page.evaluate(()=>{ensureAgenticPath().pendingPlan=null;agenticUnlockUnit('GH-01-K01','ui_contract_fixture');selectUnit('GH-01-K01');});
+  await page.locator('[data-openmaic-state=ready]').first().waitFor();
+  assert(await page.evaluate(()=>Boolean(LearningWorkspace.knowledgePrimaryAction)), 'navigation interface required');
+  const steps=[];
+  for(let i=0;i<8;i++){
+   await page.waitForFunction(()=>!document.querySelector('[data-learning-primary-action]')?.disabled);
+   const step=await page.evaluate(()=>({surface:document.querySelector('.core-learning-workspace').dataset.classroomSurface,page:document.querySelector('[data-openmaic-page]')?.dataset.openmaicPage,label:document.querySelector('[data-learning-primary-action]')?.textContent,disabled:document.querySelector('[data-learning-primary-action]')?.disabled,completed:state.completed.includes('GH-01-K01')}));steps.push(step);
+   assert.equal(step.completed,false,'lecture navigation must not mark completed');
+   if(step.label==='进入互动探索')break;
+   assert.equal(step.label,'下一讲解页');await page.locator('[data-learning-primary-action]').click();
+   await page.waitForFunction(p=>document.querySelector('[data-openmaic-page]')?.dataset.openmaicPage!==p,step.page);
+  }
+  assert.equal(steps.at(-1).label,'进入互动探索');await page.locator('[data-learning-primary-action]').click();
+  await page.locator('[data-knowledge-scene=simulation]').click();
+  await page.locator('iframe[data-courseware-frame]').waitFor({state:'visible'});
+  assert.equal(await page.locator('[data-learning-primary-action]').isDisabled(),true,'selecting scene alone must not unlock completion');
+  const frame=await page.locator('iframe[data-courseware-frame]').contentFrame();
+  await frame.locator('input,button,select').first().waitFor({timeout:60000});
+  await frame.getByText('演示速度与观察记录',{exact:true}).click();
+  await frame.locator('#speed-slider').focus();await frame.locator('#speed-slider').press('ArrowRight');
+  assert.equal(await page.locator('[data-learning-primary-action]').isDisabled(),true,'presentation speed is not a mathematical attempt');
+  await page.screenshot({path:path.join(out,'修复后-等待实际互动.png')});
+  await page.evaluate(()=>{window.uiInteractionEvents=[];addEventListener('cq:learning-signal',e=>{if(/parameter|courseware|interactive/.test(e.detail?.event?.eventType))uiInteractionEvents.push(e.detail.event);});});
+  await frame.locator('#input_x-slider').focus();await frame.locator('#input_x-slider').press('ArrowRight');
+  await page.waitForFunction(()=>Boolean(state.analytics?.interactionEvidence?.['GH-01-K01']?.coursewareReadiness?.scenes?.simulation?.attemptedAt),{},{timeout:12000}).catch(async error=>{console.log('ACTUAL_SIGNALS',JSON.stringify(await page.evaluate(()=>uiInteractionEvents)));throw error;});
+  const readiness=await page.evaluate(()=>state.analytics.interactionEvidence['GH-01-K01'].coursewareReadiness);
+  assert.equal(await page.locator('[data-learning-primary-action]').isEnabled(),true);
+  assert.equal(await page.locator('[data-learning-primary-action]').textContent(),'完成学习，进入检测');
+  await page.screenshot({path:path.join(out,'修复后-实际互动已解锁.png')});
+  await page.evaluate(()=>syncLearningSnapshot('ui-regression-refresh'));
+  await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('#auth-gate').waitFor({state:'hidden'});
+  await page.locator('[data-view=learn]').first().click();
+  await page.waitForFunction(()=>getUnit()?.id==='GH-01-K01');
+  await page.locator('[data-workspace-canvas=interactive]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-learning-primary-action]')?.textContent==='完成学习，进入检测');
+  const persisted=await page.evaluate(()=>state.analytics.interactionEvidence['GH-01-K01'].coursewareReadiness);
+  assert.equal(persisted.scenes.simulation.attemptedAt,readiness.scenes.simulation.attemptedAt);
+  await page.locator('[data-learning-primary-action]').click();await page.waitForFunction(()=>getUnit()?.id==='GH-01-K01-formative');
+  assert.equal(await page.evaluate(()=>state.completed.includes('GH-01-K01')),true);
+  await page.evaluate(()=>selectUnit('GH-01-K01'));await page.locator('[data-openmaic-state=ready]').first().waitFor();
+  await page.waitForFunction(()=>document.querySelector('[data-learning-primary-action]')?.textContent==='下一讲解页');
+  const reviewedCompleted=await page.evaluate(()=>({page:document.querySelector('[data-openmaic-page]').dataset.openmaicPage,completed:state.completed.includes('GH-01-K01'),label:document.querySelector('[data-learning-primary-action]').textContent}));
+  await page.locator('[data-workspace-canvas=slide]').click();
+  const navigation=await page.evaluate(()=>({surface:document.querySelector('.core-learning-workspace').dataset.classroomSurface,page:document.querySelector('[data-openmaic-page]')?.dataset.openmaicPage,label:document.querySelector('[data-learning-primary-action]')?.textContent,disabled:document.querySelector('[data-learning-primary-action]')?.disabled,selected:state.selectedKnowledgeScenes['GH-01-K01']}));
+  await page.screenshot({path:path.join(out,'修复后-讲解主操作.png')});
+  await page.evaluate(()=>{const marker=document.createElement('section');marker.dataset.independentCheck='true';marker.id='ui-contract-independent-marker';document.querySelector('#lesson-player').append(marker);});
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('#lesson-rail')).visibility==='visible');
+  const independent=await page.locator('#lesson-rail').evaluate(n=>{const matched=[];const visit=rules=>{for(const r of rules){if(r.selectorText&&r.style?.visibility){try{if(n.matches(r.selectorText))matched.push({selector:r.selectorText,visibility:r.style.visibility,priority:r.style.getPropertyPriority('visibility')});}catch{}}if(r.cssRules&&(!r.conditionText||matchMedia(r.conditionText).matches))visit(r.cssRules);}};for(const sheet of document.styleSheets){try{visit(sheet.cssRules)}catch{}}return{visibility:getComputedStyle(n).visibility,width:n.getBoundingClientRect().width,display:getComputedStyle(n).display,matched};});
+  await page.screenshot({path:path.join(out,'修复后-独立检查路径.png')});await page.locator('#ui-contract-independent-marker').evaluate(n=>n.remove());
+  await page.locator('#workspace-tools-toggle').click();await page.locator('[data-knowledge-input]').waitFor({state:'visible'});await page.locator('[data-knowledge-input]').focus();
+  const composer=await page.locator('[data-knowledge-input]').evaluate(n=>({inputOutline:getComputedStyle(n).outline,wrapperBorder:getComputedStyle(n.parentElement).border,wrapperShadow:getComputedStyle(n.parentElement).boxShadow,metaShadow:getComputedStyle(n.closest('form').querySelector('.knowledge-composer-meta')).boxShadow}));
+  await page.locator('[data-knowledge-input]').fill('为什么同一个输入不能对应两个输出？请结合当前知识点解释。');
+  await page.locator('.knowledge-composer button').click();
+  await page.locator('.knowledge-message .assistant-content').first().waitFor();
+  await page.screenshot({path:path.join(out,'修复后-知点输入框.png')});
+  const viewports=[];
+  for(const width of [1400,1366,1024,390]){
+   await page.setViewportSize({width,height:900});
+   if(width<=1180)await page.locator('button[data-workspace-pane=assistant]').click();
+   else if(await page.locator('#workspace-tools-toggle').getAttribute('aria-expanded')==='false')await page.locator('#workspace-tools-toggle').click();
+   await page.locator('[data-knowledge-input]').waitFor({state:'visible',timeout:5000}).catch(async e=>{await page.screenshot({path:path.join(out,`布局失败-${width}.png`)});console.log('LAYOUT_FAIL',await page.evaluate(()=>({shell:document.querySelector('.core-learning-workspace').className,pane:document.querySelector('.core-learning-workspace').dataset.workspacePane,root:document.querySelector('#knowledge-assistant-root').className,tools:getComputedStyle(document.querySelector('.learning-workspace-tools')).display})));throw e;});
+   const layout=await page.evaluate(()=>{const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,right:r.right}};return {width:innerWidth,docWidth:document.documentElement.scrollWidth,composer:box(document.querySelector('.knowledge-composer')),input:box(document.querySelector('[data-knowledge-input]')),panel:box(document.querySelector('.knowledge-assistant-panel'))};});
+   assert(layout.docWidth<=width+1,`${width} horizontal overflow`);assert(layout.input.width>150);assert(layout.input.bottom<=900,`${width} input outside viewport`);assert(layout.composer.right<=width+1);viewports.push(layout);
+   await page.screenshot({path:path.join(out,`修复后-知点-${width}.png`)});
+   if(width<=1180)await page.locator('button[data-workspace-pane=course]').click();else await page.locator('#workspace-tools-toggle').click();
+   assert(await page.locator('#lesson-player').isVisible());
+   const header=await page.locator('.player-top').evaluate(n=>{const r=n.getBoundingClientRect(),badge=n.querySelector('.first-session-budget'),b=badge?.getBoundingClientRect();return {right:r.right,width:r.width,docWidth:document.documentElement.scrollWidth,timer:badge?{visible:badge.checkVisibility(),right:b.right,width:b.width}:null};});
+   assert(header.right<=width+1&&header.docWidth<=width+1,`${width} header overflow`);
+   if(header.timer){assert(header.timer.visible,`${width} timer unexpectedly hidden`);assert(header.timer.right<=width+1,`${width} timer overflow`);}
+   layout.courseHeader=header;
+   await page.screenshot({path:path.join(out,`修复后-课件-${width}.png`)});
+  }
+  const report={synthetic:true,steps,readiness,persisted,reviewedCompleted,navigation,independent,composer,viewports,errors};
+  fs.writeFileSync(path.join(out,'修复后回归.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+  assert.equal(independent.visibility,'visible');assert(independent.width>0);assert.match(composer.inputOutline,/none/);assert.equal(composer.metaShadow,'none');assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+}
+main().catch(e=>{console.error(e.stack);process.exitCode=1;});

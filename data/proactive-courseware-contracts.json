@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "courseId": "calculus",
+  "chapterId": "V14-C3",
+  "purpose": "为主动学习实验声明课件任务、可观察证据和允许支架。",
+  "sceneTasks": {
+    "simulation": {
+      "task": "通过拖动或调节参数观察一个量如何变化，并先预测再解释变化原因。",
+      "evidence": ["parameter_changed", "prediction_made", "independent_check_completed"]
+    },
+    "game": {
+      "task": "识别一个具体错误并修改它，说明判断依据而不是只追求通关。",
+      "evidence": ["attempt_submitted", "error_type_identified", "independent_check_completed"]
+    },
+    "mindMap": {
+      "task": "整理概念、表示和因果关系，用自己的话说明至少一条连接。",
+      "evidence": ["representation_switched", "short_explanation_submitted", "independent_check_completed"]
+    },
+    "visualization3d": {
+      "task": "从空间或几何视角观察同一概念，比较不同表示并解释它们为何对应同一数学对象。",
+      "evidence": ["parameter_changed", "representation_switched", "independent_check_completed"]
+    }
+  },
+  "knowledgePoints": {
+    "GH-06-K01": {
+      "learningTask": "调节分割数，比较矩形和曲线下面积的逼近误差，并解释分割变细时为何趋近真实面积。",
+      "successEvidence": ["改变分割数", "预测误差变化", "独立解释宽高与面积的关系"],
+      "misconceptionSignals": ["把分割数变大误解为矩形变大", "只看最终数值而不能解释逼近过程"],
+      "supports": ["ask_reflection", "highlight_target", "show_comparison"]
+    },
+    "GH-06-K02": {
+      "learningTask": "改变累积上限或时间区间，解释曲线下的有向面积如何表示总量及其变化。",
+      "successEvidence": ["操作上限或区间", "预测累计量变化", "独立解释正负面积的意义"],
+      "misconceptionSignals": ["把积分当作某一时刻函数值", "忽略有向面积或区间方向"],
+      "supports": ["ask_reflection", "show_comparison", "open_hint"]
+    },
+    "GH-06-K03": {
+      "learningTask": "比较同一导数对应的函数族，解释积分常数为何改变图像位置而不改变变化率。",
+      "successEvidence": ["改变常数或函数参数", "比较导数与图像", "独立说明常数的作用"],
+      "misconceptionSignals": ["认为原函数唯一", "把积分常数当作额外变量运算"],
+      "supports": ["ask_reflection", "highlight_target", "show_comparison"]
+    },
+    "GH-07-K01": {
+      "learningTask": "拖动积分上限，观察累计函数的瞬时变化率与被积函数之间的对应关系。",
+      "successEvidence": ["改变上限", "比较累计函数斜率", "独立解释变化率关系"],
+      "misconceptionSignals": ["把上限代入当作普通函数值", "混淆累计量和瞬时变化率"],
+      "supports": ["ask_reflection", "show_comparison", "open_hint"]
+    },
+    "GH-07-K02": {
+      "learningTask": "用端点值之差计算定积分，并解释它与原函数变化量的关系。",
+      "successEvidence": ["选择端点", "完成端点差预测", "独立解释公式各项"],
+      "misconceptionSignals": ["忘记上限减下限", "把原函数值当作积分结果"],
+      "supports": ["ask_reflection", "highlight_target", "open_hint"]
+    },
+    "GH-07-K03": {
+      "learningTask": "通过改变变量表示比较换元前后的面积或累计过程，说明换元如何保持同一数量。",
+      "successEvidence": ["操作变量替换", "比较两种表示", "独立说明微分因子作用"],
+      "misconceptionSignals": ["只替换表达式不替换微分", "把换元当作形式改写"],
+      "supports": ["ask_reflection", "show_comparison", "open_hint"]
+    },
+    "GH-07-K04": {
+      "learningTask": "拆分乘积函数的积分，比较分部积分两部分的角色并选择合理的 u 与 dv。",
+      "successEvidence": ["尝试拆分", "比较两部分难度", "独立说明公式来源"],
+      "misconceptionSignals": ["机械套公式", "无法解释边界项或选择依据"],
+      "supports": ["ask_reflection", "show_comparison", "open_hint"]
+    }
+  }
+}

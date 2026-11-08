@@ -5,6 +5,8 @@ data/*
 !data/.gitignore
 !data/knowledge-graph.json
 !data/multi-scene-learning-route.json
+!data/proactive-courseware-contracts.json
+!data/functions-limits-courseware-contracts.json
 *.db
 *.db-shm
 *.db-wal

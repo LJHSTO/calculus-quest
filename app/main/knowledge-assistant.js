@@ -30,6 +30,8 @@
   let recentInteraction = null;
   let pendingSelection = null;
   let noteEditorSelection = null;
+  let noteEditorOwner = '';
+  let noteTextDrag = null;
   let currentUnitKey = "";
   let currentSceneType = "";
   let currentQuizSubmitted = false;
@@ -119,10 +121,46 @@
         || (supportView.format || "plain")!=="plain" || ["A1","A4"].includes(proactiveDecision?.authority?.level)));
   }
 
+  function feedbackStorageKey(id) {
+    return `calculus-check-read:${state?.participant?.participantId||''}:${id}`;
+  }
+  function feedbackAcknowledged(id) {
+    try{return Boolean(id && localStorage.getItem(feedbackStorageKey(id)));}catch{return false;}
+  }
+  function feedbackFromResult(result,scopeKey) {
+    return {...result,id:`${result.checkId}:${result.at||''}`,scopeKey,unitId:result.unitId||scopeKey,
+      tone:result.status==='correct'?'success':result.status==='incorrect'?'warning':'neutral',
+      title:result.status==='correct'?'本轮检查通过':result.status==='incorrect'?'这道题还需要巩固':'已结束本轮检查',
+      text:result.status==='correct'?'这道题回答正确。你可以继续学习，也可以回看下面的解释。':result.status==='incorrect'?'本次回答尚未正确。对照答案和解释，再决定下一步。':'已跳过本次检查，不记为答错。'};
+  }
+  function checkFeedbackHistory(meta=courseMeta()) {
+    const records=(proactiveStudy.agentRuntime?.memory||[]).map(row=>({...row.payload?.outcome,scopeKey:row.scope,at:row.payload?.outcome?.at||row.created_at}));
+    for(const c of proactiveStudy.supportCycles||[])if(c.checkResult)records.push({...c.checkResult,scopeKey:c.scope});
+    if(proactiveCheckFeedback)records.push(proactiveCheckFeedback);
+    const unique=new Map();
+    for(const r of records){
+      if(r.scopeKey!==proactiveScopeKey(meta)||(r.unitId&&r.unitId!==meta.unitId)||!r.checkId)continue;
+      unique.set(r.checkId,{...feedbackFromResult(r,r.scopeKey),...(r.text?{text:r.text,title:r.title,tone:r.tone}:{})});
+    }
+    return [...unique.values()].sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+  }
   function currentCheckFeedback(meta = courseMeta()) {
-    const f=proactiveCheckFeedback;
-    return f && f.scopeKey===proactiveScopeKey(meta) && f.unitId===meta.unitId
-      && f.sceneType===(meta.sceneType||'slide') && (!f.expiresAt||Date.now()<f.expiresAt) ? f : null;
+    if(proactiveCheckFeedback?.tone==='error' && proactiveCheckFeedback.unitId===meta.unitId)return proactiveCheckFeedback;
+    return checkFeedbackHistory(meta).find(f=>!feedbackAcknowledged(f.id)) || null;
+  }
+  function acknowledgeCheckFeedback(id) {
+    try{localStorage.setItem(feedbackStorageKey(id),'1');}catch{}
+    if(proactiveCheckFeedback && `${proactiveCheckFeedback.checkId}:${proactiveCheckFeedback.at||''}`===id)proactiveCheckFeedback=null;
+    global.TaskSupport?.leaveConversation();render();
+  }
+  function pendingIndependentCheck() {
+    if(!isSignedInNow()||global.FirstSessionBudget?.closed)return null;
+    const c=(proactiveStudy.supportCycles||[]).find(c=>c.status==='awaiting_check');
+    if(c)return {source:'cycle',scopeKey:c.scope,unitId:c.scope,sceneType:c.sceneType||'slide',checkId:c.check.id,id:c.id};
+    const row=proactiveStudy.policyStates.find(r=>r.lifecycle?.phase==='awaiting_independent_attempt'
+      && r.verificationCheck?.id && r.lifecycle.activeVerificationCheckId===r.verificationCheck.id
+      && r.lifecycle.lastVerificationCheckId!==r.verificationCheck.id);
+    return row?{source:'policy',scopeKey:row.scopeKey,checkId:row.verificationCheck.id,...row.checkContext,unitId:row.checkContext?.unitId||row.scopeKey}:null;
   }
 
   function designSpaceSnapshot() {
@@ -130,7 +168,7 @@
     const locked = quizAssistantLocked(meta, false)
       || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession() || global.ThreeArmStudyUI?.judgmentActive);
     const eligible = isSignedInNow() && meta.supported && meta.taskReady !== false && !locked && learningViewActive();
-    const offer = eligible && proactiveDecision?.unitId === meta.unitId
+    const offer = eligible && !global.FirstSessionBudget?.closed && proactiveDecision?.unitId === meta.unitId
       && (!proactiveDecision.sceneType || proactiveDecision.sceneType === (meta.sceneType||'slide'))
       && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)
       ? proactiveDecision : null;
@@ -156,17 +194,17 @@
       assignment: proactiveStudy.assignment || null,
       researchControls: proactiveStudy.researchControls || null,
       agentRuntime: eligible ? proactiveStudy.agentRuntime || null : null,
-      supportCycle: eligible ? (proactiveStudy.supportCycles||[]).find(c=>c.scope===proactiveScopeKey(meta)&&(!c.sceneType||c.sceneType===(meta.sceneType||'slide')||c.status==='awaiting_check')) || null : null,
+      supportCycle: eligible && !global.FirstSessionBudget?.closed ? (proactiveStudy.supportCycles||[]).find(c=>c.scope===proactiveScopeKey(meta)&&(!c.sceneType||c.sceneType===(meta.sceneType||'slide')||c.status==='awaiting_check')) || null : null,
       supportBusy: Boolean(global.SupportCycleUI?.busy),
       pilotRevision: global.PilotStudyUI?.revision || 0,
       policyState: proactiveScopeState(meta), observation,
       offer: offer ? { ...offer } : null,
-      check: eligible ? proactiveVerificationCheck(meta) : null,
+      check: eligible && !global.FirstSessionBudget?.closed ? proactiveVerificationCheck(meta) : null,
       checkSelection: eligible ? proactiveCheckSelection : "",
       prompt: eligible && usableProactivePrompt(pendingProactivePrompt, meta)
         ? { ...pendingProactivePrompt } : null,
       feedback: eligible ? currentCheckFeedback(meta) : null,
-      busy: proactiveChoiceSaving || proactiveCheckSubmitting || isAsking,
+      busy: Boolean(global.FirstSessionBudget?.closed) || proactiveChoiceSaving || proactiveCheckSubmitting || isAsking,
       providerLabel: provider.live ? "AI 助教" : "模拟回复",
       assistantOpen: isOpen
     };
@@ -627,7 +665,15 @@ const proactiveJustificationDrafts = new Map();
 
   function quizAssistantLocked(meta = courseMeta(), includeSupportCheck = true) {
     return Boolean(meta?.isQuiz && !meta.quizSubmitted || global.CommonLearning?.protects()
-      || includeSupportCheck && (proactiveStudy.supportCycles||[]).some(c=>c.status==="awaiting_check"));
+      || includeSupportCheck && Boolean(pendingIndependentCheck()));
+  }
+  function conceptDiscussionMeta(meta=courseMeta()) {
+    if(!meta.isQuiz||!meta.quizSubmitted||meta.unitId!==`${meta.chapterId}-pre`)return meta;
+    const chapter=typeof getChapter==='function'?getChapter(meta.chapterId):null;
+    const unit=chapter?.units?.find(item=>item.type==='knowledge');
+    if(!unit)return meta;
+    return {...meta,conceptDiscussion:true,unitId:unit.id,unitLabel:unit.label||'课程概念',unitType:'knowledge',
+      knowledgePointId:unit.id,knowledgePointLabel:unit.label||'课程概念',sceneType:'slide',learningSurface:'slide',isQuiz:false,quizSubmitted:false};
   }
 
   function quizParticipationAccessAllowed(meta = courseMeta()) {
@@ -785,7 +831,7 @@ const proactiveJustificationDrafts = new Map();
 
   function proactiveCollectionEnabled(meta = courseMeta()) {
     if (
-      proactiveOutcomesOpen
+      global.FirstSessionBudget?.closed || global.RegulationTransferUI?.active || proactiveOutcomesOpen
       || global.OperationGuide?.active
       || proactiveStudy.agentAssistanceBlocked
       || activeProactiveOutcomeSession()
@@ -1707,6 +1753,9 @@ const proactiveJustificationDrafts = new Map();
   }
 
   function proactiveOutcomeFigureNode(figure) {
+    if(figure?.src?.startsWith('assets/assessment/functions-limits-r11/') && typeof renderAssessmentFigure==='function'){
+      const host=document.createElement('div');host.innerHTML=renderAssessmentFigure(figure);return host.firstElementChild;
+    }
     if (!figure || !/^resources\/assessment\/v14-c3-r3\/[^/\\]+-r3\.svg$/u.test(figure.src || "")) {
       return null;
     }
@@ -1833,7 +1882,7 @@ const proactiveJustificationDrafts = new Map();
       fieldset.appendChild(legend);
       const figure = proactiveOutcomeFigureNode(item.figure);
       if (figure) fieldset.appendChild(figure);
-      item.options.forEach((option) => {
+      item.options.filter(option=>!['__skip__','skip'].includes(option.value)).forEach((option) => {
         const labelNode = document.createElement("label");
         labelNode.classList.toggle("unknown-choice-option", option.value === "__unknown__");
         const input = document.createElement("input");
@@ -1859,6 +1908,11 @@ const proactiveJustificationDrafts = new Map();
         labelNode.append(input, text);
         fieldset.appendChild(labelNode);
       });
+      const skip=document.createElement('button'),skipped=['skip','__skip__'].includes(proactiveOutcomeResponses[item.id]);
+      skip.type='button';skip.className='quiz-omission-toggle';skip.textContent=skipped?'已暂不作答 · 返回作答':'暂不作答';
+      skip.disabled=proactiveOutcomesSubmitting||proactiveOutcomeWithdrawing||proactiveOutcomeSkipConfirming;
+      skip.onclick=()=>{proactiveOutcomeResponses={...proactiveOutcomeResponses};if(skipped)delete proactiveOutcomeResponses[item.id];else proactiveOutcomeResponses[item.id]='skip';proactiveOutcomeStatus='正在保存作答草稿。';renderProactiveOutcomes();saveProactiveOutcomeDraft();};
+      fieldset.append(skip);
       section.appendChild(fieldset);
     });
 
@@ -4185,7 +4239,7 @@ const proactiveJustificationDrafts = new Map();
     return article;
   }
 
-  function proactiveCheckFeedbackNode(feedback) {
+  function proactiveCheckFeedbackNode(feedback, { history=false }={}) {
     const article = document.createElement("article");
     article.className = `knowledge-message assistant knowledge-proactive-check-feedback is-${feedback.tone || "neutral"}`;
     const heading = document.createElement("div");
@@ -4195,6 +4249,15 @@ const proactiveJustificationDrafts = new Map();
     const body = document.createElement("p");
     setQuestionMathContent(body, feedback.text || "");
     article.append(heading, body);
+    article.setAttribute('role','status');
+    for(const [label,value] of [['题目',feedback.prompt],['你的选择',feedback.responseLabel],['正确答案',feedback.correctLabel],['解释',feedback.explanation]]) {
+      if(!value)continue;
+      const p=document.createElement('p');setQuestionMathContent(p,`${label}：${value}`);article.append(p);
+    }
+    if(!history && feedback.id){
+      const done=document.createElement('button');done.type='button';done.textContent='收起结果，继续学习';
+      done.onclick=()=>acknowledgeCheckFeedback(feedback.id);article.append(done);
+    }
     return article;
   }
 
@@ -4337,6 +4400,7 @@ const proactiveJustificationDrafts = new Map();
 
   async function submitProactiveVerification(check, options = {}) {
     const meta = courseMeta();
+    const owner=state.authToken,generation=exposureGeneration;
     const scopeKey = proactiveScopeKey(meta);
     const declined = options.declined === true;
     if (
@@ -4375,6 +4439,7 @@ const proactiveJustificationDrafts = new Map();
         })
       });
       const payload = await response.json().catch(() => ({}));
+      if(owner!==state.authToken||generation!==exposureGeneration)return false;
       if (!response.ok || payload.ok === false) {
         const error = new Error(payload.message || "这道支架后检查暂时无法提交。");
         error.code = payload.code || "";
@@ -4401,8 +4466,9 @@ const proactiveJustificationDrafts = new Map();
         L5: "一个保留最后步骤的部分例题"
       }[decision.supportLevel] || "下一层最小必要支架";
       proactiveCheckFeedback = {
+        ...result,id:result.checkId||check.id,checkId:result.checkId||check.id,at:result.at||new Date().toISOString(),
         scopeKey,
-        unitId: meta.unitId, sceneType: meta.sceneType || 'slide', expiresAt: Date.now()+6000,
+        unitId: meta.unitId, sceneType: meta.sceneType || 'slide',
         tone: result.status === "correct"
           ? "success"
           : result.status === "incorrect" ? "warning" : "neutral",
@@ -4422,8 +4488,6 @@ const proactiveJustificationDrafts = new Map();
             : "知点不会继续升级支架，你仍可以按自己的节奏学习。"
       };
       global.TaskSupport?.leaveConversation();
-      const completedFeedback=proactiveCheckFeedback;
-      setTimeout(()=>{if(proactiveCheckFeedback===completedFeedback){proactiveCheckFeedback=null;render();}},6000);
       if (nextSupportAuthorized) {
         proactiveDecision = {
           ...decision,
@@ -4431,6 +4495,7 @@ const proactiveJustificationDrafts = new Map();
           decisionId: payload.decisionId || "",
           kind: "independent_attempt_outcome",
           unitId: meta.unitId,
+          sceneType: meta.sceneType || 'slide',
           createdAt: new Date().toISOString(),
           interventionId: payload.interventionId || "",
           serverIssued: true
@@ -4452,6 +4517,7 @@ const proactiveJustificationDrafts = new Map();
       render();
       return true;
     } catch (error) {
+      if(owner!==state.authToken||generation!==exposureGeneration)return false;
       proactiveCheckFeedback = {
         scopeKey,
         unitId: meta.unitId, sceneType: meta.sceneType || 'slide',
@@ -4467,8 +4533,7 @@ const proactiveJustificationDrafts = new Map();
       render();
       return false;
     } finally {
-      proactiveCheckSubmitting = false;
-      renderMessages();
+      if(owner===state.authToken&&generation===exposureGeneration){proactiveCheckSubmitting = false;renderMessages();}
     }
   }
 
@@ -4488,7 +4553,7 @@ const proactiveJustificationDrafts = new Map();
     const options = document.createElement("div");
     options.className = "knowledge-proactive-verification-options";
     options.setAttribute("role", "radiogroup");
-    (Array.isArray(check.options) ? check.options : []).forEach((item) => {
+    (Array.isArray(check.options) ? check.options : []).forEach((item, optionIndex) => {
       const button = document.createElement("button");
       button.classList.toggle("unknown-choice-option", item.value === "__unknown__");
       button.type = "button";
@@ -4502,7 +4567,7 @@ const proactiveJustificationDrafts = new Map();
         proactiveCheckSelection === item.value
       );
       button.disabled = proactiveCheckSubmitting;
-      setQuestionMathContent(button, item.value === "__unknown__" ? "我不会" : `${item.value}. ${item.label || ""}`);
+      setQuestionMathContent(button, item.value === "__unknown__" ? "我不会" : `${String.fromCharCode(65+optionIndex)}. ${item.label || ""}`);
       button.addEventListener("click", () => {
         proactiveCheckSelection = item.value;
         proactiveCheckFeedback = null;
@@ -4785,25 +4850,37 @@ const proactiveJustificationDrafts = new Map();
       || scopedFeedback
       || inlineOffer
     );
+    const pending=pendingIndependentCheck(),history=checkFeedbackHistory(meta);
+    const locatedSupport=supportSurfaceOwnsContent() && (hasProactiveContent || pending || global.SupportCycleUI?.active(designSpaceSnapshot().supportCycle));
     // Preserve focused/pressed controls when a context refresh has no visible changes.
     const renderKey = JSON.stringify([
       meta.unitId, messages, pendingProactivePrompt, loadingHistory,
       verificationCheck, scopedFeedback, inlineOffer, proactiveCheckSelection,
-      proactiveCheckSubmitting, openMessageSourceId, supportView
+      proactiveCheckSubmitting, openMessageSourceId, supportView,pending,history,locatedSupport
     ]);
     if (renderKey === messagesRenderKey) return;
     messagesRenderKey = renderKey;
     els.messages.replaceChildren();
-    if (verificationCheck) {
-      if (!supportSurfaceOwnsContent()) els.messages.appendChild(proactiveVerificationNode(verificationCheck));
-      else els.messages.appendChild(document.createTextNode("正在独立检查，完成或跳过后可继续对话。"));
+    if (verificationCheck || pending) {
+      if (verificationCheck && !supportSurfaceOwnsContent()) els.messages.appendChild(proactiveVerificationNode(verificationCheck));
+      else {
+        const p=document.createElement('p');p.textContent='有一道独立检查尚未完成。完成或暂不检查后，可以继续提问。';
+        const b=document.createElement('button');b.type='button';b.textContent='返回独立检查';b.onclick=()=>global.KnowledgeAssistant.resumeIndependentCheck();
+        els.messages.append(p,b);
+      }
+      if(scopedFeedback?.tone==='error')els.messages.append(proactiveCheckFeedbackNode(scopedFeedback));
       return;
+    }
+    if(locatedSupport){
+      const p=document.createElement('p');p.textContent='这一步的知点帮助在学习内容旁。';
+      const b=document.createElement('button');b.type='button';b.textContent='查看当前帮助与反馈';
+      b.onclick=()=>{global.LearningWorkspace?.showTask?.();global.TaskSupport?.locate?.();};els.messages.append(p,b);
     }
     if (
       !messages.length
       && !pendingProactivePrompt
       && !loadingHistory
-      && !hasProactiveContent
+      && !hasProactiveContent && !locatedSupport
     ) {
       els.messages.appendChild(els.empty);
       els.empty.hidden = false;
@@ -4846,6 +4923,11 @@ const proactiveJustificationDrafts = new Map();
     }
     if (inlineOffer && !supportSurfaceOwnsContent()) {
       els.messages.appendChild(proactiveInlineOfferNode(inlineOffer));
+    }
+    if(history.length){
+      const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='回看独立检查结果';details.append(summary);
+      for(const feedback of history.slice(0,8))details.append(proactiveCheckFeedbackNode(feedback,{history:true}));
+      els.messages.append(details);
     }
     // Replacing the message DOM can clamp scrollTop; never override a learner reading above.
     scrollViewport.scrollTop = nearBottom && messages.length
@@ -4999,6 +5081,7 @@ const proactiveJustificationDrafts = new Map();
 
   function renderUnit() {
     const meta = courseMeta();
+    const discussion=conceptDiscussionMeta(meta);
     const awaitingAgent=rehearsalConversationPending(meta);
     const quizLocked = quizAssistantLocked(meta);
     const measurementBlocked = Boolean(
@@ -5008,8 +5091,8 @@ const proactiveJustificationDrafts = new Map();
     );
     const conversationLimited = conversationAtLimit();
     renderLauncherAvailability(meta);
-    els.unit.textContent = meta.knowledgePointLabel || meta.unitLabel || "等待课件加载";
-    els.unitDetail.textContent = conversationLimited
+    els.unit.textContent = discussion.knowledgePointLabel || discussion.unitLabel || "等待课件加载";
+    els.unitDetail.textContent = discussion.conceptDiscussion?'前测已提交，可先问课程概念；六维设置影响主动帮助方式，当前测验题暂不讲解。':conversationLimited
       ? `这段对话已完成 ${CONVERSATION_TURN_LIMIT} 轮，请新建对话继续。`
       : meta.sceneType
       ? `${currentSceneLabel(meta)}，对话会保存在这个知识点下`
@@ -5041,11 +5124,11 @@ const proactiveJustificationDrafts = new Map();
           : "写下当前这一步不明白的地方…";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
     if (els.input.disabled) els.unitDetail.textContent = els.input.placeholder;
-    els.pick.disabled = !meta.supported
+    els.pick.disabled = discussion.conceptDiscussion || !meta.supported
       || !isSignedInNow()
       || quizLocked
       || measurementBlocked;
-    els.selectionAsk.disabled = quizLocked
+    els.selectionAsk.disabled = discussion.conceptDiscussion || quizLocked
       || measurementBlocked
       || conversationLimited;
     els.selectionAsk.title = measurementBlocked
@@ -5095,6 +5178,9 @@ const proactiveJustificationDrafts = new Map();
   }
 
   function hideNoteEditor(options = {}) {
+    cancelNoteTextDrag();
+    CoursewareContext.setNoteDropEnabled(false);
+    noteEditorOwner = '';
     noteEditorSelection = null;
     editingNoteId = "";
     selectedNoteColor = "amber";
@@ -5140,8 +5226,8 @@ const proactiveJustificationDrafts = new Map();
   function showSelectionAction(payload) {
     if (!payload?.contextRef || !payload.rect) return;
     pendingSelection = payload;
-    noteEditorSelection = null;
-    els.noteEditor.hidden = true;
+    // Selecting more source text must not discard the open note or its anchor.
+    if (els.noteEditor.hidden) noteEditorSelection = null;
     els.selectionToolbar.hidden = false;
     placeFloatingElement(els.selectionToolbar, payload.rect, 214, 44, 9);
   }
@@ -5166,8 +5252,14 @@ const proactiveJustificationDrafts = new Map();
 
   function showNoteEditor(selection = pendingSelection, existingNote = null) {
     if (!selection?.contextRef || !selection.rect) return;
+    if (!els.noteEditor.hidden && noteEditorSelection && !existingNote) {
+      els.selectionToolbar.hidden = true;
+      els.noteInput.focus({ preventScroll: true });
+      return;
+    }
     const note = existingNote || matchingNoteForSelection(selection);
     noteEditorSelection = selection;
+    noteEditorOwner = noteDropOwner();
     editingNoteId = note?.id || "";
     selectedNoteColor = note?.color || "amber";
     els.selectionToolbar.hidden = true;
@@ -5177,13 +5269,87 @@ const proactiveJustificationDrafts = new Map();
       || selection.contextRef.label
       || "当前选中的课件内容";
     els.noteInput.value = note?.note || "";
+    els.noteInput.placeholder = '写下你的笔记，或把课件文字拖到这里…';
     els.noteDelete.hidden = !editingNoteId;
     renderNoteColorChoice();
     els.noteEditor.hidden = false;
+    CoursewareContext.setNoteDropEnabled(noteDropAllowed());
     els.noteEditor.dataset.workspace = selection.workspace ? "true" : "false";
     renderNoteSyncStatus();
     placeFloatingElement(els.noteEditor, selection.rect, 420, 390, 11);
     window.setTimeout(() => els.noteInput.focus({ preventScroll: true }), 0);
+  }
+
+  function noteDropOwner() {
+    const meta = courseMeta();
+    return [noteOwnerKey(), meta.chapterId, meta.unitId, meta.sceneType, global.ThreeArmStudyUI?.run?.id || ''].join('|');
+  }
+
+  function noteDropAllowed() {
+    return !document.hidden && !els.noteEditor.hidden && els.noteInput.checkVisibility()
+      && noteEditorOwner === noteDropOwner() && isSignedInNow()
+      && (!noteEditorSelection?.frame || noteEditorSelection.frame.isConnected)
+      && !quizAssistantLocked() && !pendingIndependentCheck()
+      && !activeProactiveOutcomeSession() && !global.ThreeArmStudyUI?.judgmentActive;
+  }
+
+  function appendNoteText(value) {
+    if (!noteDropAllowed()) return false;
+    const text = String(value || '').replace(/\u0000/g, '').trim();
+    const existing = els.noteInput.value;
+    const separator = existing && !existing.endsWith('\n') ? '\n' : '';
+    const available = Math.max(0, els.noteInput.maxLength - existing.length - separator.length);
+    const appended = text.slice(0, available).replace(/[\uD800-\uDBFF]$/, '');
+    if (!appended) return false;
+    els.noteInput.value = existing + separator + appended;
+    els.noteInput.dispatchEvent(new Event('input', { bubbles: true }));
+    els.noteInput.focus({ preventScroll: true });
+    els.noteInput.setSelectionRange(els.noteInput.value.length, els.noteInput.value.length);
+    track('knowledge_note_text_dropped', { characters: appended.length, truncated: appended.length < text.length });
+    return true;
+  }
+
+  function cancelNoteTextDrag() {
+    if (!noteTextDrag) return;
+    clearTimeout(noteTextDrag.timeout);
+    noteTextDrag.layer.remove();
+    noteTextDrag = null;
+    els.noteEditor.classList.remove('is-drop-target');
+  }
+
+  function beginNoteTextDrag(payload) {
+    if (!noteDropAllowed() || !payload.valid?.()) return;
+    cancelNoteTextDrag();
+    els.selectionToolbar.hidden = true;
+    const layer = document.createElement('div');
+    layer.className = 'knowledge-note-drag-layer';
+    layer.tabIndex = -1;
+    layer.setAttribute('aria-label', '拖动选中文字；松开到笔记输入框，按 Esc 取消');
+    const drag = { layer, payload, owner: noteEditorOwner, moved: false, timeout: setTimeout(cancelNoteTextDrag, 15000) };
+    noteTextDrag = drag;
+    const inside = event => {
+      const rect = els.noteInput.getBoundingClientRect();
+      return event.clientX >= rect.left && event.clientX <= rect.right
+        && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    };
+    layer.addEventListener('pointermove', event => {
+      if (!event.isTrusted || !(event.buttons & 1) || !payload.valid() || !noteDropAllowed()) {
+        cancelNoteTextDrag(); return;
+      }
+      drag.moved = true;
+      els.noteEditor.classList.toggle('is-drop-target', inside(event));
+    });
+    layer.addEventListener('pointerup', event => {
+      const accept = event.isTrusted && event.button === 0 && drag.moved && inside(event)
+        && noteTextDrag === drag && payload.valid() && noteDropAllowed() && drag.owner === noteEditorOwner;
+      event.preventDefault(); event.stopPropagation();
+      cancelNoteTextDrag();
+      if (accept) appendNoteText(payload.text);
+    });
+    layer.addEventListener('pointercancel', cancelNoteTextDrag);
+    layer.addEventListener('pointerleave', event => { if (!event.relatedTarget) cancelNoteTextDrag(); });
+    document.body.append(layer);
+    layer.focus({ preventScroll: true });
   }
 
   function saveSelectionNote() {
@@ -5281,6 +5447,7 @@ const proactiveJustificationDrafts = new Map();
     },
     onPickingChange: handlePickingChange,
     onTextSelection: showSelectionAction,
+    onNoteTextDrag: beginNoteTextDrag,
     onTextSelectionCleared: ({ source }) => {
       // Editing a note deliberately keeps its captured excerpt after selection
       // disappears. A background document must not clear another frame's selection.
@@ -5302,6 +5469,7 @@ const proactiveJustificationDrafts = new Map();
   global.CoursewareContext = CoursewareContext;
 
   function assistantParams(meta = courseMeta()) {
+    meta=conceptDiscussionMeta(meta);
     return new URLSearchParams({
       chapterId: meta.chapterId,
       unitId: meta.unitId,
@@ -5579,7 +5747,9 @@ const proactiveJustificationDrafts = new Map();
   }
 
   async function submitQuestion() {
+    if(global.FirstSessionBudget?.closed){setStatus('本次现场学习已结束，可以查看已保存的记录。','');return;}
     const meta = courseMeta();
+    const discussion=conceptDiscussionMeta(meta);
     const question = els.input.value.trim();
     const assistantIntent = pendingAssistantIntent;
     const proactivePrompt = usableProactivePrompt(pendingProactivePrompt, meta)
@@ -5619,14 +5789,14 @@ const proactiveJustificationDrafts = new Map();
     loadingHistory = false;
     loadingConversations = false;
     const requestPayload = {
-      chapterId: meta.chapterId,
-      unitId: meta.unitId,
-      sceneType: meta.sceneType,
-      conversationId: activeConversationId,
+      chapterId: discussion.chapterId,
+      unitId: discussion.unitId,
+      sceneType: discussion.sceneType,
+      conversationId: discussion.conceptDiscussion&&!conversations.some(c=>c.id===activeConversationId&&c.unitId===discussion.unitId)?'':activeConversationId,
       question,
       assistantIntent,
-      proactiveInterventionId: proactivePrompt?.interventionId || "",
-      contextRef: activeContext || {
+      proactiveInterventionId: discussion.conceptDiscussion?'':proactivePrompt?.interventionId || "",
+      contextRef: discussion.conceptDiscussion?{kind:'unit',scope:'lesson',chapterId:discussion.chapterId,unitId:discussion.unitId,unitLabel:discussion.unitLabel,knowledgePointId:discussion.knowledgePointId,knowledgePointLabel:discussion.knowledgePointLabel}:activeContext || {
         kind: "unit",
         scope: meta.isQuiz ? "quiz" : meta.learningSurface || "lesson",
         chapterId: meta.chapterId,
@@ -5754,6 +5924,7 @@ const proactiveJustificationDrafts = new Map();
     clearTimeout(syncTimer);
     syncTimer = null;
     const meta = courseMeta();
+    if (!els.noteEditor.hidden && !noteDropAllowed()) hideSelectionAction();
     const nextParticipantId = isSignedInNow()
       ? String(state?.participant?.participantId || "")
       : "";
@@ -5792,6 +5963,8 @@ const proactiveJustificationDrafts = new Map();
     if (participantChanged) proactiveCoach?.reset?.({ clearCooldowns: true });
     if (participantChanged) {
       supportView = { placement: "inline", modality: "tip", format:"plain" };
+      proactiveCheckFeedback=null;proactiveCheckSubmitting=false;
+      proactiveStudy.supportCycles=[];proactiveStudy.agentRuntime=null;proactiveStudy.policyStates=[];
       proactiveStudy.learningMemory = null;
       syncProactiveExposureOwner();
     }
@@ -6027,6 +6200,23 @@ const proactiveJustificationDrafts = new Map();
     event.preventDefault();
     saveSelectionNote();
   });
+  const plainNoteDrop = transfer => transfer && !transfer.files?.length
+    && !Array.from(transfer.types || []).includes('Files')
+    && Array.from(transfer.types || []).includes('text/plain');
+  els.noteInput.addEventListener('dragover', event => {
+    event.preventDefault();
+    const allowed = !els.noteEditor.hidden && plainNoteDrop(event.dataTransfer);
+    if (event.dataTransfer) event.dataTransfer.dropEffect = allowed ? 'copy' : 'none';
+    els.noteEditor.classList.toggle('is-drop-target', allowed);
+  });
+  els.noteInput.addEventListener('dragleave', () => els.noteEditor.classList.remove('is-drop-target'));
+  els.noteInput.addEventListener('drop', event => {
+    event.preventDefault(); event.stopPropagation();
+    els.noteEditor.classList.remove('is-drop-target');
+    if (els.noteEditor.hidden || !plainNoteDrop(event.dataTransfer)) return;
+    // Assign only plain textarea text; never insert the accompanying text/html.
+    appendNoteText(event.dataTransfer.getData('text/plain'));
+  });
   els.form.addEventListener("submit", (event) => {
     event.preventDefault();
     submitQuestion();
@@ -6053,7 +6243,7 @@ const proactiveJustificationDrafts = new Map();
       && !els.selectionToolbar.contains(event.target)
       && !els.noteEditor.contains(event.target)
     ) {
-      hideSelectionAction();
+      hideSelectionAction({ keepEditor: !els.noteEditor.hidden, keepPending: !els.noteEditor.hidden });
     }
   }, true);
   window.addEventListener("scroll", (event) => {
@@ -6062,6 +6252,11 @@ const proactiveJustificationDrafts = new Map();
     hideSelectionAction();
   }, true);
   document.addEventListener("keydown", (event) => {
+    if (event.key === 'Escape' && noteTextDrag) {
+      event.preventDefault(); cancelNoteTextDrag();
+      els.noteInput.focus({ preventScroll: true });
+      return;
+    }
     if (proactiveOutcomesOpen) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -6104,11 +6299,20 @@ const proactiveJustificationDrafts = new Map();
     applyPanelPosition();
   });
   document.addEventListener("fullscreenchange", syncFullscreenHost);
+  window.addEventListener('blur', cancelNoteTextDrag);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelNoteTextDrag(); });
+  window.addEventListener('cq:authentication-changed', () => hideSelectionAction());
+  for (const type of ['cq:regulation-state', 'cq:proactive-state', 'cq:lesson-rendered']) {
+    window.addEventListener(type, () => {
+      if (!els.noteEditor.hidden && !noteDropAllowed()) hideSelectionAction();
+    });
+  }
   window.addEventListener("cq:lesson-rendered", scheduleSync);
   window.addEventListener("cq:common-learning-change", scheduleSync);
   window.addEventListener("cq:classroom-surface-change", sync);
   window.addEventListener("cq:learning-signal", consumeProactiveSignal);
   proactiveTickTimer = window.setInterval(runProactiveTick, 10 * 1000);
+  global.addEventListener('cq:first-session-closed',()=>{proactiveDecision=null;pendingProactivePrompt=null;proactiveCheckSubmitting=false;render();});
   window.addEventListener("beforeunload", () => window.clearInterval(proactiveTickTimer), { once: true });
 
   const lessonPlayer = document.querySelector("#lesson-player");
@@ -6120,6 +6324,28 @@ const proactiveJustificationDrafts = new Map();
   global.KnowledgeAssistant = Object.freeze({
     sync,
     designSpaceSnapshot,
+    pendingIndependentCheck,
+    async resumeIndependentCheck() {
+      const pending=pendingIndependentCheck();if(!pending)return false;
+      if(typeof selectUnit==='function')selectUnit(pending.unitId);
+      if(pending.sceneType && !['quiz','slide'].includes(pending.sceneType)){
+        if(typeof setKnowledgeSceneType==='function')setKnowledgeSceneType(pending.unitId,pending.sceneType);
+        global.LearningWorkspace?.showInteractive?.();
+      }else if(pending.sceneType==='slide')global.LearningWorkspace?.showLecture?.();
+      if(typeof syncLearningSnapshot==='function')await syncLearningSnapshot('resume_independent_check');
+      await loadProactiveStudy(courseMeta(),{force:true});render();
+      global.LearningWorkspace?.showTask?.();requestAnimationFrame(()=>global.TaskSupport?.locate?.());return true;
+    },
+    async skipPendingIndependentCheck() {
+      const pending=pendingIndependentCheck();if(!pending)return false;
+      const owner=state.authToken,path=pending.source==='cycle'?'api/learning/support-cycle':'api/learning/proactive/check';
+      const body=pending.source==='cycle'?{action:'skip_check',id:pending.id,scope:pending.scopeKey,unitId:pending.unitId,sceneType:pending.sceneType,checkId:pending.checkId}
+        :{chapterId:proactiveStudy.chapterId,scopeKey:pending.scopeKey,unitId:pending.unitId,sceneType:pending.sceneType,checkId:pending.checkId,resolution:'declined'};
+      const r=await fetch(path,{method:'POST',headers:{Authorization:`Bearer ${owner}`,'Content-Type':'application/json'},body:JSON.stringify(body)}),payload=await r.json();
+      if(owner!==state.authToken)throw new Error('账号已变化。');
+      if(!r.ok)throw new Error(payload.message||'暂未结束检查，请重试。');
+      await loadProactiveStudy(courseMeta(),{force:true});render();return true;
+    },
     refreshSupportSurface() { scheduleDesignSpaceSync(); },
     async reloadLearnerPolicy() {
       proactiveDecision=null;pendingProactivePrompt=null;
@@ -6204,7 +6430,7 @@ const proactiveJustificationDrafts = new Map();
       const snapshot = designSpaceSnapshot();
       const fragment = document.createDocumentFragment();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
-      if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));return fragment;}
+      if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));if(snapshot.feedback?.tone==='error')fragment.appendChild(proactiveCheckFeedbackNode(snapshot.feedback));return fragment;}
       if(snapshot.muted){
         const notice=document.createElement('div');notice.className='support-quiet-state';notice.append('本知识点的主动提醒已关闭，仍可自己提问。');
         const restore=document.createElement('button');restore.type='button';restore.textContent='恢复本知识点提醒';restore.disabled=snapshot.busy;restore.onclick=()=>updateProactiveScopePreference('standard');notice.append(restore);fragment.append(notice);
@@ -6241,7 +6467,7 @@ const proactiveJustificationDrafts = new Map();
     },
     async askInTask(question, questionId="") {
       const s=designSpaceSnapshot(),meta=courseMeta();
-      if(!s.signedIn||s.locked||s.check||s.supportCycle?.status==="awaiting_check"||!s.active||isAsking)return false;
+      if(global.FirstSessionBudget?.closed||!s.signedIn||s.locked||s.check||s.supportCycle?.status==="awaiting_check"||!s.active||isAsking)return false;
       questionId=questionId||s.prompt?.questionId||s.offer?.questionId||'';
       if(questionId){
         const card=[...document.querySelectorAll(".question-card[data-question]")].find(node=>node.dataset.question===questionId);
@@ -6284,9 +6510,8 @@ const proactiveJustificationDrafts = new Map();
         nickname: state?.participant?.nickname || "",
         signedIn: isSignedInNow(),
         locked,
-        pendingSupport: Boolean(proactiveDecision && !locked && isSignedInNow()
-          && proactiveDecision.unitId === meta.unitId
-          && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)),
+        pendingSupport: !locked && isSignedInNow() && Boolean(designSpaceSnapshot().offer
+          || currentCheckFeedback(meta) || global.SupportCycleUI?.active(designSpaceSnapshot().supportCycle)),
         noteSyncLabel: noteSyncState === "synced" ? "已同步" : noteSyncState === "syncing"
           ? "同步中" : ["error", "pending"].includes(noteSyncState) ? "同步未完成，本机保留" : "本机记录",
         learningMemory: locked || !isSignedInNow() || !proactiveStudy.loaded
@@ -6324,6 +6549,8 @@ const proactiveJustificationDrafts = new Map();
     },
     resetLearningGeneration() {
       exposureGeneration += 1;
+      proactiveCheckFeedback=null;proactiveCheckSubmitting=false;
+      proactiveStudy.supportCycles=[];proactiveStudy.agentRuntime=null;proactiveStudy.policyStates=[];
       proactiveStudy.learningMemory = null;
       syncProactiveExposureOwner();
       const ownerKey = noteOwnerKey();

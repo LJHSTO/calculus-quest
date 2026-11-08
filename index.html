@@ -19,7 +19,10 @@
           var url=new URL(typeof input==='string'?input:input.url,document.baseURI);
           if(url.origin===location.origin&&url.pathname.includes('/api/')){
             var options=Object.assign({},init||{}),headers=new Headers(options.headers||(input instanceof Request?input.headers:undefined));
-            headers.set('X-Study-Arm',value);options.headers=headers;
+            headers.set('X-Study-Arm',value);
+            var runId=window.ThreeArmStudyUI?.run?.id;
+            if(runId&&!/\/api\/auth\//.test(url.pathname)&&!url.pathname.endsWith('/api/study/enroll'))headers.set('X-Study-Run',runId);
+            options.headers=headers;
             return originalFetch.call(window,input,options);
           }
           return originalFetch.call(window,input,init);
@@ -68,6 +71,8 @@
     <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260922-hint-justification-v1" />
     <link rel="stylesheet" href="app/main/pilot-study.css?v=20261022" />
     <link rel="stylesheet" href="app/main/learner-setup.css?v=20261024" />
+    <link rel="stylesheet" href="app/main/first-session-budget.css?v=r11" />
+    <link rel="stylesheet" href="app/main/regulation-transfer.css?v=r11" />
     <link rel="stylesheet" href="app/main/learning-workspace.css?v=20261014-workspace-v4" />
     <link rel="stylesheet" href="app/main/openmaic-classroom.css?v=20261014-course-space-v8" />
     <link rel="stylesheet" href="app/main/system-announcements.css?v=20260726-announcements-v5" />
@@ -650,7 +655,9 @@
     <script src="app/shared/learner-preferences.js?v=20261024"></script>
     <script src="app/shared/study-stages.js?v=20261031"></script>
     <script src="app/main/pilot-study.js?v=20261024"></script>
+    <script src="app/main/first-session-budget.js?v=r11"></script>
     <script src="app/main/three-arm-study.js?v=20261031"></script>
+    <script src="app/main/regulation-transfer.js?v=r11"></script>
     <script src="app/main/learner-setup.js?v=20261024"></script>
     <script src="app/main/task-support.js?v=20261018-task-support"></script>
     <script src="app/main/proactive-surface.js?v=20261018-task-support"></script>

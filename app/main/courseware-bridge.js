@@ -3,6 +3,45 @@
   window.__calculusQuestContextBridge = true;
 
   const PARENT = window.parent;
+  let noteDropChannel = '';
+  let noteDragCandidate = null;
+  function beginNoteTextDrag(event) {
+    const candidate = noteDragCandidate;
+    if (!event.isTrusted || !candidate || candidate.started || !noteDropChannel) return;
+    candidate.started = true;
+    event.preventDefault();
+    try { candidate.target.releasePointerCapture(candidate.pointerId); } catch {}
+    post('cq:note-text-drag', { channel: noteDropChannel, text: candidate.text });
+  }
+  document.addEventListener('pointerdown', event => {
+    noteDragCandidate = null;
+    if (!event.isTrusted || !noteDropChannel || event.button !== 0
+      || event.target.closest?.('input,textarea,select,button,[contenteditable]')) return;
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    const inSelection = [...range.getClientRects()].some(rect => event.clientX >= rect.left
+      && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom);
+    if (!inSelection) return;
+    const text = selection.toString().trim().slice(0, 1200).replace(/[\uD800-\uDBFF]$/, '');
+    if (!text) return;
+    noteDragCandidate = { text, x: event.clientX, y: event.clientY, pointerId: event.pointerId, target: event.target, started: false };
+    try { event.target.setPointerCapture(event.pointerId); } catch {}
+  }, true);
+  document.addEventListener('pointermove', event => {
+    const candidate = noteDragCandidate;
+    if (!candidate || event.pointerId !== candidate.pointerId || !event.buttons) return;
+    candidate.distance = Math.hypot(event.clientX - candidate.x, event.clientY - candidate.y);
+    if (candidate.nativeStarted && candidate.distance >= 6) beginNoteTextDrag(event);
+  }, true);
+  document.addEventListener('dragstart', event => {
+    if (!noteDragCandidate || !noteDropChannel || !event.isTrusted) return;
+    event.preventDefault();
+    noteDragCandidate.nativeStarted = true;
+    if (noteDragCandidate.distance >= 6) beginNoteTextDrag(event);
+  }, true);
+  document.addEventListener('pointerup', () => { noteDragCandidate = null; }, true);
+  document.addEventListener('pointercancel', () => { noteDragCandidate = null; }, true);
   let authoredPlayback = false;
   const authoredMarks = new Map();
   const authored3dMarks=new Set();
@@ -545,7 +584,7 @@
     return {
       schemaVersion: 1,
       kind: kind || (tag === "canvas" ? "viewport" : latex ? "formula" : "object"),
-      scope: "interactive",
+      scope: document.body?.dataset.cqLecturePage === 'true' ? 'slide' : 'interactive',
       semanticId: id,
       label: labelFor(element),
       excerpt: compactMultiline(element?.textContent || "", 900),
@@ -1221,6 +1260,11 @@
   }
 
   window.addEventListener("message", (event) => {
+    if (event.source === PARENT && event.data?.type === 'cq:note-drop-mode') {
+      noteDropChannel = typeof event.data.channel === 'string' ? event.data.channel.slice(0, 100) : '';
+      noteDragCandidate = null;
+      return;
+    }
     if (event.source !== PARENT || !event.data || typeof event.data !== "object") return;
     const type = String(event.data.type || "");
     if (type === "cq:playback-widget") { applyAuthoredWidget(event.data); return; }

@@ -1,0 +1,14 @@
+'use strict';
+const assert = require('node:assert/strict'), budget = require('../lib/first-session-budget');
+const start = Date.UTC(2026, 10, 7), run = { mode: 'formal', firstSessionBudget: budget.start(new Date(start).toISOString()) };
+assert.equal(budget.project({}, start), null);
+assert.equal(budget.project(run, start + 3839e3).reservePosttest, false);
+assert.equal(budget.project(run, start + 3840e3).reservePosttest, true);
+budget.assertOpen(run, start + 5399e3);
+assert.throws(() => budget.assertOpen(run, start + 5400e3), { code: 'FIRST_SESSION_TIME_LIMIT' });
+assert.equal(budget.project(run, start + 4 * 86400e3).elapsedSeconds, 5400);
+budget.assertOpen({ ...run, mode: 'preview' }, start + 6000e3);
+const finished = { ...run, finalSurveyAt: new Date(start + 4700e3).toISOString() };
+assert.equal(budget.project(finished, start + 4 * 86400e3).elapsedSeconds, 4700);
+budget.assertOpen(finished, start + 4 * 86400e3);
+console.log('首场预算：64分钟预留提示、90分钟正式截止、体验提示、结束冻结与延迟随访分离通过。');

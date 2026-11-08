@@ -70,6 +70,11 @@
 #three-arm-dialog button:disabled{opacity:.5;cursor:default;}
 #three-arm-review,#three-arm-tasks{padding:8px 12px;border:1px solid #d5cdea;border-radius:9px;background:#fff;color:#4c3c80;font:500 13px/1.5 "Microsoft YaHei",sans-serif;cursor:pointer;}
 #three-arm-review:hover,#three-arm-tasks:hover{background:#f4f0ff;border-color:#947ad1;}
+#three-arm-review.user-menu-item,#three-arm-tasks.user-menu-item{width:100%;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:inherit;text-align:left;font:inherit;font-weight:900;}
+#three-arm-review.user-menu-item:hover,#three-arm-tasks.user-menu-item:hover{background:#f4f0ff;}
+.study-phase-grid{align-items:start;}
+.study-phase-grid:has(.study-linked-card:not([data-configuration-revision])){grid-template-columns:1fr;}
+#three-arm-dialog .study-phase-grid .study-linked-card:not([data-configuration-revision]){padding:12px 16px;background:#f8f7fc;}
 #three-arm-dialog .study-linked-card small{display:block;margin:7px 0;color:#53627a;}
 #three-arm-dialog:has([data-linked-feedback]){width:min(1040px,calc(100vw - 24px))}
 #three-arm-dialog .study-link-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;padding:12px;counter-reset:study-step}

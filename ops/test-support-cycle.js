@@ -67,7 +67,11 @@ async function main(){
  assert.throws(()=>store.act("alice",c.id,1,{action:"submit_check",checkId:"wrong",response:correct.value},{adapter}),/更新/);
  c=store.act("alice",c.id,1,{action:"submit_check",checkId:c.check.id,response:correct.value,score:0},{adapter});
  assert.equal(c.checkResult.correct,true);assert.equal(c.status,"closed");assert.equal(store.protects("alice",1),false);
- assert.throws(()=>store.act("alice",c.id,1,{action:"submit_check",checkId:c.check.id,response:correct.value},{adapter}),/更新/);
+ const eventCount=events.length,completedRevision=c.revision;
+ const replayed=store.act("alice",c.id,1,{action:"submit_check",checkId:c.check.id,response:correct.value},{adapter});
+ assert.deepEqual(replayed.checkResult,c.checkResult,"重复提交返回已保存结果");
+ assert.equal(replayed.revision,completedRevision);assert.equal(events.length,eventCount,"重复提交不能重复记分或落库");
+ assert.equal(c.checkResult.correctLabel,correct.label);assert.ok(c.checkResult.prompt);
  const bytes=database.export();database.close();database=new SQL.Database(bytes);store=createStore({db,clock:()=>time,experimentId:"synthetic"});
  assert.equal(store.current("alice",scope,1).checkResult.correct,true,"重启后原记录保留");
  c=store.report("alice",scope,1,input,profile,0);time+=121000;c=await store.advance("alice",scope,1,{guard,generate});assert.equal(c.status,"expired");

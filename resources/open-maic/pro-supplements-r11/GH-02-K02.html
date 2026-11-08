@@ -1,0 +1,71 @@
+<!doctype html><html lang='zh-CN'><head><script>window.__cqLectureError=false;window.addEventListener('error',function(){window.__cqLectureError=true;parent.postMessage({type:'cq:authored-lecture-error',pageId:"GH-02-K02-pro-r11-example"},'*');});</script><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>左右趋近与函数值</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#fff;overflow:hidden;font-family:'Microsoft YaHei','PingFang SC','Hiragino Sans GB',Arial,sans-serif;color:#334155}
+#stage{position:absolute;left:50%;top:50%;width:1000px;height:562.5px;margin:-281.25px 0 0 -500px;background:#fff;transform-origin:center center}
+.band{position:absolute;left:0;top:0;width:1000px;height:52px;background:#1e3a8a;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.band h1{font-size:26px;font-weight:700;color:#fff;letter-spacing:.5px}
+.chip{font-size:13px;font-weight:700;color:#9a3412;background:#ffedd5;border-radius:4px;padding:4px 10px}
+.sub{position:absolute;left:28px;top:62px;width:944px;font-size:15px;color:#64748b}
+.card{position:absolute;left:28px;top:94px;width:566px;height:392px;background:#f0f9ff;border-left:5px solid #0284c7;border-radius:4px;padding:10px 14px}
+.card h2{font-size:15px;font-weight:700;color:#0369a1;margin-bottom:2px}
+.strip{display:flex;align-items:center;gap:10px;margin-top:2px;padding-top:5px;border-top:1px solid #bae6fd;font-size:12.5px;color:#0f172a}
+.side{position:absolute;left:612px;top:94px;width:360px}
+.think{background:#fffbeb;border-left:5px solid #ea580c;border-radius:4px;padding:9px 11px}
+.think .lab{font-size:15px;font-weight:700;color:#b45309;margin-bottom:3px}
+.think p{font-size:13.5px;line-height:1.6;color:#334155}
+.btn{margin-top:10px;border:0;border-radius:6px;background:#ea580c;color:#fff;font-size:15px;font-weight:700;padding:8px 16px;cursor:pointer;font-family:inherit}
+.btn:hover{background:#c2410c}
+.btn.done{background:#16a34a;cursor:default}
+.ph{margin-top:10px;border:1px dashed #cbd5e1;border-radius:4px;padding:16px 10px;font-size:12.5px;color:#94a3b8;line-height:1.6;text-align:center;background:#f8fafc}
+.steps{margin-top:10px}
+.step{display:none;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #94a3b8;border-radius:4px;padding:7px 9px;margin-bottom:7px;font-size:13px;line-height:1.55}
+.step.on{display:block;animation:fade .25s ease-out}
+.step .n{font-weight:700;color:#1e3a8a;margin-right:3px}
+.concl{position:absolute;left:28px;top:500px;width:944px;height:46px;background:#1e3a8a;border-radius:4px;display:none;align-items:center;justify-content:center;text-align:center;color:#fff;font-size:14.5px;font-weight:700;padding:0 16px}
+.concl.on{display:flex;animation:fade .3s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.lit{filter:drop-shadow(0 0 6px rgba(234,88,12,.7))}
+</style></head><body data-cq-lecture-page="true"><div id='stage'>
+<div class='band'><h1>左右趋近与函数值</h1><span class='chip'>对比例题</span></div>
+<div class='sub'>两侧的走向与这一点的取值，是两条要分开记录的结论</div>
+<div class='card'>
+<h2>对照图：x 从两侧靠近 1，而 1 处的取值是 4</h2>
+<div style="font-size:13px;font-weight:700;color:#0f172a;background:#fff;border:1px solid #bae6fd;border-radius:4px;padding:3px 8px;display:inline-block;margin-bottom:3px">规则：x ≠ 1 时 f(x) = x + 1；f(1) = 4</div>
+<svg viewBox='0 0 534 292' width='534' height='292' role='img' aria-label='去心邻域中曲线趋近 2，空心点在 (1,2)，实心点在 (1,4)'>
+<g id='band'><rect x='228' y='34' width='28' height='216' fill='rgba(2,132,199,.14)'/><rect x='264' y='34' width='28' height='216' fill='rgba(2,132,199,.14)'/><text x='228' y='28' font-size='11.5' fill='#0369a1'>去心邻域 0&lt;|x−1|&lt;δ：x=1 本身排除在外</text></g>
+<g id='ax'>
+<line x1='56' y1='250' x2='508' y2='250' stroke='#94a3b8' stroke-width='1.4'/><polygon points='508,250 498,246 498,254' fill='#94a3b8'/>
+<line x1='90' y1='264' x2='90' y2='26' stroke='#94a3b8' stroke-width='1.4'/><polygon points='90,26 86,36 94,36' fill='#94a3b8'/>
+<text x='514' y='254' font-size='13' fill='#64748b'>x</text><text x='76' y='26' font-size='13' fill='#64748b'>y</text>
+<text x='260' y='268' font-size='12' fill='#64748b' text-anchor='middle'>1</text>
+<text x='430' y='268' font-size='12' fill='#64748b' text-anchor='middle'>2</text>
+<text x='76' y='162' font-size='12' fill='#64748b' text-anchor='end'>2</text>
+<text x='76' y='70' font-size='12' fill='#64748b' text-anchor='end'>4</text>
+</g>
+<g id='line'><line x1='93' y1='203' x2='506' y2='91' stroke='#0284c7' stroke-width='2.4'/></g>
+<g id='cut'><line x1='260' y1='250' x2='260' y2='30' stroke='#94a3b8' stroke-width='1.2' stroke-dasharray='5 4'/></g>
+<g id='hollow'><circle cx='260' cy='158' r='7' fill='#fff' stroke='#0284c7' stroke-width='2.6'/><text x='300' y='212' font-size='13' fill='#0369a1' font-weight='700'>(1, 2) 空心：这一处取不到</text><text x='300' y='231' font-size='12' fill='#475569'>两侧都靠向 2，图像不经过这一处</text></g>
+<g id='solid'><circle cx='260' cy='66' r='7' fill='#ea580c'/><text x='300' y='64' font-size='13' fill='#b45309' font-weight='700'>(1, 4) 实心：f(1) = 4</text><text x='300' y='84' font-size='12' fill='#475569'>这是这一点的取值，不是趋近的结果</text></g>
+</svg>
+<div class='strip'><span><b style="color:#0369a1">空心</b>：极限处图像不经过</span><span style="color:#94a3b8">｜</span><span><b style="color:#b45309">实心</b>：这一点的函数值</span></div>
+</div>
+<div class='side'>
+<div class='think'><div class='lab'>先想一想</div><p>x 从两侧靠近 1 时，输出都靠向 2，而 f(1) = 4。那么 x 靠近 1 时，输出靠近的是 2 还是 4？</p></div>
+<button class='btn' id='rv' aria-expanded='false'>查看推理 ▸</button>
+<div class='ph' id='ph'>点“查看推理”，按 1 → 2 → 3 逐步展开；每一步会在左侧图上点亮对应部分。</div>
+<div class='steps' id='steps' aria-live='polite'>
+<div class='step' data-lit='#band,#hollow'><span class='n'>1</span>先分开写两侧：左侧 0.9 得 1.9、0.99 得 1.99，靠近 2；右侧 1.1 得 2.1、1.01 得 2.01，也靠近 2。这些输入都不等于 1，只是记录走向的样本。</div>
+<div class='step' data-lit='#solid'><span class='n'>2</span>两侧靠向同一个数，双侧极限就是 2；(1,2) 画空心点。依据是规则本身：x≠1 时 f(x)=x+1。实心点 (1,4) 表示 f(1)=4，是点值，不参与趋近。</div>
+<div class='step' data-lit='#line'><span class='n'>3</span>对照：若左侧趋向 1、右侧趋向 2，两侧不同，双侧极限不存在；这时把 f(1) 改成任何数都补不上。样本不能代替规则，极限与点值是两条独立记录。</div>
+</div>
+</div>
+<div class='concl' id='concl'>双侧极限看两侧走向是否相同；这一点取什么值，单独记录。</div>
+</div><script>
+(function(){
+var steps=[].slice.call(document.querySelectorAll('.step')),btn=document.getElementById('rv'),concl=document.getElementById('concl'),ph=document.getElementById('ph'),i=0;
+function lit(list){document.querySelectorAll('.lit').forEach(function(n){n.classList.remove('lit');});list.forEach(function(s){var n=document.querySelector(s);if(n)n.classList.add('lit');});}
+btn.addEventListener('click',function(){if(i>=steps.length)return;if(ph)ph.style.display='none';var s=steps[i];s.classList.add('on');lit((s.getAttribute('data-lit')||'').split(',').filter(Boolean));i++;btn.setAttribute('aria-expanded','true');if(i===steps.length){btn.textContent='推理已全部展开 ✓';btn.disabled=true;btn.classList.add('done');concl.classList.add('on');}else{btn.textContent='下一步 ▸ '+i+'/'+steps.length;}});
+function fit(){var s=Math.min(window.innerWidth/1000,window.innerHeight/562.5);document.getElementById('stage').style.transform='scale('+s+')';}
+window.addEventListener('resize',fit);fit();
+})();
+</script><script>document.addEventListener('DOMContentLoaded',function(){Promise.resolve(document.fonts&&document.fonts.ready).then(function(){if(!window.__cqLectureError&&document.getElementById('rv')&&document.getElementById('stage'))parent.postMessage({type:'cq:authored-lecture-ready',pageId:"GH-02-K02-pro-r11-example"},'*');});});</script></body></html>

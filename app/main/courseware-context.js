@@ -410,6 +410,20 @@
     const noteFallbackElements = new Set();
     let renderedNotes = [];
     let renderedNoteRanges = [];
+    const noteDropFrames = new Map();
+
+    function setNoteDropEnabled(enabled) {
+      for (const [frame] of noteDropFrames) postFrame(frame, { type: 'cq:note-drop-mode', channel: '' });
+      noteDropFrames.clear();
+      if (!enabled) return;
+      const meta = currentCourseMeta();
+      for (const frame of currentFrames()) {
+        if (!bridgeFrames.has(frame) || !frame.checkVisibility?.()) continue;
+        const channel = win.crypto.randomUUID();
+        noteDropFrames.set(frame, { channel, unitId: meta.unitId });
+        postFrame(frame, { type: 'cq:note-drop-mode', channel });
+      }
+    }
 
     function notify(name, payload) {
       const handler = options[name];
@@ -1112,6 +1126,17 @@
       const type = String(event.data.type || "");
       if (!type.startsWith("cq:")) return;
 
+      if (type === 'cq:note-text-drag') {
+        const mode = noteDropFrames.get(frame);
+        if (!mode || event.data.channel !== mode.channel || mode.unitId !== currentCourseMeta().unitId
+          || !bridgeFrames.has(frame) || !frame.isConnected || !frame.checkVisibility?.()) return;
+        const text = String(event.data.text || '').replace(/\u0000/g, '').trim().slice(0, 1200).replace(/[\uD800-\uDBFF]$/, '');
+        if (!text) return;
+        notify('onNoteTextDrag', { text, valid: () => noteDropFrames.get(frame) === mode
+          && frame.isConnected && frame.checkVisibility?.() && mode.unitId === currentCourseMeta().unitId });
+        return;
+      }
+
       if (type === "cq:text-selection-cleared") {
         notify("onTextSelectionCleared", { source: "iframe" });
         return;
@@ -1151,6 +1176,7 @@
         }));
         notify("onTextSelection", {
           contextRef: ref,
+          frame,
           rect: selectionRect(null, frame, event.data.rect || null),
           source: "iframe",
           locator: event.data.locator && typeof event.data.locator === "object"
@@ -1227,6 +1253,7 @@
       restoreContext,
       restoreNote,
       renderNotes,
+      setNoteDropEnabled,
       updateRecentInteraction,
       getCurrentContext() {
         return selectedContext;
@@ -1239,6 +1266,7 @@
         clearSelectedElement();
       },
       syncUnit() {
+        setNoteDropEnabled(false);
         notify("onTextSelectionCleared", { source: "navigation" });
         const current = currentCourseMeta();
         if (selectedContext?.unitId && current.unitId && selectedContext.unitId !== current.unitId) {
@@ -1252,6 +1280,7 @@
         cancelObjectPick("unit-change");
       },
       destroy() {
+        setNoteDropEnabled(false);
         cancelObjectPick("destroy");
         clearSelectedElement();
         clearNoteHighlights();

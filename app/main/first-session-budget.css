@@ -1,0 +1,7 @@
+.first-session-budget{border:1px solid var(--border,#dde2ea);border-radius:6px;background:transparent;color:var(--text-secondary,#475569);font:inherit;font-size:12px;padding:6px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.first-session-budget[data-reserve="true"]{color:#825800;background:#fff8e7;border-color:#ead6a0}
+.first-session-budget[data-expired="true"]{color:#8f321f;background:#fff3ed;border-color:#e8b6a8}
+.first-session-budget-dialog{width:min(480px,calc(100vw - 32px));border:1px solid #d9d5ef;border-radius:16px;padding:24px;color:#273449;background:#fff;box-shadow:0 18px 60px #17263825}
+.first-session-budget-dialog::backdrop{background:#18243366}
+.first-session-budget-dialog h2{margin:0 0 12px;font-size:20px}.first-session-budget-dialog p{line-height:1.7;margin:0 0 20px}.first-session-budget-dialog button{padding:10px 16px;border:0;border-radius:8px;background:#6954ce;color:white;font:inherit}
+@media(max-width:600px){.first-session-budget{font-size:11px;padding:5px}.first-session-budget-dialog{padding:20px}}

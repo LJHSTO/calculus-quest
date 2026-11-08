@@ -93,7 +93,7 @@
   function quizReview(next){
     for(const card of document.querySelectorAll(".question-card[data-question]")){
       const existing=card.querySelector(".question-task-review");
-      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
+      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10|11)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
       card.querySelector(".task-assessment-note")?.remove();if(existing)continue;
       const questionId=card.dataset.question, details=el("div",null,"question-task-review");
       const button=el('button','和知点讨论这道题');button.type='button';
@@ -103,15 +103,19 @@
   }
   function showPanel(){
     if(!source)return;
-    const pane=snapshot.unitType==="quiz" ? document.querySelector('[data-quiz-support-host]') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
+    const questionId=snapshot.check?snapshot.policyState?.checkContext?.questionId:
+      selectedQuestion||snapshot.prompt?.questionId||snapshot.offer?.questionId||snapshot.feedback?.questionId||snapshot.replyQuestionId;
+    const cards=snapshot.unitType==='quiz'?[...document.querySelectorAll('.question-card[data-question]')]:[];
+    const questionCard=questionId?cards.find(n=>n.dataset.question===questionId):null;
+    const pane=snapshot.unitType==="quiz" ? questionCard||document.querySelector('[data-quiz-support-host]') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
     if(!pane)return;
     const host=pane.querySelector('.multi-scene-selected-resource.has-resource')||pane;
     if(workspaceHost!==host){workspaceHost?.classList.remove('task-support-workspace','support-focus-help');miniObserver.disconnect();workspaceHost=host;const stage=host.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]');if(stage)miniObserver.observe(stage);}
     if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"工作区中的知点帮助");host.append(panel);}
     if(panel.parentElement!==host)host.append(panel);
     if(source.parentElement!==panel){
-      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点'));
-      if(snapshot.unitType==='quiz'&&!snapshot.check){const cards=[...document.querySelectorAll('.question-card[data-question]')],index=cards.findIndex(n=>n.dataset.question===(selectedQuestion||snapshot.prompt?.questionId||snapshot.offer?.questionId||snapshot.replyQuestionId));const target=el('button',index<0?'查看本次答题':'查看第 '+(index+1)+' 题');target.type='button';target.onclick=()=>cards[Math.max(0,index)]?.scrollIntoView({block:'start',behavior:'instant'});bar.append(target);}
+      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':snapshot.unitType==='quiz'&&!questionCard?'知点 · 本次检测的整体帮助':'知点'));
+      if(snapshot.unitType==='quiz'&&questionCard&&!snapshot.check){const target=el('button','查看第 '+(cards.indexOf(questionCard)+1)+' 题');target.type='button';target.onclick=()=>questionCard.scrollIntoView({block:'start',behavior:'instant'});bar.append(target);}
       if(snapshot.unitType==='knowledge'&&!snapshot.check){
         const toggle=el('button',focusHelp?'放大课件':'课件小窗');toggle.type='button';toggle.dataset.supportFocusToggle='';toggle.title='在完整课件和缩放小窗之间切换';
         toggle.setAttribute('aria-pressed',String(focusHelp));toggle.onclick=()=>setFocusHelp(!focusHelp);bar.append(toggle);

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN"><head><script>window.__cqLectureError=false;window.addEventListener('error',function(){window.__cqLectureError=true;parent.postMessage({type:'cq:authored-lecture-error',pageId:"GH-01-K01-pro-r11-example"},'*');});</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>输入、输出与函数规则</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#fff;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",Arial,sans-serif;color:#334155}
+#stage{position:absolute;left:50%;top:50%;width:1000px;height:562.5px;margin:-281.25px 0 0 -500px;background:#fff;transform-origin:center center}
+.band{position:absolute;left:0;top:0;width:1000px;height:52px;background:#1e3a8a;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.band h1{font-size:26px;font-weight:700;color:#fff;letter-spacing:.5px}
+.chip{font-size:13px;font-weight:700;color:#9a3412;background:#ffedd5;border-radius:4px;padding:4px 10px}
+.sub{position:absolute;left:28px;top:62px;width:944px;font-size:15px;color:#64748b}
+.card{position:absolute;left:28px;top:94px;width:566px;height:392px;background:#f0f9ff;border-left:5px solid #0284c7;border-radius:4px;padding:10px 14px}
+.card h2{font-size:15px;font-weight:700;color:#0369a1;margin-bottom:2px}
+.domrow{display:flex;align-items:center;gap:10px;margin-top:6px;padding-top:6px;border-top:1px solid #bae6fd;font-size:13.5px;color:#0f172a;font-weight:700}
+.domrow .hint{font-weight:400;color:#64748b;font-size:12.5px}
+.side{position:absolute;left:612px;top:94px;width:360px}
+.think{background:#fffbeb;border-left:5px solid #ea580c;border-radius:4px;padding:9px 11px}
+.think .lab{font-size:15px;font-weight:700;color:#b45309;margin-bottom:3px}
+.think p{font-size:13.5px;line-height:1.6;color:#334155}
+.btn{margin-top:10px;border:0;border-radius:6px;background:#ea580c;color:#fff;font-size:15px;font-weight:700;padding:8px 16px;cursor:pointer;font-family:inherit}
+.btn:hover{background:#c2410c}
+.btn.done{background:#16a34a;cursor:default}
+.steps{margin-top:10px}
+.ph{margin-top:10px;border:1px dashed #cbd5e1;border-radius:4px;padding:16px 10px;font-size:12.5px;color:#94a3b8;line-height:1.6;text-align:center;background:#f8fafc}
+.step{display:none;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #94a3b8;border-radius:4px;padding:7px 9px;margin-bottom:7px;font-size:13px;line-height:1.55}
+.step.on{display:block;animation:fade .25s ease-out}
+.step .n{font-weight:700;color:#1e3a8a;margin-right:3px}
+.concl{position:absolute;left:28px;top:500px;width:944px;height:46px;background:#1e3a8a;border-radius:4px;display:none;align-items:center;justify-content:center;text-align:center;color:#fff;font-size:14.5px;font-weight:700;padding:0 16px}
+.concl.on{display:flex;animation:fade .3s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.lit{filter:drop-shadow(0 0 6px rgba(234,88,12,.65))}
+text{font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+</style></head>
+<body data-cq-lecture-page="true"><div id="stage">
+<div class="band"><h1>输入、输出与函数规则</h1><span class="chip">对比例题</span></div>
+<div class="sub">一个输入只能有一个输出；几个输入共用一个输出仍然合法</div>
+<div class="card">
+<h2>对照图：一个输入连出几个输出？</h2>
+<svg viewBox="0 0 534 296" width="534" height="296" role="img" aria-label="上部多对一映射合法，下部一个输入连到两个输出不合法">
+<defs>
+<marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#0284c7"/></marker>
+<marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#ea580c"/></marker>
+</defs>
+<text x="56" y="18" font-size="13" fill="#64748b" text-anchor="middle">输入 x</text>
+<text x="250" y="18" font-size="13" fill="#64748b" text-anchor="middle">输出 y</text>
+<g id="legal">
+<path d="M78,58 C140,58 168,84 224,84" fill="none" stroke="#0284c7" stroke-width="2" marker-end="url(#ab)"/>
+<path d="M78,150 C140,150 168,88 224,88" fill="none" stroke="#0284c7" stroke-width="2" marker-end="url(#ab)"/>
+<path d="M78,104 C140,104 168,130 224,134" fill="none" stroke="#0284c7" stroke-width="2" marker-end="url(#ab)"/>
+<circle cx="56" cy="58" r="22" fill="#fff" stroke="#0284c7" stroke-width="2"/><text x="56" y="63" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">-2</text>
+<circle cx="56" cy="104" r="22" fill="#fff" stroke="#0284c7" stroke-width="2"/><text x="56" y="109" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">0</text>
+<circle cx="56" cy="150" r="22" fill="#fff" stroke="#0284c7" stroke-width="2"/><text x="56" y="155" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">2</text>
+<circle cx="250" cy="86" r="22" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/><text x="250" y="91" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">4</text>
+<circle cx="250" cy="134" r="22" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/><text x="250" y="139" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">0</text>
+</g>
+<text x="292" y="72" font-size="13.5" fill="#334155">g(-2)=4 与 g(2)=4</text>
+<text x="292" y="92" font-size="13.5" fill="#334155">两个不同输入，共用一个输出</text>
+<text x="292" y="114" font-size="13.5" fill="#15803d" font-weight="700">→ 仍是函数（多对一）</text>
+<line x1="8" y1="176" x2="526" y2="176" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="56" y="198" font-size="13" fill="#64748b" text-anchor="middle">输入 x</text>
+<g id="bad">
+<path d="M78,222 C140,222 168,206 224,206" fill="none" stroke="#ea580c" stroke-width="2" marker-end="url(#ao)"/>
+<path d="M78,234 C140,234 168,250 224,250" fill="none" stroke="#ea580c" stroke-width="2" marker-end="url(#ao)"/>
+<circle cx="56" cy="228" r="22" fill="#fff" stroke="#ea580c" stroke-width="2.5"/><text x="56" y="233" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">2</text>
+<circle cx="250" cy="206" r="22" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/><text x="250" y="211" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">3</text>
+<circle cx="250" cy="250" r="22" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/><text x="250" y="255" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">5</text>
+</g>
+<text x="292" y="200" font-size="13.5" fill="#334155">同一个输入 2 同时连到 3 和 5</text>
+<text x="292" y="222" font-size="13.5" fill="#334155">这个输入的输出不唯一</text>
+<text x="292" y="244" font-size="13.5" fill="#b91c1c" font-weight="700">→ 不是函数</text>
+<text x="292" y="274" font-size="12.5" fill="#64748b">常函数把每个输入都送到同一个数</text>
+</svg>
+<div style="margin-top:2px;font-size:12px;color:#64748b">图仅示三个输入：-2、0、2；定义域 [-2,2] 中的其他输入同样只有一个平方值</div>
+<div class="domrow" id="dom"><span>定义域 [-2,2]</span><span style="color:#94a3b8">｜</span><span>值域 [0,4]</span><span class="hint">输入允许的范围 ≠ 输出取到的范围</span></div>
+</div>
+<div class="side">
+<div class="think"><div class="lab">先想一想</div><p>g(x)=x² 的定义域是 [-2,2]：g(-2)=4、g(2)=4，输入不同却输出相同，它还算函数吗？常函数呢？</p></div>
+<button class="btn" id="rv" aria-expanded="false">查看推理 ▸</button>
+<div class="ph" id="ph">点“查看推理”，按 1 → 2 → 3 逐步展开；每一步会在左侧对照图上点亮对应部分。</div>
+<div class="steps" id="steps" aria-live="polite">
+<div class="step" data-lit="#legal"><span class="n">1</span>规则已给定为 g(x)=x²：定义域 [-2,2] 中每个输入都只有一个平方值，所以是函数。图只示三个输入。</div>
+<div class="step" data-lit="#legal"><span class="n">2</span>输出重复不影响合法性：g(-2)=g(2)=4 是多对一；常函数把每个输入都送到同一个数，仍是一个输入对应一个输出，也仍是函数。</div>
+<div class="step" data-lit="#dom"><span class="n">3</span>定义域 [-2,2] 是允许输入的集合；值域是实际取到的输出，因为 0≤x²≤4，所以值域是 [0,4]，两者要分开写。</div>
+</div>
+</div>
+<div class="concl" id="concl">合法与否看“一个输入对应几个输出”，不看“几个输入共用同一个输出”。</div>
+</div>
+<script>
+(function(){
+var steps=[].slice.call(document.querySelectorAll('.step')),
+btn=document.getElementById('rv'),concl=document.getElementById('concl'),ph=document.getElementById('ph'),i=0;
+function lit(list){
+document.querySelectorAll('.lit').forEach(function(n){n.classList.remove('lit');});
+list.forEach(function(s){var n=document.querySelector(s);if(n)n.classList.add('lit');});
+}
+btn.addEventListener('click',function(){
+if(i>=steps.length)return;
+if(ph)ph.style.display='none';
+var s=steps[i];s.classList.add('on');
+lit((s.getAttribute('data-lit')||'').split(',').filter(Boolean));
+i++;btn.setAttribute('aria-expanded','true');
+if(i===steps.length){btn.textContent='推理已全部展开 ✓';btn.disabled=true;btn.classList.add('done');concl.classList.add('on');}
+else{btn.textContent='下一步 ▸ '+i+'/'+steps.length;}
+});
+function fit(){var s=Math.min(window.innerWidth/1000,window.innerHeight/562.5);document.getElementById('stage').style.transform='scale('+s+')';}
+window.addEventListener('resize',fit);fit();
+})();
+</script>
+<script>document.addEventListener('DOMContentLoaded',function(){Promise.resolve(document.fonts&&document.fonts.ready).then(function(){if(!window.__cqLectureError&&document.getElementById('rv')&&document.getElementById('stage'))parent.postMessage({type:'cq:authored-lecture-ready',pageId:"GH-01-K01-pro-r11-example"},'*');});});</script></body></html>

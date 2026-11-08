@@ -331,6 +331,14 @@ async function completeAndAdvanceCurrentUnit(event) {
   event?.preventDefault?.();
   const unit = getUnit();
   if (!unit) return false;
+  if (window.LearningWorkspace?.regulationCourseProtected?.()) {
+    await window.LearningWorkspace.resumeRegulationTask?.();
+    return false;
+  }
+  if (window.KnowledgeAssistant?.pendingIndependentCheck?.()) {
+    await window.KnowledgeAssistant.resumeIndependentCheck?.();
+    return false;
+  }
   if(globalThis.StudyEntry&&(unit.type==='knowledge'||unit.assessmentPhase==='formative')){
     const path=ensureAgenticPath();path.pendingPlan=null;path.pendingAt='';state.pendingKnowledgeTransition=null;
   }
@@ -353,6 +361,8 @@ async function completeAndAdvanceCurrentUnit(event) {
   ) {
     return returnToQuizFromCourseware(unit.id);
   }
+
+  if (unit.type === 'knowledge' && window.LearningWorkspace?.advanceKnowledge?.(unit)) return true;
 
   if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
     addLog("请先选择一个互动场景，再完成本节。");

@@ -7,7 +7,11 @@
   const order=stages.flatMap(s=>s.points),reviews=stages.filter(s=>s.review);
   const point=id=>String(id||'').replace(/-formative$/,'');
   function crosses(stage,id){const target=point(id);return target==='V14-C1-post'||order.indexOf(target)>order.indexOf(stage.points.at(-1));}
-  function completed(stage,results){return stage.points.every(id=>new Set(results.filter(r=>r.unit_id===id+'-formative').map(r=>r.question_id)).size>=3);}
+  function completed(stage,results,requiredCount){return stage.points.every(id=>{
+    const rows=results.filter(r=>r.unit_id===id+'-formative'),current=rows.filter(r=>/^fl-r11-formative-/.test(r.question_id||''));
+    const count=requiredCount??(current.length?2:3),selected=count===2?current:rows.filter(r=>!/^fl-r11-formative-/.test(r.question_id||''));
+    return new Set(selected.map(r=>r.question_id)).size>=count;
+  });}
   function reviewWindow(run,submitted=[],unitId=''){
     const protectedTask=/-(pre|post|formative|retention|transfer)$/.test(unitId)&&!submitted.includes(unitId);
     const stage=reviews.find(s=>s.points.every(id=>submitted.includes(id+'-formative'))&&!(run?.reviewedStages||[]).includes(s.id));

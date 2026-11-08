@@ -236,6 +236,25 @@ assert.deepEqual(
 assert.equal(context.agenticDisplayUnitsForChapter(x1).length, x1.units.length, "locked extension lessons must remain browseable");
 assert.equal(context.agenticIsUnitUnlocked("C2-k1"), false, "free browsing must not silently unlock the inspected lesson");
 assert.equal(context.agenticGuardNavigation("C2-k1", { allowPrevious: true }), true, "locked lessons must be openable for browsing");
+let resumedIndependentChecks = 0;
+context.KnowledgeAssistant = {
+  pendingIndependentCheck: () => ({ unitId: "C1-pre", source: "legacy" }),
+  resumeIndependentCheck: () => { resumedIndependentChecks++; return Promise.resolve(); }
+};
+assert.equal(context.agenticGuardNavigation("C2-k1", { allowPrevious: true }), false, "an unanswered check must block other unit entry points, including preview");
+assert.equal(resumedIndependentChecks, 1, "blocked navigation must offer the unfinished check");
+assert.equal(context.agenticGuardNavigation("C1-pre", { allowPrevious: true }), true, "resuming the issued check must remain possible");
+context.KnowledgeAssistant.pendingIndependentCheck = () => null;
+assert.equal(context.agenticGuardNavigation("C2-k1", { allowPrevious: true }), true, "feedback after a closed check must not keep navigation locked");
+delete context.KnowledgeAssistant;
+context.RegulationTransferUI = { active: true };
+assert.equal(context.agenticGuardNavigation('C1-pre', { silent: true }), false, 'active regulation protects even the currently selected old lesson');
+context.RegulationTransferUI.active = false;
+context.ThreeArmStudyUI = { run: { regulationActive: true } };
+assert.equal(context.agenticGuardNavigation('C2-k1', { silent: true }), false, 'server-restored regulation state also protects navigation');
+context.ThreeArmStudyUI.run.regulationActive = false;
+assert.equal(context.agenticGuardNavigation('C2-k1', { silent: true }), true, 'finished regulation restores this run navigation');
+delete context.RegulationTransferUI;delete context.ThreeArmStudyUI;
 context.currentChapterId = "C2";
 context.currentUnitId = "C2-k1";
 const lockedPreviewCta = context.agenticCompletionCta(context.getUnit("C2-k1"));

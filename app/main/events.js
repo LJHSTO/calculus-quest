@@ -225,6 +225,9 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const omission = event.target.closest('[data-quiz-omission]');
+  if (omission) { toggleQuizOmission(omission); return; }
+
   const retryAiGradeButton = event.target.closest("[data-retry-ai-grade]");
   if (retryAiGradeButton) {
     retryAiGradeButton.disabled = true;

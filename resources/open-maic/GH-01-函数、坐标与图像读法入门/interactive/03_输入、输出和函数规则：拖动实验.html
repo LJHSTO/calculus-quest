@@ -1531,7 +1531,7 @@ function drawFunctionCurve(g, rule) {
     const mx = -xRange + (px / g.w) * (2 * xRange);
     const my = fn.rule(mx);
 
-    if (my < -10 || my > 10) {
+    if (!Number.isFinite(my) || my < -10 || my > 10) {
       started = false;
       continue;
     }
@@ -1594,7 +1594,7 @@ function drawPoint(g, mx, my) {
   ctx.fillStyle = '#f8fafc';
   ctx.font = 'bold 12px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`(${(Number.isFinite(Number(mx)) ? Number(mx) : 0).toFixed(1)}, ${(Number.isFinite(Number(my)) ? Number(my) : 0).toFixed(1)})`, p.x + 14, p.y - 8);
+  ctx.fillText(`(${(Number.isFinite(Number(mx)) ? Number(mx) : 0).toFixed(1)}, ${(Number.isFinite(my) ? my.toFixed(1) : '无实数值')})`, p.x + 14, p.y - 8);
 }
 
 function drawTracePoints(g) {
@@ -1603,6 +1603,7 @@ function drawTracePoints(g) {
   state.trace.forEach(t => {
     const fn = functions[state.current_rule];
     const my = fn.rule(t);
+    if (!Number.isFinite(my)) return;
     const p = mathToCanvas(t, my, g);
     ctx.fillStyle = 'rgba(251, 191, 36, 0.7)';
     ctx.beginPath();
@@ -1632,7 +1633,7 @@ function draw() {
 
   const fn = functions[state.current_rule];
   const my = fn.rule(state.input_x);
-  drawPoint(g, state.input_x, my);
+  if (Number.isFinite(my)) drawPoint(g, state.input_x, my);
 
   ctx.restore();
 
@@ -1652,7 +1653,7 @@ function updateDisplay() {
 
   // Update HUD
   document.getElementById('hud-x').textContent = state.input_x.toFixed(1);
-  document.getElementById('hud-y').textContent = (Number.isFinite(Number(my)) ? Number(my) : 0).toFixed(1);
+  document.getElementById('hud-y').textContent = (Number.isFinite(my) ? my.toFixed(1) : '无实数值');
 
   // Update slider display
   document.getElementById('input_x-display').textContent = state.input_x.toFixed(1);
@@ -1660,7 +1661,7 @@ function updateDisplay() {
   // Update machine display
   document.getElementById('machine-input').textContent = `x = ${state.input_x.toFixed(1)}`;
   document.getElementById('machine-rule').textContent = fn.label;
-  document.getElementById('machine-output').textContent = `= ${(Number.isFinite(Number(my)) ? Number(my) : 0).toFixed(1)}`;
+  document.getElementById('machine-output').textContent = `= ${(Number.isFinite(my) ? my.toFixed(1) : '无实数值')}`;
 
   // Update calculation steps
   document.getElementById('calc-steps').innerHTML = `<div class="step">${fn.calcStr(state.input_x)}</div>`;
@@ -1704,7 +1705,7 @@ function renderTraceTable() {
   const fn = functions[state.current_rule];
   container.innerHTML = state.trace.map((x, i) => {
     const y = fn.rule(x);
-    return `<div class="trace-entry"><span class="trace-x">x = ${(Number.isFinite(Number(x)) ? Number(x) : 0).toFixed(1)}</span><span class="trace-y">f(x) = ${(Number.isFinite(Number(y)) ? Number(y) : 0).toFixed(1)}</span></div>`;
+    return `<div class="trace-entry"><span class="trace-x">x = ${(Number.isFinite(Number(x)) ? Number(x) : 0).toFixed(1)}</span><span class="trace-y">f(x) = ${(Number.isFinite(y) ? y.toFixed(1) : '无实数值')}</span></div>`;
   }).join('');
 
   container.scrollTop = container.scrollHeight;
@@ -2881,5 +2882,88 @@ updateDisplay();
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
-</script></body>
+</script>
+
+
+<script data-function-explorer-r11>
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.CourseFunctionExpression = api;
+})(typeof window === 'undefined' ? globalThis : window, function () {
+  'use strict';
+  const functions = { abs: Math.abs, sqrt: Math.sqrt, sin: Math.sin, cos: Math.cos };
+  function compile(input) {
+    const source = String(input || '').trim().replaceAll('−', '-').replaceAll('×', '*').replaceAll('÷', '/');
+    if (!source || source.length > 100) throw Error('请输入 1—100 个字符的函数表达式。');
+    const tokens = source.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|[a-z]+|[()+*/^\-]|\S/g) || [];
+    if (tokens.length > 80) throw Error('表达式过长，请使用更简短的规则。');
+    let pos = 0, depth = 0;
+    const binary = (a, b, operation) => x => {
+      const left = a(x), right = b(x);
+      if (!Number.isFinite(left) || !Number.isFinite(right)) return NaN;
+      const result = operation(left, right); return Number.isFinite(result) ? result : NaN;
+    };
+    function atom() {
+      if (++depth > 16) throw Error('括号或运算嵌套过多。');
+      const token = tokens[pos++]; let value;
+      if (/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/.test(token || '')) {
+        const n = Number(token); if (!Number.isFinite(n) || Math.abs(n) > 1e6) throw Error('常数需为绝对值不超过一百万的有限数。');
+        value = () => n;
+      } else if (token === 'x') value = x => x;
+      else if (token === 'pi' || token === 'e') value = () => token === 'pi' ? Math.PI : Math.E;
+      else if (token === '(') { value = sum(); if (tokens[pos++] !== ')') throw Error('左右括号需要成对。'); }
+      else if (Object.hasOwn(functions, token)) {
+        if (tokens[pos++] !== '(') throw Error('函数后请使用括号，例如 sqrt(x)。');
+        const child = sum(); if (tokens[pos++] !== ')') throw Error('左右括号需要成对。');
+        value = x => functions[token](child(x));
+      } else throw Error('仅支持 x、数字、+ - * / ^、括号及 abs、sqrt、sin、cos、pi、e。乘法请写 *。');
+      depth--; return value;
+    }
+    function power() { const left = atom(); if (tokens[pos] !== '^') return left; pos++; const right = unary(); return binary(left, right, (a, b) => a === 0 && b === 0 ? NaN : Math.pow(a, b)); }
+    function unary() { if (tokens[pos] === '+' || tokens[pos] === '-') { const sign = tokens[pos++] === '-' ? -1 : 1; if (++depth > 16) throw Error('运算嵌套过多。'); const child = unary(); depth--; return x => sign * child(x); } return power(); }
+    function product() { let left = unary(); while (tokens[pos] === '*' || tokens[pos] === '/') { const op = tokens[pos++], b = unary(); left = binary(left, b, (a, b) => op === '*' ? a * b : a / b); } return left; }
+    function sum() { let left = product(); while (tokens[pos] === '+' || tokens[pos] === '-') { const op = tokens[pos++], b = product(); left = binary(left, b, (a, b) => op === '+' ? a + b : a - b); } return left; }
+    const evaluate = sum(); if (pos !== tokens.length) throw Error('有无法识别的内容；乘法请写 *，例如 2*x。');
+    return Object.freeze({ source, evaluate(x) { const y = evaluate(x); return Number.isFinite(x) && Number.isFinite(y) ? y : NaN; } });
+  }
+  return Object.freeze({ compile });
+});
+
+(function () {
+  'use strict';
+  function install() {
+    const host = document.querySelector('.presets-section');
+    if (!host || document.getElementById('custom-function-r11')) return;
+    const details = document.createElement('details'); details.id = 'custom-function-r11';
+    const summary = document.createElement('summary'); summary.textContent = '试试自己的函数（可选）';
+    const label = document.createElement('label'); label.textContent = 'f(x) = ';
+    const input = document.createElement('input'); input.type = 'text'; input.maxLength = 100; input.value = 'x^2-1'; input.setAttribute('aria-label', '自定义函数表达式'); label.append(input);
+    const help = document.createElement('p'); help.textContent = '先预测，再绘图和拖动 x。支持 + - * / ^、括号、abs、sqrt、sin、cos；乘法写 *。可拖动输入范围 x∈[-8,8]，无实数输出的位置留空；屏幕范围不等于函数的完整定义域。';
+    const status = document.createElement('p'); status.setAttribute('role', 'status');
+    const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = '绘制这个函数';
+    const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = '恢复示例 2x';
+    apply.onclick = () => {
+      try {
+        const formula = window.CourseFunctionExpression.compile(input.value);
+        resetSimulation();
+        functions.custom = { rule: formula.evaluate, label: 'f(x) = ' + formula.source, desc: '自定义探索', calcStr: x => {
+          const y = formula.evaluate(x); return '输入 ' + x + '，输出 ' + (Number.isFinite(y) ? Number(y.toFixed(4)) : '无实数值或超出可计算范围');
+        } };
+        state.current_rule = 'custom'; document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        updateDisplay();
+        status.textContent = '已绘制。现在拖动 x，核对你的预测；这是自由探索，不另计分。图形是数值采样，不能替代证明。';
+        input.removeAttribute('aria-invalid');
+      } catch (error) { status.textContent = error.message; input.setAttribute('aria-invalid', 'true'); }
+    };
+    reset.onclick = () => { applyPreset('linear'); status.textContent = '已恢复原示例，可以继续比较输入与输出。'; input.removeAttribute('aria-invalid'); };
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); apply.click(); } });
+    details.append(summary, label, help, apply, reset, status); host.after(details);
+    const style = document.createElement('style'); style.textContent = '#custom-function-r11{padding:10px 12px;border:1px solid #475569;border-radius:8px;margin:10px 0;color:#e2e8f0;font-size:13px}#custom-function-r11 summary{cursor:pointer;font-weight:600}#custom-function-r11 label{display:flex;align-items:center;gap:8px;margin:12px 0 6px}#custom-function-r11 input{flex:1;width:120px;color:#e2e8f0;background:#0f172a;padding:8px;border:1px solid #64748b;border-radius:5px}#custom-function-r11 p{line-height:1.55;margin:8px 0;overflow-wrap:anywhere}#custom-function-r11 button{padding:7px 10px;margin:4px 6px 0 0;border:1px solid #a78bfa;border-radius:5px;color:#e2e8f0;background:#334155}#custom-function-r11 :focus-visible{outline:2px solid #c4b5fd;outline-offset:3px}@media(max-width:767px){body:has(#custom-function-r11) .r8-figure{width:100%!important;flex:1 1 auto!important;min-height:0!important;height:0!important}}'; document.head.append(style);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install); else install();
+})();
+
+</script>
+</body>
 </html>

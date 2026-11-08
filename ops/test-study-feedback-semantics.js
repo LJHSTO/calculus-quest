@@ -4,8 +4,8 @@ async function main(){
  const assistant=require('../lib/learning-assistant'),route=require('../data/multi-scene-learning-route.json'),index=assistant.buildCourseContextIndex(route);
  const resolve=sceneType=>assistant.resolveAssistantContext({index,chapterId:'V14-C1',unitId:'GH-02-K01',sceneType,contextRef:{kind:'lesson',scope:'lesson'}});
  const payload=resolved=>{const p=assistant.buildAssistantPrompt({resolved,question:'表中先看哪一列？'});return JSON.parse(p.user.slice(p.user.indexOf('{')));};
- const slide=payload(resolve('slide'));assert.match(slide.currentLesson.summary,/x不能取哪个值？对，就是1/);assert.ok(slide.currentLesson.objects.some(o=>o.type==='table'&&o.text.includes('0.99')));
- const interactive=payload(resolve('simulation'));assert.equal(interactive.currentLesson,null);assert.match(interactive.interactiveScene.activity.fact,/x=2/);
+ const slide=payload(resolve('slide'));assert.match(slide.currentLesson.summary,/讨论x→a时看x≠a的邻近输入/);assert.ok(slide.currentLesson.objects.some(o=>o.type==='table'&&o.text.includes('0.99')));
+ const interactive=payload(resolve('simulation'));assert.equal(interactive.currentLesson,null);assert.match(interactive.interactiveScene.activity.task,/x≠2时的规则x\+2/);
  const goals=require('../lib/support-goals');const prompt=JSON.parse(goals.promptFor({scope:'GH-02-K01',sceneType:'slide',need:{need:'concept'},plan:{primaryGoal:'cognitive',strategy:'concept_hint',knowledgeScaffoldLevel:'L2'}}).user);assert.ok(prompt.currentLesson.objects.some(o=>o.type==='table'));
  const SQL=await require('sql.js')(),database=new SQL.Database(),records=[];const time=Date.parse('2026-11-03T12:00:00Z');
  database.run('CREATE TABLE events(id TEXT,user_id TEXT,type TEXT,payload TEXT,created_at TEXT)');

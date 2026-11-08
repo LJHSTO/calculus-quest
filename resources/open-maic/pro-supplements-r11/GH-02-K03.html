@@ -1,0 +1,90 @@
+<!doctype html><html lang='zh-CN'><head><script>window.__cqLectureError=false;window.addEventListener('error',function(){window.__cqLectureError=true;parent.postMessage({type:'cq:authored-lecture-error',pageId:"GH-02-K03-pro-r11-example"},'*');});</script><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>连续的三个条件</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#fff;overflow:hidden;font-family:'Microsoft YaHei','PingFang SC','Hiragino Sans GB',Arial,sans-serif;color:#334155}
+#stage{position:absolute;left:50%;top:50%;width:1000px;height:562.5px;margin:-281.25px 0 0 -500px;background:#fff;transform-origin:center center}
+.band{position:absolute;left:0;top:0;width:1000px;height:52px;background:#1e3a8a;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.band h1{font-size:26px;font-weight:700;color:#fff;letter-spacing:.5px}
+.chip{font-size:13px;font-weight:700;color:#9a3412;background:#ffedd5;border-radius:4px;padding:4px 10px}
+.sub{position:absolute;left:28px;top:62px;width:944px;font-size:15px;color:#64748b}
+.card{position:absolute;left:28px;top:94px;width:566px;height:392px;background:#f0f9ff;border-left:5px solid #0284c7;border-radius:4px;padding:9px 14px}
+.card h2{font-size:15px;font-weight:700;color:#0369a1;margin-bottom:5px}
+.mini{display:flex;gap:18px}
+.box{width:260px;background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:6px 6px 4px}
+.box .t{font-size:12.5px;font-weight:700;color:#0f172a;margin-bottom:2px}
+.box .cap{font-size:11.5px;line-height:1.35;margin-top:2px}
+.cap.no{color:#b91c1c}.cap.ok{color:#15803d}
+.ct{width:100%;border-collapse:collapse;font-size:11.4px;margin-top:8px}
+.ct th,.ct td{border:1px solid #bae6fd;padding:3px 5px}
+.ct th{background:#e0f2fe;color:#0369a1;font-weight:700}
+.ct td{color:#0f172a}
+.ct td.x{color:#b91c1c;font-weight:700}
+.ct td.v{color:#15803d;font-weight:700}
+.ct tr.g3 td{color:#b45309}
+.side{position:absolute;left:612px;top:94px;width:360px}
+.think{background:#fffbeb;border-left:5px solid #ea580c;border-radius:4px;padding:9px 11px}
+.think .lab{font-size:15px;font-weight:700;color:#b45309;margin-bottom:3px}
+.think p{font-size:13.5px;line-height:1.6;color:#334155}
+.btn{margin-top:10px;border:0;border-radius:6px;background:#ea580c;color:#fff;font-size:15px;font-weight:700;padding:8px 16px;cursor:pointer;font-family:inherit}
+.btn:hover{background:#c2410c}
+.btn.done{background:#16a34a;cursor:default}
+.ph{margin-top:10px;border:1px dashed #cbd5e1;border-radius:4px;padding:16px 10px;font-size:12.5px;color:#94a3b8;line-height:1.6;text-align:center;background:#f8fafc}
+.steps{margin-top:10px}
+.step{display:none;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #94a3b8;border-radius:4px;padding:7px 9px;margin-bottom:7px;font-size:13px;line-height:1.55}
+.step.on{display:block;animation:fade .25s ease-out}
+.step .n{font-weight:700;color:#1e3a8a;margin-right:3px}
+.concl{position:absolute;left:28px;top:500px;width:944px;height:46px;background:#1e3a8a;border-radius:4px;display:none;align-items:center;justify-content:center;text-align:center;color:#fff;font-size:13px;line-height:1.35;font-weight:700;padding:0 14px}
+.concl.on{display:flex;animation:fade .3s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.lit{filter:drop-shadow(0 0 6px rgba(234,88,12,.7))}
+</style></head><body data-cq-lecture-page="true"><div id='stage'>
+<div class='band'><h1>连续的三个条件</h1><span class='chip'>对比例题</span></div>
+<div class='sub'>同一位置只改一点取值：三条是否同时成立，决定连不连续</div>
+<div class='card'>
+<h2>对照图：同一位置，改点值前后</h2>
+<div class='mini'>
+<div class='box'>
+<div class='t'>(a) 极限 2，而 f(1) = 4</div>
+<svg viewBox='0 0 246 176' width='246' height='176' role='img' aria-label='空心点在 (1,2)，实心点在 (1,4)'>
+<g id='axa'><line x1='30' y1='148' x2='238' y2='148' stroke='#94a3b8' stroke-width='1.2'/><line x1='40' y1='160' x2='40' y2='20' stroke='#94a3b8' stroke-width='1.2'/><text x='120' y='162' font-size='11' fill='#64748b' text-anchor='middle'>1</text><text x='32' y='92' font-size='11' fill='#64748b' text-anchor='end'>2</text><text x='32' y='32' font-size='11' fill='#64748b' text-anchor='end'>4</text></g>
+<g id='cuta'><line x1='120' y1='148' x2='120' y2='22' stroke='#cbd5e1' stroke-width='1' stroke-dasharray='4 3'/><line x1='44' y1='117' x2='224' y2='49' stroke='#0284c7' stroke-width='2'/></g>
+<g id='ha'><circle cx='120' cy='88' r='6' fill='#fff' stroke='#0284c7' stroke-width='2.4'/><circle cx='120' cy='28' r='6' fill='#ea580c'/><text x='130' y='110' font-size='10.5' fill='#0369a1'>(1,2)</text><text x='132' y='26' font-size='10.5' fill='#b45309'>(1,4)</text></g>
+</svg>
+<div class='cap no'>三道条件只差第三条 → 不连续（可去间断点）</div>
+</div>
+<div class='box'>
+<div class='t'>(b) 只把 f(1) 改成 2</div>
+<svg viewBox='0 0 246 176' width='246' height='176' role='img' aria-label='实心点在 (1,2)，图像接上'>
+<g id='axb'><line x1='30' y1='148' x2='238' y2='148' stroke='#94a3b8' stroke-width='1.2'/><line x1='40' y1='160' x2='40' y2='20' stroke='#94a3b8' stroke-width='1.2'/><text x='120' y='162' font-size='11' fill='#64748b' text-anchor='middle'>1</text><text x='32' y='92' font-size='11' fill='#64748b' text-anchor='end'>2</text></g>
+<g id='cb'><line x1='120' y1='148' x2='120' y2='22' stroke='#cbd5e1' stroke-width='1' stroke-dasharray='4 3'/><line x1='44' y1='117' x2='224' y2='49' stroke='#0284c7' stroke-width='2'/></g>
+<g id='hb'><circle cx='120' cy='88' r='6' fill='#ea580c'/><text x='130' y='110' font-size='10.5' fill='#b45309'>(1,2) 实心</text></g>
+</svg>
+<div class='cap ok'>三条同时成立 → 这一点连续</div>
+</div>
+</div>
+<table class='ct'>
+<tr><th style="width:172px">三个条件</th><th>(a) f(1) = 4</th><th>(b) f(1) = 2</th></tr>
+<tr><td>① f(1) 有定义</td><td>✓ 取值 4</td><td>✓ 取值 2</td></tr>
+<tr><td>② 双侧共同有限极限 L 存在</td><td>✓ L = 2</td><td>✓ L = 2</td></tr>
+<tr><td>③ 极限 = f(1)</td><td class='x'>✗ 2 ≠ 4</td><td class='v'>✓ 2 = 2</td></tr>
+</table>
+</div>
+<div class='side'>
+<div class='think'><div class='lab'>先想一想</div><p>把 f(1) 从 4 改成 2，这一点就连续了吗？三个条件里，改点值动的是哪一条？</p></div>
+<button class='btn' id='rv' aria-expanded='false'>查看推理 ▸</button>
+<div class='ph' id='ph'>点“查看推理”，按 1 → 2 → 3 逐步展开；每一步会在左侧两幅图和条件表上点亮对应部分。</div>
+<div class='steps' id='steps' aria-live='polite'>
+<div class='step' data-lit='#ha'><span class='n'>1</span>(a)：f(1) = 4 有定义，双侧共同有限极限 L = 2 存在；但 2 ≠ 4，第三条不成立，这一点不连续，是可去间断点。</div>
+<div class='step' data-lit='#hb'><span class='n'>2</span>(b)：只把 f(1) 改成 2，前两条本来就成立，第三条随之成立，图像接上，这一点连续。改点值改的是第三条。</div>
+<div class='step' data-lit='#axb'><span class='n'>3</span>边界：若该点原本没有定义，补一个点值可以满足第一条；若两侧趋于不同的数，共同极限不存在，只改点值修不好第二条。一张截图只显示这一处，不能说别处也连续。</div>
+</div>
+</div>
+<div class='concl' id='concl'>本例前两条已成立，改点值补齐第三条；原点未定义则补点满足第一条；共同极限不存在时，只改点值修不好第二条。</div>
+</div><script>
+(function(){
+var steps=[].slice.call(document.querySelectorAll('.step')),btn=document.getElementById('rv'),concl=document.getElementById('concl'),ph=document.getElementById('ph'),i=0;
+function lit(list){document.querySelectorAll('.lit').forEach(function(n){n.classList.remove('lit');});list.forEach(function(s){var n=document.querySelector(s);if(n)n.classList.add('lit');});}
+btn.addEventListener('click',function(){if(i>=steps.length)return;if(ph)ph.style.display='none';var s=steps[i];s.classList.add('on');lit((s.getAttribute('data-lit')||'').split(',').filter(Boolean));i++;btn.setAttribute('aria-expanded','true');if(i===steps.length){btn.textContent='推理已全部展开 ✓';btn.disabled=true;btn.classList.add('done');concl.classList.add('on');}else{btn.textContent='下一步 ▸ '+i+'/'+steps.length;}});
+function fit(){var s=Math.min(window.innerWidth/1000,window.innerHeight/562.5);document.getElementById('stage').style.transform='scale('+s+')';}
+window.addEventListener('resize',fit);fit();
+})();
+</script><script>document.addEventListener('DOMContentLoaded',function(){Promise.resolve(document.fonts&&document.fonts.ready).then(function(){if(!window.__cqLectureError&&document.getElementById('rv')&&document.getElementById('stage'))parent.postMessage({type:'cq:authored-lecture-ready',pageId:"GH-02-K03-pro-r11-example"},'*');});});</script></body></html>

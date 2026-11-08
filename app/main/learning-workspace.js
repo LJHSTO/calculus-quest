@@ -19,6 +19,91 @@
   let coachVisible = false;
   let coachDismissedUnit = "";
   let fullscreenHintTimer = 0;
+  let primaryActionKey = '';
+  const readinessVersion = 'study90-readiness-v1';
+  let regulationGuard = null;
+  let regulationProtected = false;
+  let regulationShellState = null;
+
+  function regulationCourseProtected() {
+    return Boolean(global.RegulationTransferUI?.active || global.ThreeArmStudyUI?.run?.regulationActive);
+  }
+
+  async function resumeRegulationTask() {
+    const button = regulationGuard?.querySelector('button');
+    const message = regulationGuard?.querySelector('[role="status"]');
+    if (button) button.disabled = true;
+    if (message) message.textContent = '正在打开已保存的任务…';
+    try { await global.RegulationTransferUI?.open?.(); if (message) message.textContent = ''; }
+    catch (error) { if (message) message.textContent = error.message || '暂时未能打开，请再试一次。'; }
+    finally { if (button) button.disabled = false; syncRegulationProtection(); }
+  }
+
+  function syncRegulationProtection() {
+    const active = regulationCourseProtected();
+    if (!regulationGuard) {
+      regulationGuard = document.createElement('section');
+      regulationGuard.id = 'regulation-course-guard';
+      regulationGuard.hidden = true;
+      regulationGuard.setAttribute('aria-labelledby', 'regulation-course-title');
+      regulationGuard.innerHTML = '<div><span class="regulation-course-mark" aria-hidden="true">✓</span><h2 id="regulation-course-title">调节任务已保存</h2><p>这段任务需要在新情境中独立作出决定。课程、原帮助设置和学习回顾暂时收起。</p><p>关闭任务后计时仍会继续。你可以接着完成当前任务，已保存的记录会保留。</p><button type="button">继续调节任务</button><p role="status"></p></div>';
+      regulationGuard.querySelector('button').addEventListener('click', resumeRegulationTask);
+      shell.before(regulationGuard);
+    }
+    if (active && !regulationProtected) {
+      regulationShellState = { inert: shell.inert, ariaHidden: shell.getAttribute('aria-hidden') };
+      shell.inert = true;
+      shell.setAttribute('aria-hidden', 'true');
+      if (typeof stopNarrationQueue === 'function') stopNarrationQueue();
+      for (const frame of shell.querySelectorAll('iframe')) {
+        try { frame.contentDocument?.querySelectorAll('audio,video').forEach(media => media.pause()); } catch {}
+      }
+      if (document.fullscreenElement && shell.contains(document.fullscreenElement)) document.exitFullscreen?.().then(syncRegulationProtection).catch(() => {});
+    }
+    if (!active && regulationProtected && regulationShellState) {
+      shell.inert = regulationShellState.inert;
+      if (regulationShellState.ariaHidden === null) shell.removeAttribute('aria-hidden');
+      else shell.setAttribute('aria-hidden', regulationShellState.ariaHidden);
+      regulationShellState = null;
+    }
+    regulationProtected = active;
+    document.body.toggleAttribute('data-regulation-protected', active);
+    regulationGuard.hidden = !active;
+    if (active) {
+      const taskDialog = document.getElementById('regulation-transfer-dialog');
+      if (taskDialog && shell.contains(taskDialog)) {
+        const opened = taskDialog.open;
+        if (opened) taskDialog.close();
+        document.body.append(taskDialog);
+        if (opened) taskDialog.showModal();
+      }
+      const title = global.RegulationTransferUI?.opened ? '正在完成调节任务' : '调节任务已保存';
+      if (regulationGuard.querySelector('h2').textContent !== title) regulationGuard.querySelector('h2').textContent = title;
+      // A hidden top-layer dialog would leave the resume card inert. Close only
+      // the old learning/configuration dialogs, never the current task or auth UI.
+      document.querySelectorAll('#learner-setup[open],#three-arm-dialog[open]').forEach(dialog => dialog.close());
+      if (!global.RegulationTransferUI?.opened && (document.activeElement === document.body || shell.contains(document.activeElement))) {
+        regulationGuard.querySelector('button').focus({ preventScroll: true });
+      }
+    } else {
+      const status = regulationGuard.querySelector('[role="status"]');
+      if (status.textContent) status.textContent = '';
+    }
+  }
+
+  const queueRegulationProtection = () => queueMicrotask(syncRegulationProtection);
+  global.addEventListener('cq:regulation-state', queueRegulationProtection);
+  global.addEventListener('cq:proactive-state', queueRegulationProtection);
+  global.addEventListener('cq:authentication-changed', queueRegulationProtection);
+  global.addEventListener('cq:lesson-rendered', queueRegulationProtection);
+  document.addEventListener('fullscreenchange', queueRegulationProtection);
+  new MutationObserver(queueRegulationProtection).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['open'] });
+  document.addEventListener('click', event => {
+    if (!regulationCourseProtected()) return;
+    if (!event.target.closest('#learner-preferences-button,#three-arm-review,#workspace-open-guide,#account-pilot-status')) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    resumeRegulationTask();
+  }, true);
   const fullscreenHintsShown = new Set();
   const fullscreenButton = $('[data-classroom-action="fullscreen"]');
   const fullscreenHint = document.createElement("span");
@@ -128,7 +213,7 @@
   function pauseActivity(kind){pauseObserver.activity(kind);if(kind!=='pointer')pauseEntry.hidden=true;}
   for(const type of ['pointerdown','keydown','input','wheel'])shell.addEventListener(type,event=>{if(!event.target.closest('#workspace-pause-entry'))pauseActivity('action');},{passive:true});
   shell.addEventListener('pointermove',()=>pauseActivity('pointer'),{passive:true});
-  global.addEventListener('cq:learning-signal',event=>{const type=event.detail?.eventType||'';
+  global.addEventListener('cq:learning-signal',event=>{const type=(event.detail?.event||event.detail)?.eventType||'';
     if(/^(unit_enter|repeat_unit_enter|knowledge_scene_select|interactive_(click|input|change|submit|drag_start|drag_end|scroll|wheel)|parameter_(change|commit)|short_answer_input|knowledge_question_asked|courseware_challenge_result)$/.test(type))pauseActivity('action');});
   const observedDocuments=new WeakSet();
   function observeFrameActivity(){for(const frame of shell.querySelectorAll('iframe')){try{
@@ -300,6 +385,176 @@
     return $(canvasMode === "slide" ? ".multi-scene-slide-panel" : ".multi-scene-scene-panel");
   }
 
+  function independentCheckActive() {
+    return typeof global.KnowledgeAssistant?.pendingIndependentCheck === 'function'
+      ? Boolean(global.KnowledgeAssistant.pendingIndependentCheck())
+      : Boolean(document.querySelector('[data-independent-check="true"]'));
+  }
+
+  function resumeIndependentCheck() {
+    const request = global.KnowledgeAssistant?.resumeIndependentCheck?.();
+    if (request?.catch) request.catch(() => {
+      const text = $('#independent-navigation-note span');
+      if (text) text.textContent = '检查暂未恢复，请再点一次“回到检查”。';
+    });
+    if (!request) global.TaskSupport?.locate?.();
+  }
+
+  function syncIndependentNavigationLock() {
+    const rail = $('#lesson-rail');
+    if (!rail) return;
+    const checking = independentCheckActive();
+    rail.toggleAttribute('data-independent-navigation-locked', checking);
+    for (const link of rail.querySelectorAll('[data-unit],[data-jump-unit]')) {
+      if (checking) {
+        if (!link.hasAttribute('data-check-prior-disabled')) link.dataset.checkPriorDisabled = link.getAttribute('aria-disabled') || '';
+        link.setAttribute('aria-disabled', 'true');
+      } else if (link.hasAttribute('data-check-prior-disabled')) {
+        const prior = link.dataset.checkPriorDisabled;
+        prior ? link.setAttribute('aria-disabled', prior) : link.removeAttribute('aria-disabled');
+        delete link.dataset.checkPriorDisabled;
+      }
+    }
+    let note = $('#independent-navigation-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.id = 'independent-navigation-note';
+      const text = document.createElement('span');
+      text.setAttribute('role', 'status');
+      text.textContent = '独立检查中，完成或选择“暂不检查”后可切换学习内容。';
+      const back = document.createElement('button');
+      back.type = 'button';
+      back.dataset.resumeIndependent = 'true';
+      back.textContent = '回到检查';
+      back.addEventListener('click', resumeIndependentCheck);
+      note.append(text, back);
+      rail.querySelector('.rail-header')?.after(note);
+    }
+    note.hidden = !checking;
+  }
+
+  function readinessFor(unit, sceneType) {
+    const readiness = state.analytics?.interactionEvidence?.[unit.id]?.coursewareReadiness;
+    const generation = typeof learningSnapshotGeneration === 'number' ? learningSnapshotGeneration : 0;
+    return readiness?.version === readinessVersion && readiness.generation === generation
+      ? readiness.scenes?.[sceneType] : null;
+  }
+
+  function visibleInteractionFrame(unit, sceneType) {
+    if (canvasMode !== 'interactive') return null;
+    const pane = $('.multi-scene-scene-panel:not([hidden])');
+    if (!pane) return null;
+    return [...pane.querySelectorAll('iframe[data-courseware-frame],iframe.embed-frame')].find(frame => {
+      const owner = frame.closest('[data-resource-unit]')?.dataset.resourceUnit || unit.id;
+      return owner === unit.id && frame.dataset.contextSceneType === sceneType
+        && frame.getClientRects().length > 0
+        && (!frame.checkVisibility || frame.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }));
+    }) || null;
+  }
+
+  function rememberKnowledgeInteraction(detail) {
+    const event = detail?.event || detail;
+    const unit = typeof getUnit === 'function' ? getUnit() : null;
+    if (!global.StudyEntry || unit?.type !== 'knowledge' || unit.chapterId !== 'V14-C1'
+      || global.OperationGuide?.active || independentCheckActive()) return;
+    const data = event?.data || {};
+    const unitId = data.unitId || event?.unitId;
+    const sceneType = data.sceneType || data.scene_type || event?.sceneType;
+    if (unitId !== unit.id || !sceneType || data.counts_as_student_evidence === false
+      || data.source === 'authored_playback') return;
+    const frame = visibleInteractionFrame(unit, sceneType);
+    if (!frame) return;
+    if (event.eventType === 'parameter_commit' && global.CoursewareSemantics?.parameterRelevant?.(
+      unit.id, data.parameter || data.label || data.id) === false) return;
+    const semantic = event.source === 'courseware_semantic';
+    const entered = semantic && ['courseware_page_loaded', 'courseware_scene_visible'].includes(event.eventType);
+    // The authored observation bridges verify a real learner control change.
+    // These records indicate an attempt, never a correct answer or mastery.
+    const observation = event.eventType === 'courseware_exploration_observed'
+      && (data.evidence_scope === 'free_exploration_observation' && Boolean(data.parameters?.channel)
+        || data.emission_source === 'student' && /^native_construction_r\d+$/.test(data.evidence_scope || '')
+          && (Boolean(data.parameters?.state?.control) || data.parameters?.state?.records?.length > 0));
+    const attempted = semantic && [
+      'courseware_prediction_made', 'courseware_interaction_change', 'parameter_commit',
+      'courseware_attempt_submitted', 'courseware_challenge_result',
+      'courseware_observable_evidence_captured', 'courseware_short_explanation_submitted',
+      'courseware_formative_check_submitted', 'courseware_independent_check_completed'
+    ].includes(event.eventType) || semantic && observation || event.source === 'iframe' && Boolean(data.semanticId)
+      && ['parameter_commit', 'interactive_change', 'interactive_submit', 'interactive_drag_end'].includes(event.eventType);
+    if (!entered && !attempted) return;
+    if (attempted && Object.hasOwn(data, 'previous_value') && Object.hasOwn(data, 'value')
+      && JSON.stringify(data.previous_value) === JSON.stringify(data.value)) return;
+    state.analytics ||= {};
+    state.analytics.interactionEvidence ||= {};
+    const bucket = state.analytics.interactionEvidence[unit.id] ||= { unitId: unit.id };
+    const generation = typeof learningSnapshotGeneration === 'number' ? learningSnapshotGeneration : 0;
+    if (bucket.coursewareReadiness?.version !== readinessVersion || bucket.coursewareReadiness.generation !== generation) {
+      bucket.coursewareReadiness = { version: readinessVersion, generation, scenes: {} };
+    }
+    const record = bucket.coursewareReadiness.scenes[sceneType] ||= {};
+    if (record.enteredAt && (!attempted || record.attemptedAt)) return;
+    record.enteredAt ||= new Date().toISOString();
+    if (attempted) Object.assign(record, { attemptedAt: new Date().toISOString(), eventType: event.eventType,
+      eventId: event.eventId || data.event_id || '', resourceId: data.resource_id || frame.dataset.contextId || '' });
+    if (typeof saveState === 'function') saveState();
+    syncKnowledgePrimaryAction();
+  }
+
+  function nextLectureButton() {
+    const pane = $('.multi-scene-slide-panel:not([hidden])');
+    return pane?.querySelector('.openmaic-page-nav button:last-of-type,[data-slide-action="next"]') || null;
+  }
+
+  function knowledgePrimaryAction(unit = typeof getUnit === 'function' ? getUnit() : null) {
+    if (!global.StudyEntry || unit?.chapterId !== 'V14-C1' || unit.type !== 'knowledge') return null;
+    if (independentCheckActive()) return { kind: 'independent_check', label: '先完成独立检查', disabled: true };
+    const pane = $('.multi-scene-slide-panel');
+    if (canvasMode === 'slide' || !pane) {
+      if (!pane || pane.querySelector('[data-openmaic-state="loading"]')) {
+        return { kind: 'loading', label: '正在准备讲解…', disabled: true };
+      }
+      const next = nextLectureButton();
+      return next && !next.disabled
+        ? { kind: 'lecture_next', label: '下一讲解页', disabled: false }
+        : { kind: 'enter_interaction', label: '进入互动探索', disabled: false };
+    }
+    const sceneType = typeof selectedKnowledgeSceneType === 'function' ? selectedKnowledgeSceneType(unit) : '';
+    if (!sceneType) return { kind: 'choose_interaction', label: '选择一个互动场景', disabled: false };
+    const finishedBefore = (state.completed || []).includes(unit.id)
+      && (state.submittedQuizzes || []).includes(unit.id + '-formative');
+    if (!finishedBefore && !readinessFor(unit, sceneType)?.attemptedAt) {
+      return { kind: 'attempt_interaction', label: '请先完成一次互动操作', disabled: true };
+    }
+    return { kind: 'complete', label: finishedBefore ? '继续下一节' : '完成学习，进入检测', disabled: false };
+  }
+
+  function advanceKnowledge(unit) {
+    const action = knowledgePrimaryAction(unit);
+    if (!action || action.kind === 'complete') return false;
+    if (action.kind === 'independent_check') resumeIndependentCheck();
+    if (action.kind === 'lecture_next') nextLectureButton()?.click();
+    if (['enter_interaction', 'choose_interaction'].includes(action.kind)) {
+      setCanvasMode('interactive');
+      const target = $('.multi-scene-scene-panel:not([hidden]) [data-knowledge-scene]')
+        || $('.workspace-canvas-toolbar [data-knowledge-scene]');
+      if (action.kind === 'choose_interaction') {
+        target?.scrollIntoView({ block: 'nearest' });
+        target?.focus({ preventScroll: true });
+      }
+    }
+    syncKnowledgePrimaryAction();
+    return true;
+  }
+
+  function syncKnowledgePrimaryAction() {
+    const unit = typeof getUnit === 'function' ? getUnit() : null;
+    const action = knowledgePrimaryAction(unit);
+    const key = JSON.stringify([unit?.id, action]);
+    if (key === primaryActionKey) return;
+    primaryActionKey = key;
+    if (typeof renderBottomNextButton === 'function') renderBottomNextButton();
+  }
+
   function setCoachVisible(visible) {
     const changed=coachVisible!==Boolean(visible);
     coachVisible = Boolean(visible);
@@ -377,12 +632,13 @@
     if (playback.hidden) return;
     const sources = Array.from(surface.querySelectorAll(".coach-line[data-playback-speech], .coach-line[data-audio-src]"));
     const lecturePage=surface.querySelector('[data-openmaic-page]');
-    const textOnly=Number(lecturePage?.dataset.openmaicPage||1)>1;
+    const supplementalActions=global.LessonPlayback?.lecture(surface)?.teachingActions||[];
+    const textOnly=Number(lecturePage?.dataset.openmaicPage||1)>1&&!supplementalActions.length;
     playback.hidden = sources.length === 0 && !textOnly;
     $(".classroom-lecture-label").textContent = textOnly ? "讲解 · 文字" : sources.length ? (sources.some(source => source.dataset.audioSrc) ? "讲解 · 合成语音" : "讲解 · 文字") : "互动操作";
     const authored = textOnly ? null : global.LessonPlayback?.snapshot(surface);
     const toolbar = surface.querySelector(".coach-toolbar[data-narration-unit]");
-    const queue = !textOnly && typeof activeNarration !== "undefined" && activeNarration?.unitId === toolbar?.dataset.narrationUnit
+    const queue = !textOnly && !supplementalActions.length && typeof activeNarration !== "undefined" && activeNarration?.unitId === toolbar?.dataset.narrationUnit
       ? activeNarration : null;
     const playing = (authored || queue)?.status === "playing";
     const button = $('[data-classroom-action="play"]');
@@ -406,7 +662,7 @@
     $("#classroom-lecture-text").textContent = textOnly
       ? lecturePage.dataset.openmaicPageSummary || "请阅读当前讲解页中的文字与图形。"
       : (authored?.warning ? `${authored.warning} ` : "")
-        + (authored?.caption || text || (sources.length ? "讲解正在加载" : "操作当前互动，观察画面和数值的变化。"));
+        + (authored?.caption || supplementalActions.find(action=>action.type==='speech')?.text || text || (sources.length ? "讲解正在加载" : "操作当前互动，观察画面和数值的变化。"));
     const chapter = getChapter();
     const index = (chapter?.units || []).findIndex((entry) => entry.id === unit.id);
     $("#classroom-scene-position").textContent = `${index + 1} / ${chapter?.units?.length || 0}`;
@@ -584,6 +840,7 @@
     if (changed) global.dispatchEvent(new CustomEvent("cq:classroom-surface-change", { detail: { surface: mode } }));
     syncPlayback();
     syncFullscreenHint();
+    syncKnowledgePrimaryAction();
   }
 
   function sync() {
@@ -707,7 +964,10 @@
     const tool = event.target.closest("[data-workspace-tab]");
     if (tool) selectTab(tool.dataset.workspaceTab);
     const pane = event.target.closest("button[data-workspace-pane]");
-    if (pane) setMobilePane(pane.dataset.workspacePane);
+    if (pane) {
+      setMobilePane(pane.dataset.workspacePane);
+      if (pane.dataset.workspacePane === 'assistant' && tab === 'chat') global.KnowledgeAssistant?.open?.();
+    }
     const canvas = event.target.closest("[data-workspace-canvas]");
     if (canvas) setCanvasMode(canvas.dataset.workspaceCanvas);
     if (event.target.closest("[data-scroll-knowledge-scene]")) setCanvasMode("interactive");
@@ -745,8 +1005,18 @@
     }
   });
   global.addEventListener("cq:learning-signal", (event) => {
-    if (event.detail?.eventType === "knowledge_scene_selected") sync();
+    const signal = event.detail?.event || event.detail;
+    if (signal?.eventType === "knowledge_scene_selected") sync();
+    rememberKnowledgeInteraction(event.detail);
   });
+  $('#lesson-rail')?.addEventListener('click', event => {
+    if (!independentCheckActive() || event.target.closest('[data-resume-independent]')) return;
+    if (!event.target.closest('[data-unit],[data-jump-unit],button,a')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    syncIndependentNavigationLock();
+    $('#independent-navigation-note button')?.focus({ preventScroll: true });
+  }, true);
   $("#classroom-playback-rate").addEventListener("change", (event) => {
     if(event.target.disabled)return;
     playbackRate = Number(event.target.value);
@@ -772,7 +1042,12 @@
   new ResizeObserver(scheduleClassroomLayout).observe($("#lesson-player"));
   const appHeader = document.querySelector(".app-header");
   if (appHeader) new ResizeObserver(scheduleClassroomLayout).observe(appHeader);
-  new MutationObserver(scheduleClassroomLayout).observe($("#lesson-player"), { childList: true, subtree: true });
+  new MutationObserver(() => {
+    scheduleClassroomLayout();
+    syncIndependentNavigationLock();
+    syncKnowledgePrimaryAction();
+  }).observe($("#lesson-player"), { childList: true, subtree: true, attributes: true,
+    attributeFilter: ['data-openmaic-page','data-openmaic-state','data-slide-active','data-independent-check'] });
   new MutationObserver(syncCoachSurface).observe($("#agentic-coach-panel"), {
     childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"]
   });
@@ -780,8 +1055,12 @@
   global.addEventListener("cq:learning-layout-change", scheduleClassroomLayout);
   global.addEventListener("cq:workspace-data-change", syncPlayback);
   global.addEventListener("cq:workspace-support-change", updateToolsIndicator);
-  global.addEventListener('cq:proactive-state',event=>syncSupportNotice(event.detail));
-  global.LearningWorkspace = Object.freeze({ sync, syncPlayback,
+  global.addEventListener('cq:proactive-state',event=>{
+    syncSupportNotice(event.detail);
+    syncIndependentNavigationLock();
+    syncKnowledgePrimaryAction();
+  });
+  global.LearningWorkspace = Object.freeze({ sync, syncPlayback, knowledgePrimaryAction, advanceKnowledge, regulationCourseProtected, resumeRegulationTask,
     openGuide,
     showCoach: () => {
       coachDismissedUnit = "";
@@ -791,8 +1070,9 @@
         setCoachVisible(true);
       }
     },
-    showInteractive: () => setCanvasMode("interactive"),
-    showTask: () => setCoachVisible(false) });
+    showLecture: () => { if (compactWorkspace()) setMobilePane('course'); setCanvasMode("slide"); },
+    showInteractive: () => { if (compactWorkspace()) setMobilePane('course'); setCanvasMode("interactive"); },
+    showTask: () => { if (compactWorkspace()) setMobilePane('course'); setCoachVisible(false); } });
   setToolsCollapsed(toolsCollapsed);
   syncCoachSurface();
   sync();

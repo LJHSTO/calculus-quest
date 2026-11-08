@@ -2405,6 +2405,7 @@ function closeOpenProactiveInterventionsForUser({
     "learning_reset",
     "measurement_started",
     "configuration_changed",
+    "first_session_time_limit",
     "study_withdrawn"
   ].includes(terminalResolution)) {
     throw new Error("invalid_proactive_close_resolution");

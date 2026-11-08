@@ -1,6 +1,10 @@
 (function (global) {
   "use strict";
   let player = null, owner = "", scope = null, binding = "", rate = 1;
+  function lecture(target) {
+    const page = Number(target?.querySelector('[data-openmaic-page]')?.dataset.openmaicPage || 1);
+    return page > 1 ? getUnit()?.scene?.content?.knowledgePoint?.slide?.lecturePages?.[page - 2] : null;
+  }
   const widgetTypes = { widget_highlight:"HIGHLIGHT_ELEMENT", widget_setState:"SET_WIDGET_STATE", widget_annotation:"ANNOTATE_ELEMENT", widget_reveal:"REVEAL_ELEMENT" };
   function post(type, payload = {}) {
     const frame = scope?.querySelector('iframe[data-courseware-frame], iframe[data-openmaic-slide]');
@@ -33,7 +37,9 @@
     audio.addEventListener("timeupdate", () => { if(disposed)return; if(audio.currentTime!==lastTime){lastTime=audio.currentTime;lastProgress=performance.now();} events.time(audio.currentTime); });
     audio.addEventListener("ended", events.ended);
     audio.addEventListener("error", () => { if (!disposed) events.failed(); });
-    audio.src = resourceUrl(`resources/${knowledgeAudioRoot(getUnit(),scope?.querySelector('[data-knowledge-audio-order]')?.dataset.knowledgeAudioOrder)}/${a.audioRef}`);
+    const supplement = lecture(scope);
+    const audioRoot = supplement?.audioRoot === 'open-maic/pro-supplements-r11' ? supplement.audioRoot : knowledgeAudioRoot(getUnit(),scope?.querySelector('[data-knowledge-audio-order]')?.dataset.knowledgeAudioOrder);
+    audio.src = resourceUrl(`resources/${audioRoot}/${a.audioRef}`);
     audio.load();
     return { play: start, pause() { options.paused = true; audio.pause(); },
       setRate(value) { audio.playbackRate = value; },
@@ -41,6 +47,8 @@
     };
   }
   function currentBinding(target) {
+    const supplement = lecture(target);
+    if (supplement?.teachingActions?.length) return `${getUnit()?.id}:lecture:${supplement.canvas.id}`;
     const slot = target?.querySelector('[data-knowledge-audio-order]');
     return slot ? `${getUnit()?.id}:${slot.dataset.knowledgeAudioSlot}:${slot.dataset.knowledgeAudioOrder}` : "";
   }
@@ -49,8 +57,8 @@
     if (!key || getUnit()?.type !== "knowledge") return false;
     if (player && key === owner && scope === target) return true;
     stop(); owner = key; scope = target; binding = crypto.randomUUID();
-    const order = Number(target.querySelector('[data-knowledge-audio-order]').dataset.knowledgeAudioOrder);
-    const actions = knowledgeAudioActions(getUnit(), order);
+    const order = Number(target.querySelector('[data-knowledge-audio-order]')?.dataset.knowledgeAudioOrder);
+    const actions = lecture(target)?.teachingActions || knowledgeAudioActions(getUnit(), order);
     if (!actions.length) return false;
     player = global.CoursePlayback.create(actions, { action, clearEffects, media,
       onChange() { global.LearningWorkspace?.syncPlayback?.(); } });
@@ -59,6 +67,7 @@
   }
   function stop() { player?.stop(); player = null; owner = ""; scope = null; binding = ""; }
   global.LessonPlayback = Object.freeze({
+    lecture,
     play(target) { return prepare(target) && player.play(); },
     pause() { player?.pause(); }, stop,
     seek(value, target) { if (prepare(target)) player.seek(value); },

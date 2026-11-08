@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('node:url');
+(async()=>{const root=path.resolve(__dirname,'..'),browser=await require('playwright-core').chromium.launch({channel:'chrome',headless:true});try{
+ const page=await browser.newPage({viewport:{width:1100,height:750}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(pathToFileURL(path.join(root,'resources/open-maic/GH-01-函数、坐标与图像读法入门/interactive/03_输入、输出和函数规则：拖动实验.html')).href);
+ await page.getByText('试试自己的函数（可选）',{exact:true}).click();await page.waitForTimeout(400);
+ const initial=await page.locator('canvas').first().evaluate(c=>c.toDataURL());
+ await page.getByLabel('自定义函数表达式').fill('sqrt(x)');await page.getByRole('button',{name:'绘制这个函数',exact:true}).click();await page.locator('#input_x-slider').fill('-1');await page.locator('#input_x-slider').dispatchEvent('input');assert.equal(await page.locator('#hud-y').innerText(),'无实数值');
+ await page.getByRole('button',{name:'恢复示例 2x'}).click();await page.waitForTimeout(400);const reset=await page.locator('canvas').first().evaluate(c=>c.toDataURL());assert.equal(reset,initial,'恢复示例后画布应与初始同尺寸、同函数、同点值完全相同');
+ for(const expr of ['1/(1/x)','sqrt(x)^0']){await page.getByLabel('自定义函数表达式').fill(expr);await page.getByRole('button',{name:'绘制这个函数',exact:true}).click();await page.locator('#input_x-slider').fill(expr.startsWith('sqrt')?'-1':'0');await page.locator('#input_x-slider').dispatchEvent('input');assert.equal(await page.locator('#hud-y').innerText(),'无实数值');}
+ const clockPage=await browser.newPage();await clockPage.setContent('<div class="player-top"><div class="player-actions"></div></div>');await clockPage.addScriptTag({path:path.join(root,'app/main/first-session-budget.js')});
+ const clock={elapsedSeconds:5400,completed:false,expired:true,enforce:true,maximumSeconds:5400,posttestReserveFromSeconds:3840};await clockPage.evaluate(clock=>FirstSessionBudget.update({id:'clock-synthetic',firstSessionClock:clock}),clock);await clockPage.waitForTimeout(1400);assert.match(await clockPage.locator('.first-session-budget').innerText(),/^现场 90:00 \/ 90:00$/);
+ await clockPage.evaluate(clock=>FirstSessionBudget.update({id:'clock-completed',firstSessionClock:{...clock,elapsedSeconds:4700,completed:true,expired:false}}),clock);await clockPage.waitForTimeout(1400);assert.equal(await clockPage.locator('.first-session-budget').innerText(),'首场用时 78:20');assert.equal(await clockPage.evaluate(()=>FirstSessionBudget.closed),false);assert.deepEqual(errors,[]);
+ const report={passed:true,at:new Date().toISOString(),checks:['实际课件初始与恢复示例画布像素一致','自定义undefined嵌套表达式HUD仍无实数值','真实浏览器首场超时90:00固定','完成首场78:20固定且不关闭随访'],scope:'本地导出课件与独立计时UI，不替代主服务器随访HTTP边界'};const out=path.join(root,'output/学习体验与调节迁移-r11-20261107');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'函数与计时独立浏览器审查.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

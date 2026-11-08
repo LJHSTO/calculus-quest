@@ -201,8 +201,12 @@ const reviewUnit = {
   chapterId: route.chapters[0].id,
   assessmentPhase: "formative"
 };
+const formativeReviewQuestion = route.chapters.flatMap(chapter =>
+  (chapter.modules || []).flatMap(module => (module.knowledgePoints || []).flatMap(point => point.formativeQuiz?.questions || []))
+).find(question => (question.knowledgePointIds || []).length);
+assert.ok(formativeReviewQuestion, 'review coverage uses a real formative item, never a protected pre/post item ID');
 const choiceQuestion = {
-  ...firstQuizQuestion,
+  ...formativeReviewQuestion,
   type: "single",
   options: [
     { value: "A", label: "选项 A" },
@@ -225,7 +229,7 @@ const reviewCases = [
   {
     label: "short answer",
     question: {
-      ...firstQuizQuestion,
+      ...formativeReviewQuestion,
       type: "short_answer",
       referenceAnswer: "参考答案",
       commentPrompt: "评分参考"
@@ -270,7 +274,7 @@ assert.doesNotMatch(readableAnswerHtml, /class="answer-lines analysis-line">/);
 
 const readableShortAnswerHtml = sandbox.renderQuestionReview({
   question: {
-    ...firstQuizQuestion,
+    ...formativeReviewQuestion,
     type: "short_answer",
     referenceAnswer: "当 n 趋于无穷时，T_n 收敛到面积极限。",
     commentPrompt: "说明分割加细与面积和收敛之间的关系。"
@@ -286,6 +290,9 @@ const readableShortAnswerHtml = sandbox.renderQuestionReview({
 assert.match(readableShortAnswerHtml, /review-answer-block reference-answer/);
 assert.match(readableShortAnswerHtml, /review-answer-copy/);
 assert.doesNotMatch(readableShortAnswerHtml, /<p><b>参考答案：<\/b>/);
+const protectedReceipt = sandbox.renderQuestionReview({ question: firstQuizQuestion, result: { response: '__unknown__', isCorrect: false }, index: 0, unit: { ...reviewUnit, assessmentPhase: 'pre' } });
+assert.match(protectedReceipt, /暂不显示分数和答案/);
+assert.doesNotMatch(protectedReceipt, /data-quiz-coverage|正确答案|reference-answer/);
 
 const failedShortAnswerHtml = sandbox.renderQuestionReview({
   question: {
@@ -413,20 +420,25 @@ for (const chapter of route.chapters || []) {
     const phaseModules = new Set();
     for (const question of chapter.flow?.[phase]?.questions || []) {
       const ids = question.knowledgePointIds || [];
-      const sourceModule = moduleById.get(question.moduleId);
+      const versionedMath = /^fl-r(?:7|10|11)-(pre|post)-/.test(question.id || '');
+      const sourceModule = moduleById.get(question.moduleId) || (!question.moduleId && versionedMath
+        ? chapter.modules.find(module => (module.knowledgePoints || []).some(point => point.id === ids[0])) : null);
       const sourceIds = new Set((sourceModule?.knowledgePoints || []).map((point) => point.id));
       assert.ok(sourceModule, `${chapter.id}/${phase}/${question.id} has an unknown module`);
       assert.ok(ids.length >= 1 && ids.length <= 2, `${chapter.id}/${phase}/${question.id} must cover one or two knowledge points`);
       assert.ok(ids.every((id) => sourceIds.has(id)), `${chapter.id}/${phase}/${question.id} points outside its source module`);
-      assert.equal(question.knowledgePointCoverageSource, "semantic-curation-v1");
+      if (versionedMath) {
+        assert.equal(question.sourceAlignment?.kind, 'original_items_aligned_to_textbook_objectives');
+        assert(['content_aligned_not_empirically_equated', 'content_paired_pending_learner_pilot'].includes(question.equivalence?.validationStatus));
+      } else assert.equal(question.knowledgePointCoverageSource, "semantic-curation-v1");
       const coreLabels = ids.map((id) => lookup.get(id)).filter(Boolean);
       assert.equal(coreLabels.length, ids.length, `${chapter.id}/${phase}/${question.id} has an unknown knowledge point ID`);
       const labels = question.knowledgePointNames || coreLabels;
       assert.ok(labels.length >= 1 && labels.length <= 2, `${chapter.id}/${phase}/${question.id} needs concrete knowledge point names`);
       assert.ok(labels.every((label) => !/^(?:GH|EXT)-\d{2}-K\d{2}$/i.test(label)));
-      assert.deepEqual(question.concepts, labels, `${chapter.id}/${phase}/${question.id} has stale concept labels`);
+      if (!versionedMath || question.concepts) assert.deepEqual(question.concepts, labels, `${chapter.id}/${phase}/${question.id} has stale concept labels`);
       ids.forEach((id) => chapterCoverage.add(id));
-      phaseModules.add(question.moduleId);
+      phaseModules.add(sourceModule.id);
       if (ids.length) {
         const html = sandbox.renderQuizCoverage(question, { chapterId: chapter.id });
         assert.match(html, /覆盖知识点/);
@@ -444,7 +456,11 @@ for (const chapter of route.chapters || []) {
   for (const module of chapter.modules) {
     for (const point of module.knowledgePoints || []) {
       const checks = point.formativeQuiz?.questions || [];
-      if(point.formativeQuiz.instrumentVersion==='functions-limits-formative-r5'){
+      if(point.formativeQuiz.instrumentVersion==='functions-limits-probes-r10'){
+        assert.equal(checks.length,3,`${point.id}保留r10冻结三题；r11运行时的两题投影另由版本测试验证`);
+        assert(checks.every(question=>question.type==='single'&&question.instrumentVersion==='functions-limits-probes-r10'));
+        assert.equal(point.formativeQuiz.adaptive,false);
+      }else if(point.formativeQuiz.instrumentVersion==='functions-limits-formative-r5'){
         assert.equal(checks.length,3,`${point.id}应有三道共同检测`);
         assert.deepEqual(checks.map(q=>q.adaptiveRole),['common_core','common_core','common_core']);
         assert.deepEqual(checks.map(q=>q.measurementTarget),['concept_application','misconception_discrimination','near_transfer']);

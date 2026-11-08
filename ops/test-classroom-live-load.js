@@ -1,10 +1,11 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
-const course=require('../data/multi-scene-learning-route.json').chapters.find(c=>c.id==='V14-C1');
 const base=process.env.CLASSROOM_LOAD_URL,users=Number(process.env.CLASSROOM_LOAD_USERS||50);
+const ordinaryOnly=process.argv.includes('--ordinary-only');
 assert.ok(base&&process.env.CLASSROOM_LOAD_ALLOW_SYNTHETIC==='1','必须显式指定隔离服务并允许合成账号');
 assert.ok(users>0&&users<=50);
-const root=path.resolve(__dirname,'..'),dir=fs.mkdtempSync(path.join(root,'output/学生体验修复验收/真实班级并发-'));
+const root=path.resolve(__dirname,'..'),parent=path.join(root,'output/学生体验修复验收');fs.mkdirSync(parent,{recursive:true});
+const dir=fs.mkdtempSync(path.join(parent,'真实班级并发-'));
 const clients=[],http=[],models=[],failures=[],health=[],run=Date.now().toString(36),wait=ms=>new Promise(r=>setTimeout(r,ms));
 const cases=[['GH-01-K01','两个输入得到同一个输出，为什么仍然可能是函数？'],['GH-01-K02','为什么横坐标是2、纵坐标是3时不能写成(3,2)？'],['GH-01-K03','两个观测点的输出上升，能断言整个区间都上升吗？'],['GH-02-K01','当前讲解这张数表应先看x还是f(x)？它们分别靠近哪个数？'],['GH-02-K02','左侧趋近4、右侧趋近7，判断双侧极限时先看什么？'],['GH-02-K03','点上函数值存在，为什么还不能直接说连续？']];
 function save(){fs.writeFileSync(path.join(dir,'班级并发结果.json'),JSON.stringify({users,base,synthetic:true,manifestSha256:process.env.CLASSROOM_LOAD_MANIFEST_SHA,startedAt:started,finishedAt:new Date().toISOString(),http,models,failures,health,clients:clients.map(({token,...c})=>c)},null,2));}
@@ -12,12 +13,15 @@ async function api(c,route,body){const at=performance.now();let r,json;try{r=awa
 async function cohort(tasks){const settled=await Promise.allSettled(tasks),failed=settled.find(r=>r.status==='rejected');if(failed)throw failed.reason;}
 const started=new Date().toISOString();let monitor;
 async function main(){try{
- const first=await api(null,'/api/health');assert.match(first.appVersion,/student-ux/);
+ const first=await api(null,'/api/health');
+ if(process.env.CLASSROOM_LOAD_EXPECT_VERSION)assert.equal(first.appVersion,process.env.CLASSROOM_LOAD_EXPECT_VERSION);
+ else assert.match(first.appVersion,/(?:student-ux|functions-limits.*r11|r11-diagnostic)/);
  for(let offset=0;offset<users;offset+=5){await cohort(Array.from({length:Math.min(5,users-offset)},async(_,i)=>{
   const worker=offset+i,c={worker,arm:['A','B','C'][worker%3],nickname:`班级合成${run}${worker}`,unitId:cases[worker%6][0]};
   c.token=(await api(c,'/api/auth/register',{nickname:c.nickname,password:crypto.randomBytes(16).toString('hex')})).token;assert.ok(c.token);
   const survey=(await api(c,'/api/study/survey?stage=baseline')).data;
   await api(c,'/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,3]))});
+  const course=(await api(c,'/api/course/multi-scene-learning-route')).chapters.find(ch=>ch.id==='V14-C1');
   await api(c,'/api/learning/quiz/submit',{chapterId:'V14-C1',unitId:'V14-C1-pre',phase:'pre',answers:course.flow.preQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?['__unknown__']:'__unknown__'}))});
   const ready=(await api(c,'/api/learning/learner-preferences')).data;c.runId=ready.study.id;
   if(c.arm==='A')await api(c,'/api/study/confirm-defaults',{});else await api(c,'/api/learning/learner-preferences',{answers:ready.record.answers,expectedRevision:ready.record.revision||1});
@@ -31,6 +35,12 @@ async function main(){try{
  monitor=setInterval(async()=>{const at=performance.now();try{const r=await fetch(base+'/api/health',{signal:AbortSignal.timeout(5000)});health.push({at:new Date().toISOString(),status:r.status,ms:performance.now()-at});}catch(e){health.push({at:new Date().toISOString(),error:e.name});}},2000);
  await cohort(clients.map(async c=>{const decision=await api(c,'/api/learning/assistant/intervention',{chapterId:'V14-C1',unitId:c.unitId,sceneType:'slide',signal:{kind:'quiet_dwell',dwellSeconds:600},contextRef:{kind:'unit',scope:'lesson'}});assert.equal(decision.decision.action,'stay_silent','没有困难证据时不应主动介入');}));
  console.log(users+' 人同时评估主动介入，均保持安静');
+ if(ordinaryOnly){
+  clearInterval(monitor);monitor=null;
+  const latency=http.filter(r=>r.status===200).map(r=>r.ms).sort((a,b)=>a-b);
+  const summary={users,scope:'普通请求与持久化并发，不含真实模型吞吐',ordinaryRequests:http.length,ordinaryFailures:http.filter(r=>r.status!==200).length,latencyMs:{p50:latency[Math.ceil(latency.length*.5)-1],p95:latency[Math.ceil(latency.length*.95)-1],max:latency.at(-1)},passed:http.every(r=>r.status===200),manifestSha256:process.env.CLASSROOM_LOAD_MANIFEST_SHA};
+  fs.writeFileSync(path.join(dir,'班级并发摘要.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify({dir,...summary}));return;
+ }
  console.log('同时开始 '+users+' 个真实模型请求');
  await Promise.all(clients.map(async c=>{
   const at=performance.now();c.question=cases[c.worker%6][1]+`（合成核验编号${c.worker}）`;

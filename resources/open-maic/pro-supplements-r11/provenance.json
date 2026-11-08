@@ -1,0 +1,172 @@
+{
+  "version": "openmaic-pro-lessons-r11",
+  "source": "OpenMAIC Pro",
+  "sourcePackageSha256": "8f466fde444893651180046cd101f06327fac2af3961dbd901c0879fdee9dbb6",
+  "integration": "保留原讲解页与24个互动；六个Pro补页仅增加加载握手和网站上下文标记。",
+  "pages": [
+    {
+      "pointId": "GH-01-K01",
+      "title": "对照：多对一仍是函数，一进多出不是",
+      "sourceHtmlSha256": "ca668201788e08cce0c6f19bb06eafbc075d1769af3e1019198a55126760af73",
+      "installedPath": "resources/open-maic/pro-supplements-r11/GH-01-K01.html",
+      "narrationCount": 3
+    },
+    {
+      "pointId": "GH-01-K02",
+      "title": "对照：点(2,5)在图上，(2,4)不在",
+      "sourceHtmlSha256": "c29b871d44d6dd3aa84529d8e1477828ad938b3c65f438a037cbedf92b5f0287",
+      "installedPath": "resources/open-maic/pro-supplements-r11/GH-01-K02.html",
+      "narrationCount": 3
+    },
+    {
+      "pointId": "GH-01-K03",
+      "title": "对照：三点递增，区间里仍有下降",
+      "sourceHtmlSha256": "f614c85a5ad29cb78f1614a246ed8a2b6d17405ead7ff2dfbfc8b0a45aa3ff7d",
+      "installedPath": "resources/open-maic/pro-supplements-r11/GH-01-K03.html",
+      "narrationCount": 3
+    },
+    {
+      "pointId": "GH-02-K01",
+      "title": "对照：用数表看趋近，再用距离保证",
+      "sourceHtmlSha256": "fbd0f2829869a74653aab15f44546fd7556202c0342a13c2c2bbcf7af907d4a6",
+      "installedPath": "resources/open-maic/pro-supplements-r11/GH-02-K01.html",
+      "narrationCount": 3
+    },
+    {
+      "pointId": "GH-02-K02",
+      "title": "对照：两侧趋近 2，点值却是 4",
+      "sourceHtmlSha256": "c731322773535b43b64645793d60e3c1daa762134cd4408fa6bd7fe9d389daf8",
+      "installedPath": "resources/open-maic/pro-supplements-r11/GH-02-K02.html",
+      "narrationCount": 3
+    },
+    {
+      "pointId": "GH-02-K03",
+      "title": "对照：改对点值就连续了吗",
+      "sourceHtmlSha256": "105a8a2fcc23118c7780b3b2ebf5017b2c948e5603f6cdf5ac8ac1d3c5160b47",
+      "installedPath": "resources/open-maic/pro-supplements-r11/GH-02-K03.html",
+      "narrationCount": 3
+    }
+  ],
+  "files": [
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-1.mp3",
+      "bytes": 153120,
+      "sha256": "686197327217806b81e95b9aecef11b8c6b84f4433c067e7f676666b3002948e"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-2.mp3",
+      "bytes": 107688,
+      "sha256": "5bd0cd1a6d8490053c6864735666868ce6bfb24c46eb6c2d79d606ab83201ae9"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-3.mp3",
+      "bytes": 121560,
+      "sha256": "1012fd260bd55fb7cff303f1758369b445160ae8a348d78593eeb4540d7b4a12"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/GH-01-K01.html",
+      "bytes": 10053,
+      "sha256": "6e3cf12bdc0fb462a783fc75fc2b9350f9a14fa73fd802929198e0b243f9efcc"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-4.mp3",
+      "bytes": 119064,
+      "sha256": "c8da27d2fbb1733dd2a81f234eeedbfe3686f98b53457e2d03b7ecc7ff11f699"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-5.mp3",
+      "bytes": 99960,
+      "sha256": "fc12e57f54feff80447e2dc4ee84f1a0abc435cbfbb1321ac0457200846446e0"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-6.mp3",
+      "bytes": 212112,
+      "sha256": "797305609c2da983b5a39cdf4412926e23f364ee36a5f226acdf0191d8a0ae9a"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/GH-01-K02.html",
+      "bytes": 8433,
+      "sha256": "0c239ff3d065f9f6970c8480301c610185a46a51ed2a71fe233f49713f0de59c"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-7.mp3",
+      "bytes": 91272,
+      "sha256": "c5a4d131df7f034db795550a94204b07b2f01236a5b50357884ab7b4f661bcec"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-8.mp3",
+      "bytes": 123144,
+      "sha256": "47f45c4292bc88df4df395763179f1bee12663c87996594a28f171a199639ffd"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-9.mp3",
+      "bytes": 180456,
+      "sha256": "23cac0f4a04cd53bc9095af9e06181fb11a945983720be33d55bf7225801a643"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/GH-01-K03.html",
+      "bytes": 8893,
+      "sha256": "6bb069744595f3e608593cac59705d34378f096fccaff4af838a5205e1927e39"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-10.mp3",
+      "bytes": 170088,
+      "sha256": "bc8ed8e2e47dd723109d901595d81ed0b704c67e3160fdabe67e875fbb09a4f3"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-11.mp3",
+      "bytes": 198792,
+      "sha256": "e233c8a2ecbb32bd26e11252919ca35e726e1a496f410d3d607a804d3a4cbc6c"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-12.mp3",
+      "bytes": 213792,
+      "sha256": "b2e9d2572ae7c60f6ecc4de3a5b4ccaadb68a8ad682d562951be2fdf9ca91ba3"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/GH-02-K01.html",
+      "bytes": 9311,
+      "sha256": "1317debc0b45717ba9de1bb7c34f2523bd58c5efdf7009a8f66a796b0d95b868"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-13.mp3",
+      "bytes": 173184,
+      "sha256": "2435bae04faf759d7ae839c229d92e807202978710dc6bdcece45798287bb00c"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-14.mp3",
+      "bytes": 110184,
+      "sha256": "16f91a179856a356e7c2f8fa9cc0ce56fa72a6f0cdb370098b7ec15c21890f76"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-15.mp3",
+      "bytes": 101976,
+      "sha256": "f2fdb90bfd5cc405413f07a3b93d2d3b1fb22799b94207789777625a680702fb"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/GH-02-K02.html",
+      "bytes": 8433,
+      "sha256": "9d68a68a2ae408c44e063f48b3255c5577ba4a5a25ff2c39aacd81e4a0446aaa"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-16.mp3",
+      "bytes": 114000,
+      "sha256": "e0cbb1727e71de6bfdaffac27316d5595f55c21b380b0198d3afc6b64a477f70"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-17.mp3",
+      "bytes": 143928,
+      "sha256": "355752a635c0e6b0c3ce927ed8dfd28c37c21f5104c5afdcfdc3035f37c635c8"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/audio/audio-18.mp3",
+      "bytes": 96912,
+      "sha256": "18b4bcca76bf876061319503a477af3d64702239a91f0ef021202ce40b5ec867"
+    },
+    {
+      "path": "resources/open-maic/pro-supplements-r11/GH-02-K03.html",
+      "bytes": 9021,
+      "sha256": "6663c4edf9a32d99c3eae392bd07274e49192d754deb3a45cdd512c422bd27be"
+    }
+  ]
+}

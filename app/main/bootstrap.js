@@ -70,7 +70,8 @@ function renderBottomNextButton() {
   nextBtn.type = "button";
   nextBtn.dataset.learningPrimaryAction = "true";
   const needsQuizSubmit = unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id);
-  const needsSceneChoice = unit.type === "knowledge" && !selectedKnowledgeSceneType(unit);
+  const knowledgeAction = window.LearningWorkspace?.knowledgePrimaryAction?.(unit);
+  const needsSceneChoice = !knowledgeAction && unit.type === "knowledge" && !selectedKnowledgeSceneType(unit);
   const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
   const returningToQuiz = typeof quizResourceReviewContext === "function"
     && Boolean(quizResourceReviewContext(unit.id));

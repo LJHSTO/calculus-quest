@@ -1,10 +1,62 @@
 // Quiz answer handling, review, scoring, and quiz navigation.
+function renderAssessmentFigure(figure = {}) {
+  if (!figure || !/^assets\/assessment\/functions-limits-r11\/[a-z0-9-]+\.svg$/.test(String(figure.src || ''))) return '';
+  const width = Math.max(100, Math.min(1600, Number(figure.width) || 640));
+  const height = Math.max(80, Math.min(1200, Number(figure.height) || 360));
+  const alt = String(figure.alt || '题目图示').slice(0, 2400);
+  return `<figure class="assessment-figure"><img src="${escapeHtml(figure.src)}" alt="${escapeHtml(alt)}" width="${width}" height="${height}" decoding="async">${figure.caption ? `<figcaption>${escapeHtml(String(figure.caption).slice(0, 1200))}</figcaption>` : ''}<details class="assessment-figure-description"><summary>查看图的文字说明</summary><p>${escapeHtml(alt)}</p></details></figure>`;
+}
+
+function quizResponseIsOmitted(response) {
+  return response === '__skip__' || Array.isArray(response) && response.includes('__skip__');
+}
+
+function renderQuizOmissionAction(unit, question, submitted, draft) {
+  if (question.type !== 'short_answer' && !(question.options || []).some(option => option.value === '__skip__')) return '';
+  const omitted = quizResponseIsOmitted(draft);
+  return `<div class="quiz-omission-actions"><button type="button" data-quiz-omission data-unit-id="${escapeHtml(unit.id)}" data-question-id="${escapeHtml(question.id)}" aria-pressed="${omitted}" ${submitted ? 'disabled' : ''}>${omitted ? '返回作答' : '暂不作答'}</button><span data-quiz-omission-status role="status" ${omitted ? '' : 'hidden'}>${submitted ? '本题未作答，已单独记录。' : '本题暂不作答，可在提交前返回。'}</span></div>`;
+}
+
+function toggleQuizOmission(button) {
+  const unit = getUnit(button.dataset.unitId);
+  const question = unit?.scene?.content?.questions?.find(q => q.id === button.dataset.questionId);
+  if (!question || (state.submittedQuizzes || []).includes(unit.id)
+    || quizRecordsForUnit(unit.id).some(row => row.questionId === question.id)) return false;
+  const card = button.closest('[data-question]');
+  if (!card) return false;
+  const current = readQuizDraft(unit.id, question.id, '');
+  const omitted = !quizResponseIsOmitted(current);
+  let response = '__skip__';
+  if (omitted) button.dataset.previousResponse = JSON.stringify(current);
+  else { try { response = JSON.parse(button.dataset.previousResponse || '""'); } catch { response = ''; } }
+  const choices = Array.isArray(response) ? response : [response];
+  for (const input of card.querySelectorAll('[data-choice-answer]')) {
+    input.checked = !omitted && choices.includes(input.value);
+    input.disabled = omitted;
+  }
+  const unknown = card.querySelector('[data-short-unknown]');
+  if (unknown) { unknown.checked = !omitted && response === '__unknown__'; unknown.disabled = omitted; }
+  const textarea = card.querySelector('[data-short-answer]');
+  if (textarea) {
+    textarea.disabled = omitted || response === '__unknown__';
+    if (!omitted && !['__unknown__', '__skip__'].includes(response)) textarea.value = response || '';
+  }
+  rememberQuizDraft(unit.id, question.id, response);
+  button.textContent = omitted ? '返回作答' : '暂不作答';
+  button.setAttribute('aria-pressed', String(omitted));
+  card.querySelector('[data-quiz-omission-status]').hidden = !omitted;
+  analyticsTrack('answer_select', { source: 'quiz', data: { unitId: unit.id, questionId: question.id, values: omitted ? ['__skip__'] : choices.filter(Boolean), responseKind: omitted ? 'skipped' : 'answer' } });
+  if (!omitted) (textarea || card.querySelector('[data-choice-answer]'))?.focus({ preventScroll: true });
+  return true;
+}
+
 function selectedChoiceValues(unitId, questionId) {
   return Array.from(document.querySelectorAll(`input[name="${unitId}-${questionId}"]:checked`)).map((input) => input.value);
 }
 
 function optionText(question, value) {
   if (value === "__unknown__") return "我不会";
+  if (value === "__skip__") return "暂不作答";
   const option = (question.options || []).find((item) => item.value === value);
   return option ? `${option.value}. ${displayOptionLabel(option)}` : value;
 }
@@ -157,8 +209,8 @@ function shortAnswerReferenceText(question, result = {}) {
 }
 
 function renderQuestionReview({ question, result, index, unit }) {
-  if(/^fl-r(?:7|10)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
-  if(result.response==='__skip__')return '<div class="question-review" data-question-review>本题已跳过，记为缺失作答。</div>';
+  if(/^fl-r(?:7|10|11)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
+  if(quizResponseIsOmitted(result.response))return '<div class="question-review" data-question-review>本题未作答，已单独记录。</div>';
   if (question.type === "short_answer" && result.response === "__unknown__") {
     return renderReviewBlock("你的回答", "我不会（0 分）") + renderAnalysisBlock(shortAnswerReferenceText(question, result));
   }
@@ -453,6 +505,10 @@ async function submitQuiz(unitId) {
 
   questions.forEach((question) => {
     const index = Math.max(0, allQuestions.findIndex((item) => item.id === question.id));
+    if (quizResponseIsOmitted(readQuizDraft(unit.id, question.id, ''))) {
+      submissions.push({ index, question, response: '__skip__' });
+      return;
+    }
     if (question.type === "short_answer") {
       const textarea = document.querySelector(`textarea[name="${unit.id}-${question.id}"]`);
       const unknown = document.querySelector(`[data-short-unknown][data-question-id="${question.id}"]`)?.checked;
@@ -616,7 +672,7 @@ async function submitQuiz(unitId) {
   }
   // Lock all answer controls to prevent modification after submission
   document.querySelectorAll(`[data-question]`).forEach(card => {
-    card.querySelectorAll("input, textarea").forEach(el => el.disabled = true);
+    card.querySelectorAll("input, textarea, [data-quiz-omission]").forEach(el => el.disabled = true);
   });
   showQuizReview(unit, records);
   if (feedback) {
@@ -634,7 +690,7 @@ async function submitQuiz(unitId) {
     if (existingHint) existingHint.remove();
     const summaryQuestions = unit.adaptiveFormative ? questions : allQuestions;
     const summary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
-    const outcomeHtml = /^fl-r(?:7|10)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
+    const outcomeHtml = /^fl-r(?:7|10|11)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
       quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测已提交：${outcomeHtml}。</div>`);
