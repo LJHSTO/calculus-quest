@@ -79,8 +79,10 @@ async function testEmptyResponseGradingFallback() {
     });
     assert.equal(result.errorType, "empty_response");
     assert.match(result.feedback, /可用结果/);
-    assert.match(result.feedback, /暂记 0 分/);
-    assert.equal(result.score, 0);
+    assert.match(result.feedback, /未计分/);
+    assert.equal(result.score, null);
+    assert.equal(result.isCorrect, null);
+    assert.equal(result.needsReview, true);
   } finally {
     global.fetch = originalFetch;
     Object.entries(originalEnv).forEach(([key, value]) => {

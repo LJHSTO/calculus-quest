@@ -49,6 +49,10 @@ global.fetch = async (url, options = {}) => {
   try {
     delete require.cache[require.resolve("../lib/llm")];
     const llm = require("../lib/llm");
+    const request = values => llm._internals.completionRequest({ wireApi: "responses", model: "responses-test-model", system: "Return JSON.", user: "Stay silent.", jsonHint: true, maxTokens: 80, ...values });
+    assert.match(request({}).input, /\bjson\b/i, "JSON mode must mention JSON in input even when instructions already do");
+    assert.equal(request({ jsonHint: false }).input, "Stay silent.", "ordinary input stays unchanged");
+    assert.equal(request({ user: "Return JSON for this task." }).input, "Return JSON for this task.", "do not duplicate an existing JSON instruction");
     const result = await llm.completeChat({
       system: "Return a policy decision.",
       user: "Stay silent.",
@@ -61,7 +65,7 @@ global.fetch = async (url, options = {}) => {
     assert.equal(requests[0].headers.Authorization, "Bearer responses-test-key");
     assert.equal(requests[0].body.model, "responses-test-model");
     assert.match(requests[0].body.instructions, /Return only valid JSON/);
-    assert.equal(requests[0].body.input, "Stay silent.");
+    assert.equal(requests[0].body.input, "Stay silent.\n请仅返回有效的 JSON 对象。");
     assert.equal(requests[0].body.max_output_tokens, 80);
     assert.equal(requests[0].body.store, false);
     assert.deepEqual(requests[0].body.text, {
