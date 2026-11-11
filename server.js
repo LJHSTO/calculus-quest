@@ -78,7 +78,7 @@ const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferenc
   if(!threeArmRuntimeManifest){
     const route=JSON.parse(fs.readFileSync(path.join(root,'data/multi-scene-learning-route.json'),'utf8'));
     const content=route.chapters.find(c=>c.id==='V14-C1').modules.flatMap(m=>m.knowledgePoints).flatMap(p=>p.resourceCandidates).map(r=>r.root&&r.file?'resources/'+r.root+'/'+r.file:r.path||r.src).filter(Boolean);
-    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/functions-limits-r12.js','lib/assessments/functions-limits-delayed-r12.js','lib/assessments/functions-limits-probes-r12.js','lib/proactive-outcomes/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r12.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
+    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/functions-limits-r12.js','lib/assessments/functions-limits-delayed-r12.js','lib/assessments/functions-limits-probes-r12.js','lib/assessments/functions-limits-r13.js','lib/assessments/functions-limits-probes-r13.js','lib/assessments/assessment-figures-r13.js','lib/proactive-outcomes/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r13.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
     files.push(proSupplementAssets.manifestPath,...Object.keys(proSupplementAssets.files));
     threeArmRuntimeManifest={appVersion:process.env.APP_VERSION||'development',proactiveFingerprint:proactiveProtocolFingerprint,proactiveDefinition:proactiveProtocolDefinition,files:Object.fromEntries([...new Set(files)].map(f=>[f,protocolSourceDigest(f)]))};
   }
@@ -272,7 +272,8 @@ function mathVersionFor(user){
   const run=user?threeArmStudy.get(user):null;
   if(run){const version=mathInstruments.versionForRun(run);if(!version)throw Object.assign(new Error('本轮数学测量版本不可用，原记录保留。'),{status:409});return version;}
   const ids=user?db.getQuizResultsByUser(user).map(r=>r.question_id||''):[];
-  if(ids.some(id=>/^fl-r12-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r13-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r12-/.test(id)))return 'functions-limits-integrated-r12-20261108';
   if(ids.some(id=>/^fl-r11-/.test(id)))return 'functions-limits-integrated-r11-20261107';
   if(ids.some(id=>/^fl-r10-/.test(id)))return mathInstruments.legacyVersion;
   // Ordinary learning and its pre-existing snapshots retain the archived bank.
@@ -489,9 +490,13 @@ const proactiveStoppingRules = Object.freeze({
       functionsLimitsR12:protocolSourceDigest('lib/assessments/functions-limits-r12.js'),
       functionsLimitsDelayedR12:protocolSourceDigest('lib/assessments/functions-limits-delayed-r12.js'),
       functionsLimitsProbesR12:protocolSourceDigest('lib/assessments/functions-limits-probes-r12.js'),
+      functionsLimitsR13:protocolSourceDigest('lib/assessments/functions-limits-r13.js'),
+      functionsLimitsProbesR13:protocolSourceDigest('lib/assessments/functions-limits-probes-r13.js'),
+      functionsLimitsFiguresR13:protocolSourceDigest('lib/assessments/assessment-figures-r13.js'),
       functionsLimitsOutcomesR11:protocolSourceDigest('lib/proactive-outcomes/functions-limits-r11.js'),
       functionsLimitsOutcomesR12:protocolSourceDigest('lib/proactive-outcomes/functions-limits-r12.js'),
       functionsLimitsAdapterR12:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r12.js'),
+      functionsLimitsAdapterR13:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r13.js'),
       functionsLimitsFiguresR11:protocolSourceDigest('lib/assessments/assessment-figures-r11.js'),
       functionsLimitsAdapterR11:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r11.js'),
       functionsLimitsProbesR6: protocolSourceDigest("lib/assessments/functions-limits-probes-r10.js"),
@@ -1801,11 +1806,11 @@ function proactiveProtocolPayload(experimentId = proactiveStudyConfig.experiment
 
 function assignedAssessmentEntry(entry,userId){
   if(entry.chapterId==='V14-C1'&&['pre','post','formative'].includes(entry.phase)){
-    const assigned=/-r(11|12)-/.exec(mathVersionFor(userId))?.[1]||'legacy';
-    const actual=/^fl-r(11|12)-/.exec(entry.question.id)?.[1]||'legacy';
+    const assigned=/-r(11|12|13)-/.exec(mathVersionFor(userId))?.[1]||'legacy';
+    const actual=/^fl-r(11|12|13)-/.exec(entry.question.id)?.[1]||'legacy';
     if(actual!==assigned)return false;
   }
-  if(!/^fl-r(?:7|10|11|12)-(pre|post)-/.test(entry.question.id))return true;
+  if(!/^fl-r(?:7|10|11|12|13)-(pre|post)-/.test(entry.question.id))return true;
   const order=(userId?threeArmStudy.get(userId)?.assessmentOrder:null)||'XY';
   return entry.question.form===order[entry.phase==='pre'?0:1];
 }
@@ -2138,6 +2143,40 @@ function proactiveOutcomeReview(stageId, attempt, answersReleased) {
   };
 }
 
+function studyFinalFeedback(userId) {
+  const state = proactiveOutcomeState(userId, proactiveStudyConfig.chapterId);
+  if (!state.answerReviewReleased) return { available: false, reason: "完成保持、迁移与最后的调节任务后，可统一查看独立测量反馈。" };
+  const run = threeArmStudy.get(userId);
+  if (!run) return { available: false, reason: "当前没有三组学习轮次。" };
+  const bank = mathInstruments.forVersion(mathVersionFor(userId));
+  if (!bank) throw Object.assign(new Error("本轮原题库版本暂不可用，原作答已保留。"), { status: 409 });
+  const order = run.assessmentOrder || "XY";
+  const rows = db.getQuizResultsByUser(userId);
+  const phases = ["pre", "post"].map((phase) => {
+    const questions = bank.questions(phase, order[phase === "pre" ? 0 : 1]);
+    return {
+      phase,
+      label: phase === "pre" ? "知识前测" : "结业后测",
+      items: questions.map((q) => {
+        const row = rows.find((r) => r.phase === phase && r.question_id === q.id);
+        if (!row) return { id: q.id, submitted: false };
+        const correctValues = Array.isArray(q.answer) ? q.answer : [q.answer];
+        const correctOption = (q.options || []).filter((option) => correctValues.includes(option.value));
+        return {
+          id: q.id, submitted: true, prompt: q.question,
+          ...(q.figure ? { figure: q.figure } : {}),
+          response: row.response || "",
+          correctAnswer: q.type === "short_answer" ? q.analysis || q.referenceAnswer || "" : correctOption.map((option) => option.label).join("、"),
+          explanation: q.analysis || "",
+          correct: row.is_correct == null ? null : [0, 1].includes(Number(row.is_correct)) ? Number(row.is_correct) === 1 : null,
+          ...(q.type === "short_answer" ? { rubric: q.rubric || [] } : {})
+        };
+      })
+    };
+  });
+  return { available: true, phases, delayed: state.stages.filter((stage) => ["retention", "transfer"].includes(stage.id)).map((stage) => ({ id: stage.id, label: stage.label, review: stage.review })) };
+}
+
 function proactiveOutcomeState(
   userId,
   chapterId,
@@ -2222,7 +2261,12 @@ function proactiveOutcomeState(
   const workflow = priorWorkflow || proactiveOutcomes;
   const transferComplete = workflow.stageIds
     .filter((stageId) => stageId !== "retention").every(stageTerminal);
-  const answerReviewReleased = workflow.stageIds.every(stageTerminal);
+  const answerReviewReleased = researchFeedback.finalFeedbackOpen({
+    outcomesTerminal: workflow.stageIds.every(stageTerminal),
+    studyRun: frozenRun,
+    regulationStatus: frozenRun?.regulationVersion ? regulationTransfer.completionStatus(userId) : "",
+    judgmentStatus: frozenRun && !frozenRun.regulationVersion ? threeArmStudy.judgmentState(userId).status : ""
+  });
   const reminderHistory = managed
     ? db.proactiveRetentionReminderHistory(
         userId,
@@ -2419,7 +2463,7 @@ function proactiveOutcomeState(
     activeSession: publicProactiveOutcomeSession(activeSession),
     agentAssistanceBlocked: Boolean(activeSession),
     answerReviewReleased,
-    answerReviewPolicy: "全部独立测量提交、明确跳过或超窗后统一开放已提交阶段的对错和正确答案。",
+    answerReviewPolicy: "独立测量和最后的调节任务结束后统一开放已提交阶段的对错和正确答案。",
     stages
   };
 }
@@ -3217,18 +3261,19 @@ function publicProactivePolicyState(row = {}, options = {}) {
   const scopeKeyForCheck = row.scope_key || "";
   const issuedCheckId = lifecycleState.activeVerificationCheckId || "";
   const pendingCheck = hasPendingProactiveCheck(row);
+  const contextActive = pendingCheck || lifecycleState.phase === "accepted_pending_response";
   // Read-only projections replay a bound item; new items are chosen only by start.
   const legacyCheckId = `${scopeKeyForCheck}-probe-${String(checkLevel).toLowerCase()}-v1`;
   const verificationCheck = pendingCheck
     ? adapter?.publicVerificationCheck?.(scopeKeyForCheck, checkLevel, issuedCheckId || legacyCheckId)
       || (!issuedCheckId ? adapter?.publicVerificationCheck?.(scopeKeyForCheck,checkLevel) : null)
     : null;
-  const decision = pendingCheck && row.user_id
+  const decision = contextActive && row.user_id
     ? db.getProactiveDecisionForUser(row.user_id,lifecycleState.activeDecisionId) : null;
   const intervention = decision ? db.getProactiveIntervention(lifecycleState.activeInterventionId) : null;
   const presentation = intervention && intervention.user_id===row.user_id
     ? parseStoredJson(intervention.presentation||"{}",{}) : {};
-  const checkContext = pendingCheck ? {
+  const checkContext = contextActive ? {
     unitId:decision?.unit_id || scopeKeyForCheck, sceneType:decision?.scene_type || "slide",
     questionId:presentation.questionId || presentation.questionContext?.questionId || ""
   } : null;
@@ -4776,14 +4821,18 @@ async function handleManagedProactiveIntervention({
         followupCheckId:check.id,contentVersion:adapter.version || "template-v1"});
       evidence.supportContract={...contract.toJSON(),answerLeakAudit:"teacher_review_pending",checkBinding:"planned_not_yet_issued"};
     }
-    const receipt=agentProfile.authorityLevel==="A4"
+    const followupConfirmationRequired=signal.kind==='independent_attempt_outcome'
+      &&policyDecision.lifecycleOutcome==='continued_friction';
+    const authorityLevel=followupConfirmationRequired?'A1':agentProfile.authorityLevel;
+    const receipt=authorityLevel==="A4"
       ? agentRuntime.openHint(auth.participant.id,policyScopeKey,decisionId) : null;
     if(resolved.isQuiz){
       renderedDecision.questionContext=learningAssistant.quizQuestionContext(resolved,renderedDecision.questionId);
       if(renderedDecision.questionContext)renderedDecision.questionId=renderedDecision.questionContext.questionId;
     }
     renderedDecision.presentationFormat=agentProfile.presentationFormat;
-    renderedDecision.authority={level:agentProfile.authorityLevel,autoExpanded:Boolean(receipt),
+    renderedDecision.followupConfirmationRequired=followupConfirmationRequired;
+    renderedDecision.authority={level:authorityLevel,autoExpanded:Boolean(receipt),
       receiptId:receipt?.id||"",permissionId:receipt?.permission_id||"",reversibleAction:"expand_hint_only"};
     evidence.authority=renderedDecision.authority;
     if(!resolved.isQuiz&&policyDecision.action!=='switch_representation') {
@@ -5933,7 +5982,12 @@ async function handleApi(req, res, url) {
         if(req.method==='POST'&&url.pathname!=='/api/study/judgment')assertFirstSessionOpen(user);
         const cycles=publicSupportCycles(user,generation);
         if(url.pathname==='/api/study/state'&&req.method==='GET'){
-          sendJson(res,200,{ok:true,data:{run:{...threeArmStudy.publicRun(run),regulationActive:regulationTransfer.protects(user)},preparation:ordinaryPreparation(user),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,probe:threeArmStudy.probe(user,cycles),judgment:run.regulationVersion?null:threeArmStudy.judgmentState(user),regulation:run.regulationVersion?regulationTransfer.state(user):null}});return;
+          const feedback=studyFinalFeedback(user);
+          sendJson(res,200,{ok:true,data:{run:{...threeArmStudy.publicRun(run),regulationActive:regulationTransfer.protects(user)},preparation:ordinaryPreparation(user),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,probe:threeArmStudy.probe(user,cycles),judgment:run.regulationVersion?null:threeArmStudy.judgmentState(user),regulation:run.regulationVersion?regulationTransfer.state(user):null,finalFeedback:{available:feedback.available,reason:feedback.available?'独立任务已结束，可以查看教学反馈。':feedback.reason}}});return;
+        }
+        if(url.pathname==='/api/study/final-feedback'&&req.method==='GET'){
+          const feedback=studyFinalFeedback(user);
+          sendJson(res,feedback.available?200:409,{ok:feedback.available,...(feedback.available?{data:feedback}:{code:'study_feedback_locked',message:feedback.reason})});return;
         }
         if(url.pathname==='/api/study/confirm-defaults'&&req.method==='POST'){
           if(run.arm!=='A'||ordinaryPreparation(user).stage!=='configuration')throw Object.assign(new Error('请先完成前测，再确认本组默认设置'),{status:409});
@@ -8805,7 +8859,7 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
-      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10|11|12)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
+      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10|11|12|13)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
       // Only a complete, server-recorded pretest opens discussion before setup.
       const completedPretest = resolved.isQuiz && resolved.unit.phase === "pre"
         && resolved.unit.quizQuestions.length > 0
@@ -9277,7 +9331,7 @@ async function handleApi(req, res, url) {
       expectedEntries=expectedEntries.filter(entry=>assignedAssessmentEntry(entry,auth.participant.id));
       if(chapterId==='V14-C1'&&['pre','post'].includes(phase)){
         const order=studyRun?.assessmentOrder||'XY',form=order[phase==='pre'?0:1];
-        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10|11|12)-/.test(e.question.id)||e.question.form===form);
+        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10|11|12|13)-/.test(e.question.id)||e.question.form===form);
       }
       if (expectedEntries.some((entry) => entry.assessmentStatus === "archived")) {
         sendJson(res, 409, {

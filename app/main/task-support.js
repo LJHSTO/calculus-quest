@@ -56,7 +56,8 @@
     if(snapshot.busy)status.textContent='知点正在回应…';
     else if(snapshot.taskError)status.textContent=snapshot.taskError+' 你的草稿仍保留。';
     form.append(label);
-    if(snapshot.policyState?.lifecycle?.phase==='accepted_pending_response'&&!global.SupportCycleUI?.active(snapshot.supportCycle)){
+    const checkQuestionId=snapshot.policyState?.checkContext?.questionId||snapshot.prompt?.questionId||snapshot.offer?.questionId||'';
+    if(snapshot.policyState?.lifecycle?.phase==='accepted_pending_response'&&!global.SupportCycleUI?.active(snapshot.supportCycle)&&(snapshot.unitType!=='quiz'||checkQuestionId===(questionId||selectedQuestion||snapshot.replyQuestionId||snapshot.prompt?.questionId||snapshot.offer?.questionId))){
       const check=el('button','用一题检查');check.type='button';check.className='task-check-action';check.disabled=snapshot.busy;
       check.onclick=async()=>{check.disabled=true;try{await global.KnowledgeAssistant.startTaskCheck();}catch(error){status.textContent=error.message;check.disabled=false;}};form.append(check);
     }
@@ -78,27 +79,50 @@
   function appendConversation(parent,next){
     if(next.locked||next.check||['awaiting_confirmation','queued','postponed','awaiting_check'].includes(next.supportCycle?.status))return;
     const context=`${next.unitId}:${next.sceneType||'slide'}`;
+    if(replyContext===`closed:${context}`)return;
     if(!next.prompt&&replyContext!==context&&!['offered','engaged'].includes(next.supportCycle?.status)&&!global.SupportCycleUI?.manualOpen(next))return;
     // The existing server-backed conversation is shared by both teacher surfaces and survives refresh.
     const turns=[];
     for(const item of next.taskMessages||[]){
       if(item.role==='user')turns.push({question:item.content,pending:next.busy});
-      else if(item.role==='assistant'&&turns.length){const turn=turns.at(-1);turn.reply=item.error?'暂未发送成功，请重试。':item.content;turn.pending=item.streaming;}
+      else if(item.role==='assistant'&&turns.length){const turn=turns.at(-1);turn.message=item;turn.reply=item.error?'暂未发送成功，请重试。':item.content;turn.pending=item.streaming;}
     }
     const history=el('div',null,'task-conversation-scroll');
-    for(const turn of turns.slice(-8)){const response=el('div',null,'task-conversation-reply');response.append(el('p',turn.question,'task-student-message'));if(turn.reply)response.append(replyBody(turn.reply));else if(turn.pending)response.append(el('p','知点正在回应…','task-response-status'));history.append(response);}
+    for(const turn of turns.slice(-8)){const response=el('div',null,'task-conversation-reply');response.append(el('p',turn.question,'task-student-message'));if(turn.reply)response.append(global.KnowledgeAssistant.createTaskMessage?.(turn.message,{actionable:turn===turns.at(-1)})||replyBody(turn.reply));else if(turn.pending)response.append(el('p','知点正在回应…','task-response-status'));history.append(response);}
     parent.classList.add('has-task-conversation');parent.append(history);
+    if(next.unitType==='quiz'&&next.quizSubmitted&&!turns.at(-1)?.message?.guidance?.quizReviewProgress&&!turns.at(-1)?.message?.quizReviewFollowUp)appendReviewNavigation(parent,next);
     if(!next.prompt&&next.unitType==='quiz'&&next.quizResourceUnitId){
       const back=el('button','回到本知识点课件','task-course-return');back.type='button';back.dataset.quizResourceLink=next.quizResourceUnitId;back.dataset.quizResourceScene='simulation';parent.append(back);
     }
     const questionId=next.unitType==='quiz'?(selectedQuestion||next.replyQuestionId||''):'';
     draftForm(parent,'继续交流（选填）',`${next.scopeKey}:${next.sceneType||'slide'}:conversation:${questionId}`,questionId);
   }
+  function reviewState(next,questionId){
+    if((next.checkHistory||[]).some(r=>r.questionId===questionId&&['correct','incorrect'].includes(r.status)))return '已提交独立检查';
+    if((next.taskMessages||[]).some(m=>m.role==='assistant'&&!m.error&&(m.contextRef?.questionId||m.guidance?.focusQuestionId)===questionId))return '已有讲解';
+    return '待回看';
+  }
+  function appendReviewNavigation(parent,next){
+    const records=typeof quizRecordsForUnit==='function'?quizRecordsForUnit(next.unitId):[];
+    const wrong=[...document.querySelectorAll('.question-card[data-question]')].filter(card=>records.filter(r=>r.questionId===card.dataset.question).at(-1)?.isCorrect===false);
+    if(!wrong.length)return;
+    const currentId=selectedQuestion||next.replyQuestionId||next.prompt?.questionId||next.offer?.questionId;
+    const current=wrong.findIndex(card=>card.dataset.question===currentId);
+    const box=el('section',null,'task-review-navigation'),label=el('strong',current>=0?`正在讨论第 ${[...document.querySelectorAll('.question-card[data-question]')].indexOf(wrong[current])+1} 题 · ${current+1}/${wrong.length} 道错题`:'本次检测的错题');
+    box.append(label);
+    const states=el('p',wrong.map((card,index)=>`第 ${index+1} 道错题：${reviewState(next,card.dataset.question)}`).join('；'));box.append(states);
+    const actions=el('div');
+    const ask=el('button','继续问本题');ask.type='button';ask.onclick=()=>parent.querySelector('.task-response-form textarea')?.focus({preventScroll:true});actions.append(ask);
+    const nextCard=wrong.slice(current+1).find(card=>reviewState(next,card.dataset.question)==='待回看')||wrong.find(card=>card.dataset.question!==currentId&&reviewState(next,card.dataset.question)==='待回看');
+    if(nextCard){const nextButton=el('button','下一道待回看');nextButton.type='button';nextButton.disabled=next.busy;nextButton.onclick=()=>global.KnowledgeAssistant.askInTask('请接着带我看这道题，复用我的原始作答，先给一个关键线索，不要让我重新填写原题。',nextCard.dataset.question);actions.append(nextButton);}
+    const stop=el('button','结束本次讨论');stop.type='button';stop.onclick=()=>{replyContext=`closed:${contextKey(next)}`;key='';revision++;persistDrafts();global.KnowledgeAssistant.refreshSupportSurface();document.querySelector(`.question-card[data-question="${CSS.escape(currentId||'')}"]`)?.scrollIntoView({block:'start',behavior:'instant'});};actions.append(stop);box.append(actions);parent.append(box);
+  }
+  function leaveConversation(){replyContext='';persistDrafts();}
   function quizReview(next){
     for(const card of document.querySelectorAll(".question-card[data-question]")){
       const existing=card.querySelector(".question-task-review");
-      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10|11|12)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
-      card.querySelector(".task-assessment-note")?.remove();if(existing)continue;
+      if(next.locked || next.check || !next.quizSubmitted || /^fl-r(?:7|10|11|12|13)-(pre|post)-/.test(card.dataset.question)){existing?.remove();card.querySelector('.task-assessment-note')?.remove();continue;}
+      card.querySelector(".task-assessment-note")?.remove();if(existing){const status=existing.querySelector('[data-question-review-state]');if(status)status.textContent=reviewState(next,card.dataset.question);continue;}
       const questionId=card.dataset.question, details=el("div",null,"question-task-review");
       const records=typeof quizRecordsForUnit==='function'?quizRecordsForUnit(next.unitId):[];
       const incorrect=records.filter(r=>r.questionId===questionId).at(-1)?.isCorrect===false;
@@ -106,7 +130,7 @@
       button.onclick=async()=>{selectedQuestion=questionId;replyContext=contextKey(next);persistDrafts();key='';revision++;global.KnowledgeAssistant.refreshSupportSurface();if(next.view.placement==='sidebar')global.dispatchEvent(new CustomEvent('cq:knowledge-assistant-visibility',{detail:{open:true}}));requestAnimationFrame(()=>{if(!locate())document.querySelector('.learning-support-surface')?.scrollIntoView({block:'nearest',behavior:'instant'});document.querySelector('.task-response-form textarea,.support-chat-form textarea')?.focus({preventScroll:true});});
         if(incorrect){button.disabled=true;try{await global.KnowledgeAssistant.askInTask('请带我检查这道题的关键关系，先给一个简短线索。',questionId);}finally{button.disabled=false;}}
       };
-      details.append(button);card.append(details);
+      const status=el('span',reviewState(next,questionId),'question-review-state');status.dataset.questionReviewState=questionId;details.append(status,button);card.append(details);
     }
   }
   function showPanel(){
@@ -159,7 +183,7 @@
     const helpKey=next.supportCycle?.id||next.offer?.id||next.prompt?.id||next.scopeKey;
     if(helpKey!==workspaceHelpKey){workspaceHelpKey=helpKey;focusHelp=false;}
     const nextFrame=null;
-    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.muted,next.busy,next.reply,next.taskError,next.supportCycle,next.policyState?.lifecycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
+    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.checkHistory,next.muted,next.busy,next.reply,next.taskMessages,next.taskError,next.supportCycle,next.policyState?.lifecycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
       const previousHistory=source?.querySelector('.task-conversation-scroll');
@@ -242,5 +266,5 @@
   }
   global.TaskSupport=Object.freeze({sync,clear,locate,returnToTask,visibleProbeId,appendConversation,hasConversation,
     openConversation(questionId=''){if(!snapshot||snapshot.locked||snapshot.check)return;selectedQuestion=questionId;replyContext=contextKey(snapshot);persistDrafts();key='';global.KnowledgeAssistant.refreshSupportSurface();},
-    leaveConversation(){replyContext="";persistDrafts();},get selectedQuestion(){return selectedQuestion;},get conversationRevision(){return revision+(snapshot?.taskMessages?.length||0);},get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
+    leaveConversation,get selectedQuestion(){return selectedQuestion;},get conversationRevision(){return revision+(snapshot?.taskMessages?.length||0);},get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
 })(window);

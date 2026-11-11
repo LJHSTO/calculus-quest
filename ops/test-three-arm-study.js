@@ -1,7 +1,7 @@
 "use strict";
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),net=require('node:net');
 const {spawn}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),C=require('../app/shared/learner-preferences');
+const root=path.resolve(__dirname,'..'),C=require('../app/shared/learner-preferences'),registry=require('../lib/assessments/functions-limits-registry');
 async function main(){
  const output=path.join(root,'output/三组实验上线验收');fs.mkdirSync(output,{recursive:true});const dir=fs.mkdtempSync(path.join(output,'接口隔离-'));
  let port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});
@@ -16,13 +16,15 @@ async function main(){
  try{
   await boot();const reg=await api('/api/auth/register',{nickname:'三组隔离验收',password:'synthetic-test-password'},'A');assert.equal(reg.status,200,JSON.stringify(reg));token=reg.token;
   const ids={},baseline={};
-  const course=require('../data/multi-scene-learning-route.json').chapters.find(c=>c.id==='V14-C1');
-  const pre={chapterId:'V14-C1',unitId:'V14-C1-pre',phase:'pre',answers:course.flow.preQuiz.questions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'合成前测，等待人工评分':q.type==='multiple'?q.answer:q.answer[0]}))};
+  const course=registry.routeFor(require('../data/multi-scene-learning-route.json')).chapters.find(c=>c.id==='V14-C1');
   for(const arm of ['A','B','C']){
    const data=(await api('/api/learning/learner-preferences',null,arm)).data;assert.ok(data,arm+'返回准备状态');ids[arm]=data.study.id;baseline[arm]=data.record.answers;assert.equal(data.preparation.stage,'baseline');assert.equal(data.enabled,false);
    const survey=(await api('/api/study/survey?stage=baseline',null,arm)).data;
    assert.equal((await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,3]))},arm)).status,200);
    assert.equal((await api('/api/learning/learner-preferences',null,arm)).data.preparation.stage,'pretest');
+   const assignedRun=(await api('/api/study/state',null,arm)).data.run,form=assignedRun.assessmentOrder[0];
+   const questions=form==='X'?course.flow.preQuiz.questions:course.flow.preQuiz.alternateFormQuestions;
+   const pre={chapterId:'V14-C1',unitId:'V14-C1-pre',phase:'pre',answers:questions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'合成前测，等待人工评分':q.type==='multiple'?q.answer:q.answer[0]}))};
    const submitted=await api('/api/learning/quiz/submit',pre,arm);assert.equal(submitted.status,200,JSON.stringify(submitted));
    const ready=(await api('/api/learning/learner-preferences',null,arm)).data;assert.equal(ready.preparation.stage,'configuration');assert.equal(ready.enabled,arm!=='A');
    if(arm==='A'){
@@ -38,7 +40,7 @@ async function main(){
   const snapshot=await api('/api/learning/snapshot',{generation:a.generation,baseRevision:a.revision,snapshot:{...(a.snapshot||{}),currentChapterId:'V14-C1',currentUnitId:'GH-01-K01',note:'只属于A组的合成记录'}},'A');assert.equal(snapshot.status,200,JSON.stringify(snapshot));
   assert.notEqual((await api('/api/learning/snapshot',null,'C')).snapshot?.note,'只属于A组的合成记录');
   const ordinary=await api('/api/auth/me',{});assert.notEqual(ordinary.participant.participantId,ids.A);assert.equal((await api('/api/learning/snapshot')).snapshot?.note||'','');check('同账号各组学习快照隔离，普通学习历史独立');
-  const point=course.modules[0].knowledgePoints[0];assert.equal(point.formativeQuiz.questions.length,3);assert.equal(point.formativeQuiz.adaptive,false);
+  const point=course.modules[0].knowledgePoints[0];assert.equal(point.formativeQuiz.questions.length,registry.formativeCount(registry.version));assert.equal(point.formativeQuiz.adaptive,false);
   const answer={chapterId:'V14-C1',unitId:point.id+'-formative',phase:'formative',answers:point.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))};
   assert.equal((await api('/api/learning/quiz/submit',{...answer,answers:answer.answers.slice(0,1)},'B')).status,400,'不能仅答第一道就完成检测');
   const complete=await api('/api/learning/quiz/submit',answer,'B');assert.equal(complete.status,200,JSON.stringify(complete));
@@ -69,10 +71,12 @@ async function main(){
    const saved=await api('/api/study/review',{stage:module.id,review_understanding:4,review_action:4,decision:'keep',reason:'合成测试：保持并观察下一阶段独立作答'},'B');assert.equal(saved.status,200,JSON.stringify(saved));
   }
   assert.equal((await api('/api/study/survey',{stage:'final',answers:{}},'B')).status,409);
-  assert.equal((await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:course.id+'-post',phase:'post',answers:course.flow.postQuiz.questions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.type==='multiple'?q.answer:q.answer[0]}))},'B')).status,200);
-  const final=(await api('/api/study/survey?stage=final',null,'B')).data;assert.equal(final.items.length,16);assert.equal((await api('/api/study/survey',{stage:'final',answers:Object.fromEntries(final.items.map(q=>[q.id,4]))},'B')).status,200);
-  assert.equal((await api('/api/study/survey?stage=final',null,'A')).data.items.length,13);
+  const postForm=(await api('/api/study/state',null,'B')).data.run.assessmentOrder[1],postQuestions=registry.forVersion(registry.version).questions('post',postForm);
+  assert.equal((await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:course.id+'-post',phase:'post',answers:postQuestions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.type==='multiple'?q.answer:q.answer[0]}))},'B')).status,200);
+  const final=(await api('/api/study/survey?stage=final',null,'B')).data;assert.equal(final.items.length,19);assert.equal((await api('/api/study/survey',{stage:'final',answers:Object.fromEntries(final.items.map(q=>[q.id,4]))},'B')).status,200);
+  assert.equal((await api('/api/study/survey?stage=final',null,'A')).data.items.length,16);
   const outcomes='/api/learning/proactive/outcomes';
+  assert.equal((await api('/api/study/final-feedback',null,'B')).status,409,'独立测量结束前不能读取答案');
   assert.equal((await api(outcomes+'/start',{chapterId:course.id,stageId:'transfer'},'B')).status,409);
   assert.equal((await api('/api/study/judgment',{action:'start'},'B')).status,409);check('两次阶段回顾、分组问卷及三天门槛');
   await stop();const SQL=await require('sql.js')(),database=new SQL.Database(fs.readFileSync(env.DB_PATH));database.run("UPDATE quiz_results SET created_at=? WHERE user_id=? AND phase='post'",[new Date(Date.now()-73*3600000).toISOString(),ids.B]);fs.writeFileSync(env.DB_PATH,Buffer.from(database.export()));database.close();await boot();
@@ -81,34 +85,30 @@ async function main(){
    const state=(await api(outcomes+'?chapterId='+course.id,null,'B')).data,stage=state.stages.find(s=>s.id===stageId);assert.ok(stage.items.length);
    const done=await api(outcomes+'/submit',{chapterId:course.id,stageId,sessionId:started.sessionId,responses:Object.fromEntries(stage.items.map(q=>[q.id,q.options?.[0]?.value||'A']))},'B');assert.equal(done.status,200,JSON.stringify(done));
   }
-  const judgment=await api('/api/study/judgment',{action:'start'},'B');assert.equal(judgment.status,200,JSON.stringify(judgment));assert.equal(judgment.data.items.length,6);assert.ok(judgment.data.items.every(q=>!q.guide));
-  const draftBody={action:'draft',revision:0,answers:{J1:'合成判断草稿'},outsidePractice:'合成课外练习记录',requestId:'synthetic-draft-one'};
-  const draft=await api('/api/study/judgment',draftBody,'B');assert.equal(draft.data.revision,1);
-  const repeated=await api('/api/study/judgment',draftBody,'B');assert.equal(repeated.status,200);assert.equal(repeated.data.revision,1);assert.equal(repeated.data.outsidePractice,draftBody.outsidePractice);
-  assert.equal((await api('/api/study/judgment',{...draftBody,answers:{J1:'改变内容'}},'B')).status,409);
-  assert.equal((await api('/api/study/judgment',{action:'draft',revision:0,answers:{}},'B')).status,409);
-  assert.equal((await api('/api/learning/assistant/ask',{question:'配置任务期间索要提示'},'B')).status,409);
-  assert.equal((await api('/api/study/judgment',{action:'submit',revision:1,answers:{}},'B')).status,400);
-  const browser=await require('playwright-core').chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+  assert.equal((await api('/api/study/final-feedback',null,'B')).status,409,'调节迁移结束前不能读取答案');
+  let regulation=(await api('/api/study/regulation',null,'B')).data;assert.equal(regulation.status,'available');
+  const regulate=async(action,answers)=>{const body={runId:ids.B,revision:regulation.revision||0,requestId:crypto.randomUUID(),action,...(action==='start'?{}:{taskId:regulation.taskId,phase:regulation.phase}),...(answers?{answers}:{})};const result=await api('/api/study/regulation',body,'B');assert.equal(result.status,200,JSON.stringify(result));regulation=result.data;return body;};
+  await regulate('start');await regulate('begin');assert.equal((await api('/api/learning/assistant/ask',{question:'调节任务期间索要提示'},'B')).status,409);
+  while(regulation.phase!=='summary'){
+   if(regulation.task.kind==='scenario')await regulate('next',{choice:regulation.task.options[0].value,reason:'合成理由',verification:'撤去帮助后换例核验'});
+   else if(regulation.phase==='attempt')await regulate('next',{initialAnswer:regulation.task.question.options[0].value,initialReason:'合成初次判断',confidence:'unsure'});
+   else if(regulation.phase==='support')await regulate('next',{helpChoice:'continue',actionChoice:'self_check',actionNote:'先自己核对'});
+   else if(regulation.phase==='check')await regulate('next',{checkAnswer:regulation.task.question.options[0].value,checkReason:'合成独立检查'});
+   else if(regulation.phase==='reflect')await regulate('next',{reflectionDecision:'stop',reflectionReason:'依据新例表现决定结束'});
+   else assert.fail('未预期的调节任务阶段：'+regulation.phase);
+  }
+  const regulationFinish=await regulate('finish');assert.equal(regulation.status,'submitted');assert.equal((await api('/api/study/regulation',regulationFinish,'B')).data.status,'submitted');
+  const finalFeedback=await api('/api/study/final-feedback',null,'B');assert.equal(finalFeedback.status,200,JSON.stringify(finalFeedback));assert(finalFeedback.data.available);assert.deepEqual(finalFeedback.data.phases.map(p=>p.phase),['pre','post']);assert(finalFeedback.data.phases.every(p=>p.items.some(q=>q.submitted&&q.correctAnswer)));assert(finalFeedback.data.phases[0].items.some(q=>q.submitted&&q.rubric&&q.correct===null),'未评分简答保留待评分状态');assert.deepEqual(finalFeedback.data.delayed.map(p=>p.id),['retention','transfer']);
+  assert.equal((await api('/api/study/final-feedback',null,'A')).status,409,'其他轮次不能读取已完成轮次的反馈');
+  const scores=Object.fromEntries(require('../lib/assessments/regulation-transfer-r11').taskOrder.map(id=>[id,[2,1,2]]));
+  const packet=await api('/api/admin/three-arm/regulation-rating?runId='+encodeURIComponent(ids.B),null,'',admin);assert.equal(packet.status,200,JSON.stringify(packet));assert(!('runId'in packet.data));
+  const regulationRating=await api('/api/admin/three-arm/regulation-rating',{runId:ids.B,rater:'synthetic_rater',scores},'',admin);assert.equal(regulationRating.status,200,JSON.stringify(regulationRating));assert.equal(regulationRating.data.behaviorScore,10);assert.equal(regulationRating.data.scenarioScore,10);assert.equal((await api('/api/admin/three-arm/regulation-rating',{runId:ids.B,rater:'synthetic_rater',scores},'',admin)).data.behaviorScore,10);check('延迟调节迁移四任务、答案保护、14分钟服务端状态与盲评分提交通过');
+  const browser=await require('playwright-core').chromium.launch({channel:'chrome',headless:true});
   try{
-   const page=await browser.newPage({viewport:{width:1366,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
-   await page.goto(base+'/?study=B');await page.locator('#login-identifier').fill('三组隔离验收');await page.locator('#login-password').fill('synthetic-test-password');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});
-   await page.evaluate(()=>ThreeArmStudyUI.openJudgment());await page.locator('[data-judgment=J1]').waitFor();assert.equal(await page.locator('[data-judgment=J1]').inputValue(),'合成判断草稿');
-   assert.equal(await page.getByLabel('课外练习情况',{exact:true}).inputValue(),'合成课外练习记录');
-   let lostDraftResponses=0;
-   await page.route('**/api/study/judgment',async route=>{
-    if(route.request().method()!=='POST'||route.request().postDataJSON().action!=='draft')return route.continue();
-    const response=await route.fetch();lostDraftResponses++;
-    if(lostDraftResponses<=3)return route.fulfill({status:200,contentType:'application/json',body:''});
-    return route.fulfill({response});
-   });
-   await page.getByLabel('课外练习情况',{exact:true}).fill('合成补充：练习20分钟');
-   await page.waitForFunction(()=>document.querySelector('#three-arm-dialog [role=status]')?.textContent.includes('连接暂时中断'));
-   for(const item of judgment.data.items)await page.locator(`[data-judgment=${item.id}]`).fill('合成答卷：参考独立表现保持设置，并观察后续证据。');
-   await page.getByRole('button',{name:'保存草稿，稍后继续',exact:true}).click();await page.reload();await page.evaluate(()=>ThreeArmStudyUI.openJudgment());await page.locator('[data-judgment=J6]').waitFor();assert.match(await page.locator('[data-judgment=J6]').inputValue(),/合成答卷/);
-   assert.equal(await page.getByLabel('课外练习情况',{exact:true}).inputValue(),'合成补充：练习20分钟');assert.ok(lostDraftResponses>=4);
-   await page.screenshot({path:path.join(dir,'配置判断-草稿恢复.png')});await page.getByRole('button',{name:'提交六个情境回答',exact:true}).click();await page.getByText('配置判断已提交，等待研究人员评分。',{exact:true}).waitFor();assert.deepEqual(errors,[]);check('三天后配置判断真实页面填写、刷新恢复、提交接续');
+   const student=await browser.newPage({viewport:{width:1366,height:900}});await student.goto(base+'/?study=B');await student.locator('#login-identifier').fill('三组隔离验收');await student.locator('#login-password').fill('synthetic-test-password');await student.locator('#login-submit').click();await student.locator('#auth-gate').waitFor({state:'hidden'});await student.evaluate(()=>ThreeArmStudyUI.openTasks());await student.getByRole('button',{name:'查看独立测量反馈',exact:true}).click();await student.getByRole('heading',{name:'独立测量教学反馈',exact:true}).waitFor();assert(await student.locator('#three-arm-dialog').getByText('等待人工评分',{exact:false}).count());await student.screenshot({path:path.join(dir,'学生端-独立测量教学反馈.png')});await student.close();check('学生端完成后反馈展示已提交作答并保留待人工评分状态');
+   const page=await browser.newPage({viewport:{width:1366,height:900}});
    await page.goto(base+'/three-arm-admin.html');await page.locator('#study-admin-token').fill(admin);await page.locator('#study-admin-enter').click();
+   await page.getByRole('button',{name:'打开匿名调节迁移评分',exact:true}).click();await page.getByRole('heading',{name:'调节迁移盲法评分',exact:true}).waitFor();await page.getByLabel('评分人编号',{exact:true}).fill('synthetic_browser_rater');for(const select of await page.locator('fieldset').nth(2).locator('select').all())await select.selectOption('2');for(const select of await page.locator('fieldset').nth(3).locator('select').all())await select.selectOption('2');await page.screenshot({path:path.join(dir,'管理端-匿名调节迁移盲法评分.png')});await page.getByRole('button',{name:'保存这份盲法评分',exact:true}).first().click();await page.getByText('评分已保存：12/12。',{exact:true}).waitFor();await page.getByRole('button',{name:'返回管理',exact:true}).click();
    await page.getByRole('button',{name:'数据核查与逐表导出',exact:true}).click();await page.getByLabel('导出数据来源').selectOption('preview');
    const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载轮次核查摘要 CSV',exact:true}).click();const csvDownload=await downloadPromise;await csvDownload.saveAs(path.join(dir,'轮次核查.csv'));assert.match(fs.readFileSync(path.join(dir,'轮次核查.csv'),'utf8'),/protocolFingerprint/);
    await page.getByLabel('协助对应学习轮次').selectOption(ids.B);await page.getByLabel('主试编号',{exact:true}).fill('合成主试');await page.getByLabel('主试事实记录').fill('合成网络断开30秒，指导刷新，未提供解题帮助');await page.getByRole('button',{name:'保存主试记录',exact:true}).click();await page.getByText('主试记录已保存，并纳入完整研究记录导出。',{exact:true}).waitFor();await page.screenshot({path:path.join(dir,'管理端-数据核查与主试记录.png')});await page.getByRole('button',{name:'返回管理',exact:true}).click();
@@ -118,10 +118,8 @@ async function main(){
    await recovery.goto(base+'/?study=A');await recovery.locator('[data-auth-mode=register]').click();await recovery.locator('#nickname').fill('网络恢复合成验收');await recovery.locator('#register-password').fill('synthetic-browser-password');await recovery.locator('#register-password-confirm').fill('synthetic-browser-password');await recovery.locator('#login-submit').click();await recovery.locator('#auth-gate').waitFor({state:'hidden'});
    await recovery.locator('[data-view=learn]').first().click();await recovery.locator('#three-arm-dialog[open]').waitFor();for(const field of await recovery.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();await recovery.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await recovery.waitForFunction(()=>Boolean(ThreeArmStudyUI.run?.baselineAt));
    const recoveredRun=await recovery.evaluate(()=>ThreeArmStudyUI.run.id);const recoveredExport=(await api('/api/admin/three-arm/export',null,'',admin)).data;assert.equal(surveyWrites,2);assert.equal(recoveredExport.records.filter(r=>r.run_id===recoveredRun&&r.kind==='survey'&&r.slot==='baseline').length,1,'响应丢失后的重试不能重复记录问卷');await recovery.close();check('问卷已保存但响应丢失时自动恢复，填写不丢失、记录不重复');
-   await page.getByRole('button',{name:'打开匿名配置判断评分',exact:true}).click();await page.getByRole('heading',{name:'配置判断人工评分',exact:true}).waitFor();assert.equal(await page.locator('select').count(),18);await page.screenshot({path:path.join(dir,'管理端-匿名评分.png')});
   }finally{await browser.close();}
-  assert.equal((await api('/api/study/judgment',null,'B')).data.status,'submitted');
-  const rating=await api('/api/admin/three-arm/rating',{runId:ids.B,rater:'合成评分员',scores:Object.fromEntries(judgment.data.items.map(q=>[q.id,[2,1,2]]))},'',admin);assert.equal(rating.data.total,30);check('保持与迁移、配置判断草稿保护、无答案泄露、人工评分');
+  assert.equal((await api('/api/study/regulation',null,'B')).data.status,'submitted');
   const exported=await api('/api/admin/three-arm/export',null,'',admin);assert.equal(exported.status,200);assert.equal(exported.data.runs.length,4);assert.ok(exported.data.runs.every(r=>r.mode==='preview'));check('管理导出保留实验轮次与体验数据标记');
   assert.ok(exported.data.tables.quiz_results.length>18);
   assert.equal(exported.data.manifest.schemaVersion,'three-arm-export-v2');assert.equal(exported.data.manifest.summaries.length,4);assert.equal(exported.data.manifest.summaries.find(r=>r.runId===ids.B).staffRecords,1);assert.ok('grading_regrade_audits' in exported.data.tables);

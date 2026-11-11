@@ -144,6 +144,7 @@
     }else if(c?.status==="awaiting_check"){
       root.dataset.independentCheck='true';
       root.append(el("h4","独立检查"),el("p","提示和对话已暂停。也可以跳过，不会把跳过记成答错。"),el("p",c.check.prompt));
+      if(c.check.figure&&typeof renderAssessmentFigure==='function'){const figure=el('div');figure.innerHTML=renderAssessmentFigure(c.check.figure);if(figure.childNodes.length)root.append(figure);}
       const d=draft(`${owner}:${c.id}:check:${c.check.id}`),list=el("div");choices(list,Object.fromEntries(c.check.options.map(o=>[o.value,o.label])),d.response,v=>d.response=v);root.append(list);
       root.append(el('p','这是独立练习，提交后保留首次结果；不会要求答对才能继续学习。'));
       root.append(button("提交独立检查",()=>{if(!d.response){error='请先选择一个回答。';global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"submit_check",id:c.id,checkId:c.check.id,response:d.response});}),button("跳过检查",()=>request({action:"skip_check",id:c.id,checkId:c.check.id})));
@@ -186,6 +187,7 @@
     exposureMonitor.watch(n,{key:`${c.id}:${c.rounds}`,valid:()=>!busy&&snapshot?.active&&!snapshot.locked&&!snapshot.check&&snapshot.supportCycle?.id===c.id&&snapshot.supportCycle.rounds===c.rounds&&!n.closest('details:not([open])')});
   }
   global.SupportCycleUI=Object.freeze({render,sync,active,deferInquiry,goalNames,strategyNames,needs,statuses,expose,
+    startCheck:c=>request({action:'start_check',id:c.id}),
     renderActivity:(descriptor,state,send)=>activity({content:{activity:descriptor},activityState:state},send),
     manualOpen:next=>manualScope===next.scopeKey,
     openManual(){if(!snapshot||snapshot.locked||snapshot.check||global.LearnerSetup?.enrollment?.experiencePolicy)return;manualScope=snapshot.scopeKey;global.KnowledgeAssistant.refreshSupportSurface();global.TaskSupport?.locate?.();},

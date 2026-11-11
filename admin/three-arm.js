@@ -13,7 +13,7 @@
       const name=el('input');name.placeholder='审阅教师或负责人姓名';name.setAttribute('aria-label','配置审阅人');const note=el('textarea');note.placeholder='确认依据或说明';note.setAttribute('aria-label','配置审阅说明');const label=el('label'),check=el('input');check.type='checkbox';label.append(check,document.createTextNode('我已实际审阅以上六项共同默认配置，确认适合本次教学任务'));section.append(name,note,label,button('记录教师确认并开放正式入口',async()=>{await request('/baseline',{reviewer:name.value,note:note.value,confirmed:check.checked});await load();}));
     }
     const links=el('p');for(const [arm,text]of [['A','A组体验'],['B','B组体验'],['C','C组体验'],['assigned','正式统一入口']]){const a=el('a',text);a.href='./?study='+arm;a.target='_blank';a.style.marginRight='16px';links.append(a);}section.append(links);host.append(section);
-    host.append(button('导出三组完整研究记录',async()=>download('三组实验记录-'+new Date().toISOString().slice(0,10)+'.json',await request('/export'))),button('数据核查与逐表导出',dataTools),button('查看介入与静默回放',replay),button('打开匿名配置判断评分',rating),button('退出管理',()=>{token='';host.replaceChildren();document.getElementById('study-admin-login').hidden=false;}));
+    host.append(button('导出三组完整研究记录',async()=>download('三组实验记录-'+new Date().toISOString().slice(0,10)+'.json',await request('/export'))),button('数据核查与逐表导出',dataTools),button('查看介入与静默回放',replay),button('打开匿名调节迁移评分',regulationRating),button('打开匿名配置判断评分',rating),button('退出管理',()=>{token='';host.replaceChildren();document.getElementById('study-admin-login').hidden=false;}));
   }
   async function dataTools(){
     const bundle=await request('/export'),manifest=bundle.manifest;host.replaceChildren(el('h2','数据核查与逐表导出'),button('返回管理',load));
@@ -42,6 +42,20 @@
       const names={silent:'保持安静',present:'提供帮助',cancel:'取消',defer:'等待'};
       for(const item of bundle.cases.slice(-100)){const d=el('details');d.append(el('summary',`${new Date(item.input.cutoff).toLocaleString('zh-CN')} · ${item.input.knowledgePointId} · ${names[item.observedPolicy.action]}`),el('p','系统记录的原因：'+item.observedPolicy.reasonCodes.join('、')),el('p',`当时配置第 ${item.input.configuration.revision} 版；${item.input.history.length} 条此前操作记录。`),el('pre',JSON.stringify({当时依据:item.input.currentEvidence,当时配置:item.input.configuration.values},null,2)));list.append(d);}
     }),list);
+  }
+  async function regulationRating(){
+    const exported=await request('/export'),bundle=exported.regulationTransfer;host.replaceChildren(el('h2','调节迁移盲法评分'),el('p','使用匿名作答编号评分。每项任务按有效证据、决定匹配和独立核验各评0–2分；明确缺失或技术中断留空，不计为0分。数学作答单独保留，不并入调节分数。'),button('返回管理',load));
+    const rater=el('input');rater.placeholder='评分人编号';rater.setAttribute('aria-label','评分人编号');host.append(rater);
+    for(const session of bundle.sessions.filter(s=>['submitted','expired'].includes(s.status))){
+      const article=el('article');article.append(el('h3','匿名作答 '+session.runId.slice(-8)),el('p',`${session.status==='submitted'?'已提交':'时间到'} · ${session.instrumentVersion}`));const scores={};
+      for(const card of bundle.ratingCards){const response=session.responses[card.id]||{},fieldset=el('fieldset'),answer=card.kind==='behavior'?'初次选项：'+(response.initialAnswer||'未填写')+'；初次依据：'+(response.initialReason||'未填写')+'；帮助选择：'+(response.helpChoice||'未填写')+'；下一步行动：'+(response.actionChoice||'未填写')+'；独立检查选项：'+(response.checkAnswer||'未填写')+'；后续决定：'+(response.reflectionDecision||'未填写')+'；理由：'+(response.reflectionReason||'未填写'):'学生选择：'+(response.choice||'未填写')+'；理由：'+(response.reason||'未填写')+'；核验计划：'+(response.verification||'未填写');fieldset.append(el('legend',card.title),el('p',answer),el('p','评分参考：'+card.guide));scores[card.id]=[null,null,null];
+        for(const [index,criterion] of card.criteria.entries()){const label=el('label',criterion.label+'：'+criterion.levels.join(' / ')),select=el('select');select.setAttribute('aria-label',card.title+'：'+criterion.label);select.append(new Option('未能评分',''));for(const value of [0,1,2])select.append(new Option(String(value),String(value)));select.onchange=()=>scores[card.id][index]=select.value===''?null:Number(select.value);label.append(select);fieldset.append(label);}
+        article.append(fieldset);
+      }
+      const math=Object.values(session.math?.items||{});if(math.length)article.append(el('p','独立数学作答（单独报告）：'+math.map(x=>`${x.questionId} ${x.responseKind==='answer'?(x.correct?'答对':'答错'):'未评分'}`).join('；')));
+      article.append(button('保存这份盲法评分',async()=>{if(!rater.value.trim())throw new Error('请填写评分人编号');const saved=await request('/regulation-rating',{runId:session.runId,rater:rater.value.trim(),scores});status.textContent=`评分已保存：${saved.scenarioScore===null?'情境任务未全部评分':saved.scenarioScore+'/12'}。`;}));host.append(article);
+    }
+    if(!bundle.sessions.some(s=>['submitted','expired'].includes(s.status)))host.append(el('p','暂无已完成的调节迁移作答。'));
   }
   async function rating(){const data=await request('/rating');host.replaceChildren(el('h2','配置判断人工评分'),el('p','评分页不显示分组和姓名。每题按三个评分点各给0–2分，六题满分36分。每位评分人独立保存一份；未评分不算0分。'));
     host.append(button('返回管理',load));const rater=el('input');rater.placeholder='你的评分人编号';rater.setAttribute('aria-label','评分人编号');host.append(rater);

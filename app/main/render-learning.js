@@ -1087,7 +1087,7 @@ function renderQuiz(unit) {
     }
   });
   let questions = unit.scene.content?.questions || [];
-  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r(?:7|10|11|12)-/.test(q.id));
+  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r(?:7|10|11|12|13)-/.test(q.id));
   let submitted = (state.submittedQuizzes || []).includes(unit.id);
   const unitResults = quizRecordsForUnit(unit.id);
   const archivedQuestions = unit.scene.content?.quizConfig?.archivedQuestions || [];

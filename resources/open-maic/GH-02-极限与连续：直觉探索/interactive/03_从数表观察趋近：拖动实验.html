@@ -1808,10 +1808,16 @@ function addRecord() {
 
 // ============ CONTROLS ============
 document.getElementById('x-position-slider').addEventListener('input', function() {
+  if (state.autoStepTimer) {
+    clearInterval(state.autoStepTimer);
+    state.autoStepTimer = null;
+  }
+  state.running = false;
+  state.paused = false;
   state.xPosition = parseFloat(this.value);
   state.ended = false;
-  updateStateBadge('idle');
-  document.getElementById('main-btn').textContent = '启动';
+  updateStateBadge(state.running ? 'running' : 'idle');
+  document.getElementById('main-btn').textContent = state.running ? '暂停' : '启动';
   addRecord();
   updateUI();
 });
@@ -1828,18 +1834,18 @@ function stepToward(direction) {
   const step = state.stepSize;
 
   if (direction === 'left') {
-    // Move from left side toward target
-    if (state.xPosition >= fn.target) {
-      state.xPosition = fn.target - Math.max(Math.abs(state.xPosition - fn.target), step);
-    } else {
-      state.xPosition = Math.min(fn.target - step, state.xPosition + step);
-    }
-  } else {
-    // Move from right side toward target
+    // Move from the right side without crossing the target.
     if (state.xPosition <= fn.target) {
-      state.xPosition = fn.target + Math.max(Math.abs(state.xPosition - fn.target), step);
+      state.xPosition = fn.target + Math.max(fn.target - state.xPosition, step);
     } else {
       state.xPosition = Math.max(fn.target + step, state.xPosition - step);
+    }
+  } else {
+    // Move from the left side without crossing the target.
+    if (state.xPosition >= fn.target) {
+      state.xPosition = fn.target - Math.max(state.xPosition - fn.target, step);
+    } else {
+      state.xPosition = Math.min(fn.target - step, state.xPosition + step);
     }
   }
 
@@ -1852,8 +1858,8 @@ function stepToward(direction) {
   }
 
   state.ended = false;
-  updateStateBadge('idle');
-  document.getElementById('main-btn').textContent = '启动';
+  updateStateBadge(state.running ? 'running' : 'idle');
+  document.getElementById('main-btn').textContent = state.running ? '暂停' : '启动';
   addRecord();
   updateUI();
 }

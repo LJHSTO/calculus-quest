@@ -3,20 +3,22 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {pathToFileURL}=require('node:url'),{chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 async function main(){
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const browser=await chromium.launch({channel:'chrome',headless:true});
  try{
-  const page=await browser.newPage();
+  const page=await browser.newPage();await page.addInitScript(()=>{try{localStorage.clear();sessionStorage.clear();}catch{}});
   await page.goto(pathToFileURL(path.join(root,'resources/open-maic/函数极限-OpenMAIC修订/GH-02-K01.html')).href);
-  await page.getByRole('button',{name:'开始挑战',exact:true}).click();
+  await page.locator('#game-screen').waitFor({state:'visible'});
   const questions=[];
-  for(const [round,x] of [3,1].entries()){
+  for(const [round,x] of [0.001,1].entries()){
    await page.locator('#candidate-grid').getByRole('button',{name:String(x),exact:true}).click();
    await page.getByRole('button',{name:'预计输出不同',exact:true}).click();
    await page.getByRole('button',{name:'提交观测点',exact:true}).click();
+   await page.getByRole('button',{name:'读完反馈，继续',exact:true}).click();
    await page.locator('#conclusion-screen').waitFor({state:'visible'});
    questions.push(await page.locator('#conclusion-screen > p').innerText());
    if(round)assert.notEqual(questions[0],questions[1],'两轮不能重复同一道概括题');
    await page.locator(`[onclick="checkConclusion('${round?'B':'A'}')"]`).click();
+   await page.getByRole('button',{name:'读完反馈，继续',exact:true}).click();
    await page.locator(round?'#result-screen':'#game-screen').waitFor({state:'visible'});
   }
   console.log('通过：两轮不同问题，第二轮将新规则与趋近趋势联系起来。');

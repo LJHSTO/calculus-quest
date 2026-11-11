@@ -122,7 +122,10 @@
   function learnerDraftKey(kind, id, meta=courseMeta()) {
     if(!isSignedInNow()||!meta.unitId)return '';
     const generation=typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:exposureGeneration;
-    return 'calculus-assistant-draft-r12:'+JSON.stringify([state.participant.participantId,generation,global.ThreeArmStudyUI?.run?.id||'',meta.chapterId,meta.unitId,kind==='composer'?'unit':meta.sceneType||'slide',kind,id||'']);
+    const participantId=state.participant.participantId,runKey=`calculus-assistant-run-r12:${JSON.stringify([participantId,generation])}`;
+    let runId=global.ThreeArmStudyUI?.run?.id||'';
+    try{if(runId)localStorage.setItem(runKey,runId);else runId=localStorage.getItem(runKey)||'';}catch{}
+    return 'calculus-assistant-draft-r12:'+JSON.stringify([participantId,generation,runId,meta.chapterId,meta.unitId,kind==='composer'?'unit':meta.sceneType||'slide',kind,id||'']);
   }
   function saveComposerDraft() {
     if(!composerDraftKey)return;
@@ -207,7 +210,8 @@
       generation: exposureGeneration,
       learningGeneration: typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:exposureGeneration,
       runId: global.ThreeArmStudyUI?.run?.id || "",
-      taskMessages: messages.map(({id,role,content,error,streaming})=>({id,role,content,error:Boolean(error),streaming:Boolean(streaming)})),
+      taskMessages: messages.map(({id,role,content,error,streaming,contextRef,guidance,quizReviewFollowUp,assistantIntent})=>({id,role,content,error:Boolean(error),streaming:Boolean(streaming),contextRef,guidance,quizReviewFollowUp,assistantIntent})),
+      checkHistory: eligible ? checkFeedbackHistory(meta) : [],
       taskError: taskRequestError?.unitId===meta.unitId&&taskRequestError.sceneType===(meta.sceneType||'slide')?taskRequestError.message:'',
       reply: messages.filter(message=>message.role==="assistant"&&!message.error).slice(-1).map(message=>({id:message.id,text:message.content||"",streaming:message.streaming===true}))[0]||null,
       replyQuestionId: messages.filter(message=>message.role==="assistant"&&!message.error).at(-1)?.contextRef?.questionId || activeContext?.questionId || "",
@@ -1791,7 +1795,7 @@ const proactiveJustificationDrafts = new Map();
   }
 
   function proactiveOutcomeFigureNode(figure) {
-    if(figure?.src?.startsWith('assets/assessment/functions-limits-r11/') && typeof renderAssessmentFigure==='function'){
+    if(/^assets\/assessment\/functions-limits-r(?:11|13)\//.test(figure?.src||'') && typeof renderAssessmentFigure==='function'){
       const host=document.createElement('div');host.innerHTML=renderAssessmentFigure(figure);return host.firstElementChild;
     }
     if (!figure || !/^resources\/assessment\/v14-c3-r3\/[^/\\]+-r3\.svg$/u.test(figure.src || "")) {
@@ -2835,8 +2839,9 @@ const proactiveJustificationDrafts = new Map();
     }
     els.proactiveEyebrow.textContent = suggestion.eyebrow || "知点留意到";
     els.proactiveTitle.textContent = suggestion.title || "这里可能值得停一下";
-    els.proactiveBody.textContent = suggestion.body || "先找一个观察点，再决定是否展开解释。";
-    els.proactiveAccept.textContent = suggestion.actionLabel || "带我看看";
+    els.proactiveBody.textContent = suggestion.followupConfirmationRequired?'这次检查结果已保存。是否继续一次补充帮助，由你选择。':suggestion.body || "先找一个观察点，再决定是否展开解释。";
+    els.proactiveAccept.textContent = suggestion.followupConfirmationRequired?'我还需要，再帮一次':suggestion.actionLabel || "带我看看";
+    els.proactiveSnooze.textContent = suggestion.followupConfirmationRequired?'我先自己试':'稍后再说';
     const options = suggestion.learnerOptions || {};
     els.proactiveAlternative.hidden = options.canRequestAlternative !== true;
     els.proactiveMute.hidden = options.canMuteScope !== true;
@@ -4297,16 +4302,21 @@ const proactiveJustificationDrafts = new Map();
     article.className = `knowledge-message assistant knowledge-proactive-check-feedback is-${feedback.tone || "neutral"}`;
     const heading = document.createElement("div");
     const label = document.createElement("strong");
-    label.textContent = feedback.title || "本轮支架状态";
+    const resultStatus=feedback.status || (feedback.tone==='success'?'correct':feedback.tone==='warning'?'incorrect':'');
+    label.textContent = ({correct:'回答正确',incorrect:'回答错误',skipped:'已跳过本次检查',declined:'已跳过本次检查'})[resultStatus] || feedback.title || "本轮支架状态";
+    heading.className='support-check-verdict';
+    article.dataset.checkResult=resultStatus;
     heading.appendChild(label);
     const body = document.createElement("p");
     setQuestionMathContent(body, feedback.text || "");
     article.append(heading, body);
     article.setAttribute('role','status');
-    for(const [label,value] of [['题目',feedback.prompt],['你的选择',feedback.responseLabel],['正确答案',feedback.correctLabel],['解释',feedback.explanation]]) {
+    const details=document.createElement('dl');details.className='support-check-details';
+    for(const [label,value] of [['题目',feedback.prompt],['你的选择',feedback.responseLabel],['正确答案',feedback.correctLabel],['理由',feedback.explanation]]) {
       if(!value)continue;
-      const p=document.createElement('p');setQuestionMathContent(p,`${label}：${value}`);article.append(p);
+      const term=document.createElement('dt'),description=document.createElement('dd');term.textContent=label;setQuestionMathContent(description,value);details.append(term,description);
     }
+    if(details.childNodes.length)article.append(details);
     if(!history && feedback.tone!=='error'){
       const note=document.createElement('p');note.textContent=feedback.status==='incorrect'||feedback.tone==='warning'
         ?'这道独立检查的首次回答已保存。若你选择继续帮助，后面会换一道练习题；新题不会改写这次结果，也不要求答对才能继续课程。'
@@ -4392,7 +4402,8 @@ const proactiveJustificationDrafts = new Map();
       detail.setAttribute("role","note");detail.setAttribute("aria-label","知点的学习线索");
     }
     if(activityHost.childNodes.length)detail.append(activityHost);
-    if(format==="disclosure" || suggestion.authority?.level==="A1" || suggestion.authority?.level==="A4") {
+    if(suggestion.followupConfirmationRequired){detail.hidden=true;content=detail;}
+    else if(format==="disclosure" || suggestion.authority?.level==="A1" || suggestion.authority?.level==="A4") {
       const wrapper=document.createElement("div"), toggle=document.createElement("button");
       toggle.type="button";
       if(proactiveReading.expanded===null)proactiveReading.expanded=Boolean(suggestion.authority?.autoExpanded && suggestion.authority?.receiptId);
@@ -4406,7 +4417,7 @@ const proactiveJustificationDrafts = new Map();
     const accept = document.createElement("button");
     accept.type = "button";
     accept.className = "is-primary";
-    accept.textContent = suggestion.action==='switch_representation'?(suggestion.actionLabel||'打开推荐课件'):"接受提示并继续交流";
+    accept.textContent = suggestion.followupConfirmationRequired?'我还需要，再帮一次':suggestion.action==='switch_representation'?(suggestion.actionLabel||'打开推荐课件'):"接受提示并继续交流";
     // 内联卡也要走同一套「先说理由」流程：如果走对话流的学生不必说理由，
     // 两条路径的 Hint Justification Rate 就不可比，等于给自己开了个后门。
     const justify = proactiveJustificationForm(suggestion);
@@ -4425,7 +4436,7 @@ const proactiveJustificationDrafts = new Map();
     });
     const dismiss = document.createElement("button");
     dismiss.type = "button";
-    dismiss.textContent = "这次先不看";
+    dismiss.textContent = suggestion.followupConfirmationRequired?'我先自己试':"这次先不看";
     dismiss.addEventListener("click", () => {
       snoozeProactiveSuggestion();
     });
@@ -4683,6 +4694,7 @@ const proactiveJustificationDrafts = new Map();
     actions.append(submit, decline);
     const help=document.createElement('p');help.textContent='独立完成一次，再看反馈；本题提交后保留首次结果。';
     article.append(heading, help, prompt, options, actions);
+    if(check.figure&&typeof renderAssessmentFigure==='function'){const figure=document.createElement('div');figure.innerHTML=renderAssessmentFigure(check.figure);if(figure.childNodes.length)article.insertBefore(figure,options);}
     return article;
   }
 
@@ -4702,10 +4714,11 @@ const proactiveJustificationDrafts = new Map();
       return false;
     }
     if (action === "next") {
-      const existingDraft = els.input.value.trim();
+      const input=supportSurfaceOwnsContent()?document.querySelector('.task-response-form textarea')||els.input:els.input;
+      const existingDraft = input.value.trim();
       if (existingDraft && existingDraft !== pendingGeneratedDraft) {
         setStatus("输入框里还有未发送的内容；先发送或清空后再进入下一题。", "warning");
-        els.input.focus({ preventScroll: true });
+        input.focus({ preventScroll: true });
         return false;
       }
     }
@@ -4769,12 +4782,16 @@ const proactiveJustificationDrafts = new Map();
       if (action === "next") {
         els.input.value = "";
         resizeComposer();
+        global.TaskSupport?.openConversation(payload.prompt.questionId || "");
         setStatus("下一道错题已就位。先回答上面的诊断问题，再决定是否发送。", "");
       } else {
         setStatus("可以继续追问这一题；写好后由你决定是否发送。", "");
       }
       render();
-      window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+      window.setTimeout(() => {
+        const input=supportSurfaceOwnsContent()?document.querySelector('.task-response-form textarea'):els.input;
+        input?.focus({ preventScroll: true });
+      }, 0);
       track(`knowledge_quiz_review_${action}`, {
         reviewIndex: payload.progress?.targetReviewIndex,
         reviewTotal: payload.progress?.reviewTotal
@@ -4845,6 +4862,33 @@ const proactiveJustificationDrafts = new Map();
     return panel;
   }
 
+  function taskMessageActions(message) {
+    const s=designSpaceSnapshot(),meta=courseMeta();
+    if(s.locked||s.check||s.busy||!s.active)return null;
+    if(s.supportCycle?.plan?.primaryGoal&&!['cognitive','metacognitive'].includes(s.supportCycle.plan.primaryGoal))return null;
+    const panel=document.createElement('section');panel.className='task-message-actions';panel.setAttribute('aria-label','选择下一步帮助');
+    const questionId=message.contextRef?.questionId||message.guidance?.focusQuestionId||s.replyQuestionId;
+    const profile=s.researchControls?.profile||{},level=s.supportCycle?.plan?.knowledgeScaffoldLevel||(s.policyState?.lifecycle?.phase==='accepted_pending_response'?s.policyState.lifecycle.supportLevel:profile.initialSupportLevel);
+    const label=document.createElement('p');label.textContent='选择需要的帮助，也可以直接回课件尝试。';panel.append(label);
+    const actions=document.createElement('div');actions.className='task-help-choices';
+    const actionStatus=document.createElement('p');actionStatus.className='task-response-status';actionStatus.setAttribute('role','status');
+    const add=(text,fn,disabled=false)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.disabled=disabled;b.onclick=async()=>{b.disabled=true;try{await fn();}catch(error){actionStatus.textContent=error.message||'暂未完成，请重试。';}finally{b.disabled=disabled;}};actions.append(b);return b;};
+    add('换一种解释',()=>global.KnowledgeAssistant.askInTask('请换一种更直观的表示解释刚才的关键关系，接着现有作答讲，不要让我重做原题。',questionId));
+    add('给一个线索',()=>global.KnowledgeAssistant.askInTask('请只给一个针对刚才卡点的概念线索，保留下一步让我自己判断。',questionId));
+    if(level==='L5')
+      add('看局部示例',()=>global.KnowledgeAssistant.askInTask('请按当前帮助层级，用不同数值演示一个局部例子，再留下当前任务的一步让我判断。',questionId));
+    const cycleCheck=['offered','engaged'].includes(s.supportCycle?.status);
+    const checkQuestionId=s.policyState?.checkContext?.questionId||s.prompt?.questionId||s.offer?.questionId||'';
+    const policyCheck=s.policyState?.lifecycle?.phase==='accepted_pending_response'&&(!meta.isQuiz||checkQuestionId===questionId);
+    if(cycleCheck||policyCheck)add('用一道题独立检验',async()=>{
+      if(cycleCheck)await global.SupportCycleUI.startCheck(s.supportCycle);
+      else await global.KnowledgeAssistant.startTaskCheck();
+    });
+    panel.append(actions,actionStatus);
+    const note=document.createElement('small');note.textContent='对话中的小题与回复属于交流练习；只有独立检查会保存结构化判定。';panel.append(note);
+    return panel;
+  }
+
   function messageNode(message, options = {}) {
     const article = document.createElement("article");
     article.className = `knowledge-message ${message.role === "user" ? "user" : "assistant"}`;
@@ -4890,7 +4934,7 @@ const proactiveJustificationDrafts = new Map();
         source.append(sourceButton, sourceDetail);
         article.appendChild(source);
       }
-      if (guidance.showUnderstandingCheck && Array.isArray(guidance.actions) && guidance.actions.length) {
+      if (!options.task && guidance.showUnderstandingCheck && Array.isArray(guidance.actions) && guidance.actions.length) {
         const actions = document.createElement("div");
         actions.className = "knowledge-message-actions";
         actions.setAttribute("data-knowledge-message-actions", "true");
@@ -4916,6 +4960,7 @@ const proactiveJustificationDrafts = new Map();
         actionable: options.quizReviewActionable !== false
       });
       if (quizReviewFollowUp) article.appendChild(quizReviewFollowUp);
+      if(options.task && options.actionable){const actions=taskMessageActions(message);if(actions)article.append(actions);}
     }
     return article;
   }
@@ -6448,6 +6493,9 @@ const proactiveJustificationDrafts = new Map();
       await loadProactiveStudy(courseMeta(),{force:true});render();return true;
     },
     refreshSupportSurface() { scheduleDesignSpaceSync(); },
+    createTaskMessage(message,{actionable=false}={}) {
+      return messageNode(messages.find(item=>item.id===message.id)||message,{task:true,actionable,quizReviewActionable:actionable});
+    },
     async reloadLearnerPolicy() {
       proactiveDecision=null;pendingProactivePrompt=null;
       await loadProactiveStudy(courseMeta(),{force:true});render();scheduleDesignSpaceSync();
@@ -6538,10 +6586,14 @@ const proactiveJustificationDrafts = new Map();
       }
       if(snapshot.unitType==="knowledge" && snapshot.researchControls?.enabled) {
         const content=global.SupportCycleUI?.render(snapshot);if(content)fragment.append(content);
-        if(global.SupportCycleUI?.active(snapshot.supportCycle))return fragment;
+        if(global.SupportCycleUI?.active(snapshot.supportCycle)){
+          if(['offered','engaged'].includes(snapshot.supportCycle.status)&&!snapshot.taskMessages.some(m=>m.role==='assistant')){const actions=taskMessageActions({});if(actions)fragment.append(actions);}
+          return fragment;
+        }
       }
       if (snapshot.offer) fragment.appendChild(proactiveInlineOfferNode(snapshot.offer, { recordShown: false }));
       if (snapshot.prompt) fragment.appendChild(proactivePromptNode(snapshot.prompt, { dismissible: true }));
+      if(snapshot.prompt&&!snapshot.taskMessages.some(m=>m.role==='assistant')){const actions=taskMessageActions({contextRef:{questionId:snapshot.prompt.questionId}});if(actions)fragment.append(actions);}
       if (snapshot.check) fragment.appendChild(proactiveVerificationNode(snapshot.check));
       if (snapshot.feedback) fragment.appendChild(proactiveCheckFeedbackNode(snapshot.feedback));
       if (supportView.modality === "chat") {

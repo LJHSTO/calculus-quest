@@ -4479,3 +4479,17 @@ body.knowledge-outcomes-open {
 .knowledge-message .assistant-content pre { padding: 0.5em; white-space: pre; }
 .knowledge-note-editor.is-drop-target textarea { outline: 2px dashed currentColor; outline-offset: -4px; }
 .knowledge-note-drag-layer { position:fixed;inset:0;z-index:2147483000;cursor:copy;touch-action:none; }
+.support-check-details{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 12px;margin:14px 0;font-size:14px;line-height:1.7;}
+.support-check-details dt{font-weight:700;color:#37445c;}
+.support-check-details dd{margin:0;min-width:0;overflow-wrap:anywhere;}
+.task-message-actions{margin-top:14px;padding-top:12px;border-top:1px solid #e3deef;}
+.task-message-actions>p{margin:0 0 8px;font-size:13px;}
+.task-help-choices{display:flex;gap:7px;flex-wrap:wrap;}
+.task-help-choices button,.task-review-navigation button{min-height:38px;padding:7px 12px;border:1px solid #d3c9eb;border-radius:8px;background:#fff;color:#514081;font:inherit;font-size:13px;cursor:pointer;}
+.task-help-choices button:focus-visible,.task-review-navigation button:focus-visible{outline:3px solid #8f70df;outline-offset:2px;}
+.task-help-choices button:disabled,.task-review-navigation button:disabled{opacity:.55;cursor:wait;}
+.task-message-actions>small{display:block;margin-top:9px;color:#687286;font-size:12px;line-height:1.6;}
+.task-review-navigation{margin:12px 0 0;padding:12px 0;border-top:1px solid #e3deef;font-size:13px;line-height:1.6;}
+.task-review-navigation p{margin:5px 0 9px;color:#687286;}
+.task-review-navigation>div{display:flex;gap:8px;flex-wrap:wrap;}
+.question-review-state{margin-right:10px;color:#69758a;font-size:12px;}

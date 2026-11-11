@@ -1,6 +1,6 @@
 // Quiz answer handling, review, scoring, and quiz navigation.
 function renderAssessmentFigure(figure = {}) {
-  if (!figure || !/^assets\/assessment\/functions-limits-r11\/[a-z0-9-]+\.svg$/.test(String(figure.src || ''))) return '';
+  if (!figure || !/^assets\/assessment\/functions-limits-r(?:11|13)\/[a-z0-9-]+\.svg$/.test(String(figure.src || ''))) return '';
   const width = Math.max(100, Math.min(1600, Number(figure.width) || 640));
   const height = Math.max(80, Math.min(1200, Number(figure.height) || 360));
   const alt = String(figure.alt || '题目图示').slice(0, 2400);
@@ -211,7 +211,7 @@ function shortAnswerReferenceText(question, result = {}) {
 }
 
 function renderQuestionReview({ question, result, index, unit }) {
-  if(/^fl-r(?:7|10|11|12)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
+  if(/^fl-r(?:7|10|11|12|13)-(pre|post)-/.test(question.id))return '<div class="question-review" data-question-review><p>回答已保存。本次独立测量暂不显示分数和答案；简答题由评分者按量规复核。</p></div>';
   if(quizResponseIsOmitted(result.response))return '<div class="question-review" data-question-review>本题未作答，已单独记录。</div>';
   if (question.type === "short_answer" && result.response === "__unknown__") {
     return renderReviewBlock("你的回答", "我不会（0 分）") + renderAnalysisBlock(shortAnswerReferenceText(question, result));
@@ -692,7 +692,7 @@ async function submitQuiz(unitId) {
     if (existingHint) existingHint.remove();
     const summaryQuestions = unit.adaptiveFormative ? questions : allQuestions;
     const summary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
-    const outcomeHtml = /^fl-r(?:7|10|11|12)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
+    const outcomeHtml = /^fl-r(?:7|10|11|12|13)-/.test(allQuestions[0]?.id||'')&&['pre','post'].includes(unit.assessmentPhase)?'回答已保存，答案与分数将在研究规定的反馈时间提供':quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
       quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测已提交：${outcomeHtml}。</div>`);

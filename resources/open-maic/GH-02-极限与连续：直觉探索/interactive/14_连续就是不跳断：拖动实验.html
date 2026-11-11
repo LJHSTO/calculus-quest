@@ -1352,9 +1352,12 @@ function drawIsolatedPoint() {
 function drawApproachArrow() {
   if (!state.running) return;
   const progress = state.approachPhase;
-  if (progress < 0.01 || progress > 1) return;
-
-  const arrowX = holeX - 1.5 + progress * 0.5;
+  if (progress < 0.01 || progress > 2) return;
+  const rightSide = progress > 1;
+  const sideProgress = rightSide ? progress - 1 : progress;
+  const arrowX = rightSide
+    ? holeX + 1.5 - sideProgress * 1.5
+    : holeX - 1.5 + sideProgress * 1.5;
   const arrowY = f(arrowX);
   if (isNaN(arrowY)) return;
 
@@ -1374,8 +1377,8 @@ function drawApproachArrow() {
   ctx.strokeStyle = 'rgba(52, 211, 153, 0.4)';
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 4]);
-  for (let t = 0; t < progress; t += 0.02) {
-    const tx = holeX - 1.5 + t * 0.5;
+  for (let t = 0; t < sideProgress; t += 0.02) {
+    const tx = rightSide ? holeX + 1.5 - t * 1.5 : holeX - 1.5 + t * 1.5;
     const ty = f(tx);
     if (!isNaN(ty)) {
       const tcx = toCanvasX(tx);
@@ -1436,16 +1439,40 @@ function draw() {
   drawLimitLabel();
 }
 
+function updateReadouts() {
+  document.getElementById('limit-display').textContent = `${Number(holeY).toFixed(2)}`;
+  document.getElementById('f-value-display').textContent = state.point_y_coordinate.toFixed(2);
+}
+
+function updateContinuityFeedback() {
+  if (!state.checked) return;
+  state.continuous = Math.abs(state.point_y_coordinate - holeY) <= 1e-9;
+  const banner = document.getElementById('feedback-banner');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  banner.textContent = state.continuous
+    ? `🎉 连续！lim f(x) = f(a) = ${holeY.toFixed(2)}`
+    : `❌ 不连续：lim f(x) = ${holeY.toFixed(2)} ≠ f(a) = ${state.point_y_coordinate.toFixed(2)}`;
+  banner.className = `feedback-banner show${state.continuous ? '' : ' fail'}`;
+  statusDot.className = state.continuous ? 'status-dot continuous' : 'status-dot';
+  statusText.textContent = state.continuous ? '连续！' : '不连续';
+  statusText.style.color = state.continuous ? '#22c55e' : '#ef4444';
+}
+
 // ============================================================
 // ANIMATION LOOP
 // ============================================================
 let animId = null;
-function animationLoop() {
+let lastAnimationFrameAt = 0;
+function animationLoop(timestamp) {
   if (state.running) {
-    state.approachPhase += 0.008;
-    if (state.approachPhase > 1) {
+    const delta = lastAnimationFrameAt ? Math.min(timestamp - lastAnimationFrameAt, 100) : 0;
+    lastAnimationFrameAt = timestamp;
+    state.approachPhase += delta / 1500;
+    if (state.approachPhase > 2) {
       state.approachPhase = 0;
     }
+    updateReadouts();
     draw();
     animId = requestAnimationFrame(animationLoop);
   }
@@ -1455,40 +1482,10 @@ function animationLoop() {
 // CONTINUITY CHECK
 // ============================================================
 function checkContinuity() {
-  const limitVal = limitAtHole();
-  const gap = Math.abs(state.point_y_coordinate - limitVal);
-  // Only numerical round-off is tolerated; visual proximity is not equality.
-  const isContinuous = gap <= 1e-9;
-
   state.checked = true;
-  state.continuous = isContinuous;
-
-  const banner = document.getElementById('feedback-banner');
-  const statusDot = document.getElementById('status-dot');
-  const statusText = document.getElementById('status-text');
-
-  if (isContinuous) {
-    banner.textContent = '🎉 连续！lim f(x) = f(a) = 4.00';
-    banner.className = 'feedback-banner show';
-    statusDot.className = 'status-dot continuous';
-    statusText.textContent = '连续！';
-    statusText.style.color = '#22c55e';
-    spawnConfetti();
-    document.getElementById('limit-display').textContent = `${(Number.isFinite(Number(holeY)) ? Number(holeY) : 0).toFixed(2)}`;
-    document.getElementById('f-value-display').textContent = `${state.point_y_coordinate.toFixed(2)}`;
-  } else {
-    banner.textContent = `❌ 不连续：lim f(x) = ${(Number.isFinite(Number(holeY)) ? Number(holeY) : 0).toFixed(2)} ≠ f(a) = ${state.point_y_coordinate.toFixed(2)}`;
-    banner.className = 'feedback-banner show fail';
-    statusDot.className = 'status-dot';
-    statusText.textContent = '不连续';
-    statusText.style.color = '#ef4444';
-  }
-
-  document.getElementById('limit-display').textContent = `${(Number.isFinite(Number(holeY)) ? Number(holeY) : 0).toFixed(2)}`;
-  document.getElementById('f-value-display').textContent = `${state.point_y_coordinate.toFixed(2)}`;
-
-  // Keep feedback until the point changes.
-
+  updateReadouts();
+  updateContinuityFeedback();
+  if (state.continuous) spawnConfetti();
   draw();
 }
 
@@ -1519,25 +1516,29 @@ function spawnConfetti() {
 function handleMainButton() {
   const btn = document.getElementById('start-btn');
   if (state.continuous && state.checked) {
-    // If already continuous, restart animation
     state.running = !state.running;
-    state.approachPhase = 0;
+    state.paused = !state.running;
     if (state.running) {
+      lastAnimationFrameAt = 0;
       btn.innerHTML = '⏸ 暂停动画';
       animationLoop();
     } else {
-      btn.innerHTML = '▶ 启动动画';
+      lastAnimationFrameAt = 0;
+      btn.innerHTML = '▶ 继续动画';
       cancelAnimationFrame(animId);
     }
     return;
   }
   if (state.running) {
     state.running = false;
-    btn.innerHTML = '▶ 启动动画';
+    state.paused = true;
+    lastAnimationFrameAt = 0;
+    btn.innerHTML = '▶ 继续动画';
     cancelAnimationFrame(animId);
   } else {
     state.running = true;
-    state.approachPhase = 0;
+    state.paused = false;
+    lastAnimationFrameAt = 0;
     btn.innerHTML = '⏸ 暂停动画';
     animationLoop();
   }
@@ -1563,8 +1564,7 @@ function resetSimulation() {
   // Reset displays
   document.getElementById('point_y_coordinate-display').textContent = '2.00';
   document.getElementById('gap_width-display').textContent = '0.40';
-  document.getElementById('limit-display').textContent = '—';
-  document.getElementById('f-value-display').textContent = '—';
+  updateReadouts();
 
   // Reset status
   const statusDot = document.getElementById('status-dot');
@@ -1611,14 +1611,14 @@ function applyPreset(name) {
     // Reset check state when preset changes
     state.checked = false;
     state.continuous = false;
-    document.getElementById('limit-display').textContent = '—';
-    document.getElementById('f-value-display').textContent = '—';
+    updateReadouts();
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
     statusDot.className = 'status-dot';
     statusText.textContent = '不连续';
     document.getElementById('feedback-banner').className = 'feedback-banner';
 
+    updateReadouts();
     draw();
   }
 }
@@ -1629,22 +1629,9 @@ function applyPreset(name) {
 document.getElementById('point_y_coordinate-slider').addEventListener('input', function() {
   state.point_y_coordinate = parseFloat(this.value);
   document.getElementById('point_y_coordinate-display').textContent = state.point_y_coordinate.toFixed(2);
+  updateReadouts();
   if (state.checked) {
-    const gap = Math.abs(state.point_y_coordinate - holeY);
-    state.continuous = gap <= 1e-9;
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status-text');
-    if (state.continuous) {
-      statusDot.className = 'status-dot continuous';
-      statusText.textContent = '连续！';
-      statusText.style.color = '#22c55e';
-    } else {
-      statusDot.className = 'status-dot';
-      statusText.textContent = '不连续';
-      statusText.style.color = '';
-    }
-    document.getElementById('f-value-display').textContent = state.point_y_coordinate.toFixed(2);
-    document.getElementById('limit-display').textContent = `${(Number.isFinite(Number(holeY)) ? Number(holeY) : 0).toFixed(2)}`;
+    updateContinuityFeedback();
   }
   draw();
 });
@@ -1691,19 +1678,8 @@ function handlePointerMove(e) {
     document.getElementById('point_y_coordinate-display').textContent = state.point_y_coordinate.toFixed(2);
 
     if (state.checked) {
-      const gap = Math.abs(state.point_y_coordinate - holeY);
-      state.continuous = gap <= 1e-9;
-      const statusDot = document.getElementById('status-dot');
-      const statusText = document.getElementById('status-text');
-      if (state.continuous) {
-        statusDot.className = 'status-dot continuous';
-        statusText.textContent = '连续！';
-        statusText.style.color = '#22c55e';
-      } else {
-        statusDot.className = 'status-dot';
-        statusText.textContent = '不连续';
-        statusText.style.color = '';
-      }
+      updateReadouts();
+      updateContinuityFeedback();
     }
     draw();
     e.preventDefault();
@@ -1829,8 +1805,8 @@ draw();
 
 
 CQSimulationState.install('GH-02-K03',{
- get:()=>({y:state.point_y_coordinate,gap:state.gap_width,checked:state.checked,started:state.running||state.paused||state.ended,ended:state.ended,preset:document.querySelector('.preset-btn.active')?.dataset.preset||'',feedback:document.getElementById('feedback-banner').textContent.slice(0,300)}),
- set:s=>{const num=CQSimulationState.number;cancelAnimationFrame(animId);state.running=false;state.paused=s.started===true;state.ended=s.ended===true;state.point_y_coordinate=num(s.y,2,0,10);state.gap_width=num(s.gap,.4,.01,4);state.checked=s.checked===true;state.continuous=state.checked&&Math.abs(state.point_y_coordinate-holeY)<=1e-9;state.isDragging=false;state.confettiPieces=[];document.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('active',b.dataset.preset===s.preset));document.getElementById('point_y_coordinate-slider').value=state.point_y_coordinate;document.getElementById('gap_width-slider').value=state.gap_width;document.getElementById('point_y_coordinate-display').textContent=state.point_y_coordinate.toFixed(2);document.getElementById('gap_width-display').textContent=state.gap_width.toFixed(2);document.getElementById('limit-display').textContent=state.checked?holeY.toFixed(2):'—';document.getElementById('f-value-display').textContent=state.checked?state.point_y_coordinate.toFixed(2):'—';document.getElementById('status-dot').className=state.continuous?'status-dot continuous':'status-dot';document.getElementById('status-text').textContent=state.continuous?'连续！':'不连续';document.getElementById('feedback-banner').textContent=typeof s.feedback==='string'?s.feedback.slice(0,300):'';document.getElementById('feedback-banner').className='feedback-banner'+(state.checked?' show'+(state.continuous?'':' fail'):'');document.getElementById('start-btn').textContent=state.paused?'▶ 继续动画':'▶ 启动动画';draw();}
+ get:()=>({y:state.point_y_coordinate,gap:state.gap_width,checked:state.checked,started:state.running||state.paused||state.ended,ended:state.ended,phase:state.approachPhase,preset:document.querySelector('.preset-btn.active')?.dataset.preset||'',feedback:document.getElementById('feedback-banner').textContent.slice(0,300)}),
+ set:s=>{const num=CQSimulationState.number;cancelAnimationFrame(animId);state.running=false;state.paused=s.started===true;state.ended=s.ended===true;state.approachPhase=num(s.phase,0,0,2);state.point_y_coordinate=num(s.y,2,0,10);state.gap_width=num(s.gap,.4,.01,4);state.checked=s.checked===true;state.continuous=state.checked&&Math.abs(state.point_y_coordinate-holeY)<=1e-9;state.isDragging=false;state.confettiPieces=[];document.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('active',b.dataset.preset===s.preset));document.getElementById('point_y_coordinate-slider').value=state.point_y_coordinate;document.getElementById('gap_width-slider').value=state.gap_width;document.getElementById('point_y_coordinate-display').textContent=state.point_y_coordinate.toFixed(2);document.getElementById('gap_width-display').textContent=state.gap_width.toFixed(2);updateReadouts();document.getElementById('status-dot').className=state.continuous?'status-dot continuous':'status-dot';document.getElementById('status-text').textContent=state.continuous?'连续！':'不连续';document.getElementById('feedback-banner').textContent=typeof s.feedback==='string'?s.feedback.slice(0,300):'';document.getElementById('feedback-banner').className='feedback-banner'+(state.checked?' show'+(state.continuous?'':' fail'):'');if(state.checked)updateContinuityFeedback();document.getElementById('start-btn').textContent=state.paused?'▶ 继续动画':'▶ 启动动画';draw();}
 });
 </script>
 <script id="openmaic-audit-repair-shim-v5">

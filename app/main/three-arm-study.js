@@ -126,7 +126,7 @@
     const data=await request('survey?stage='+stage);if(data.saved){if(stage==='baseline')await global.LearnerSetup.resumePreparation();else await openTasks();return;}
     const key=(run?.id||snapshot?.ownerKey)+':'+stage,answers=surveyDrafts[key]||(surveyDrafts[key]={});
     const d=modal(stage==='baseline'?'开始前，先了解一下你':'回想这次学习体验');
-    if(stage==='baseline'&&run?.previousPreviewVersion)d.append(el('p','学习体验已更新。这次将开始新版体验；此前版本的答题、笔记与配置仍保留在原轮次记录中。'));
+    if(stage==='baseline'&&run?.previousRunId)d.append(el('p','这是新开始的一轮学习。此前的答题、笔记与设置仍保留在上一轮记录中。'));
     d.append(el('p',stage==='baseline'?'没有标准答案。填完后进入独立前测；不会的题可以选择“我不会”。':'请只考虑刚才这次学习。1＝完全不符合，5＝完全符合。可以选择不愿回答。'));
     if(stage==='baseline')d.append(el('p','本站的 AI 学习助手叫“知点”，入口在学习页面右上角。它可以解释概念、提供线索并回应问题；前测请先独立完成。你还没有用过它也没关系，下面按自己目前的情况回答。'));
     if(stage==='baseline')d.append(el('p','请按每题标出的尺度回答；可以选择不愿回答。'));
@@ -139,13 +139,6 @@
       catch(error){if(error.code!=='study_enrollment_required')throw error;await openEnrollment();return;}
     }
     const data=await request('state');setRun(data.run);const d=modal('问卷与后续任务');
-    if(run.mode==='preview'&&!run.regulationVersion){
-      d.append(el('p','你正在继续原版本体验。新版加入带图前后测、每个知识点两道检测及独立调节任务；首次现场按80分钟加10分钟缓冲设计，体验计时只提示。'),
-        button('开始新版体验（保留旧记录）',async()=>{
-          const previous=run.id,confirm=modal('开始新版体验');confirm.append(el('p','将开始一轮新的体验。原来的答题、笔记和配置都保留；可以从新轮次的后续任务查看上一轮记录。'),
-            button('确认开始新版体验',async()=>{await request('preview/new',{previousRunId:previous});location.reload();}),button('继续原轮次',openTasks));await show();
-        }));
-    }
     if(run.previousRunId)d.append(button('查看上一轮记录',async()=>{
       const previous=await request('previous'),view=modal('上一轮体验记录');
       view.append(el('p',`本页只读。上一轮共保存 ${previous.results.length} 道题的作答；原笔记和配置仍保存在该轮次中。`));
@@ -158,20 +151,50 @@
     if(!run.finalSurveyAt&&data.posttestComplete)d.append(button('填写学习体验问卷',()=>openSurvey('final')));else if(run.finalSurveyAt)d.append(el('p','学习体验已保存。'));
     if(data.posttestComplete)d.append(button(run.linkedFeedback?'比较两阶段的配置与学习经历':'回顾两阶段学习结果',openReview));
     const newer=Boolean(data.regulation),j=data.regulation||data.judgment;
-    const order=newer?'先完成保持与数学迁移，再进入14分钟调节任务。':'先完成保持和迁移，再做六个配置判断情境。';
+    const order=newer?'先完成保持与数学迁移，再进入14分钟调节任务。':'先完成保持与数学迁移，再独立回答学习帮助情境。';
     d.append(el('h3','三天后的独立任务'),el('p',j.unlockAt?`开放时间：${new Date(j.unlockAt).toLocaleString('zh-CN')}。${order}`:`完成后测72小时后开放。${order}`));
     if(newer&&j.status==='locked')d.append(el('p',j.reason));
     const outcomes=button('查看保持与迁移测验',async()=>{dialog.close();await global.KnowledgeAssistant.openOutcomeStage('retention');});outcomes.disabled=!j.unlockAt||Date.now()<Date.parse(j.unlockAt);outcomes.title=outcomes.disabled?'后测完成满72小时后开放':'';d.append(outcomes);
     if(newer){const b=button(j.status==='active'?'继续14分钟调节任务':'开始14分钟调节任务',async()=>{dialog.close();await openJudgment();});b.disabled=!['available','active'].includes(j.status);d.append(b);if(['submitted','expired'].includes(j.status))d.append(el('p','调节任务记录已保存。'));}
-    else if(j.status==='submitted')d.append(el('p','配置判断已提交，等待研究人员评分。'));
-    else{const b=button(j.status==='active'?'继续配置判断':'开始配置判断',()=>openJudgment());b.disabled=j.status==='locked';d.append(b);}
+    else if(j.status==='submitted')d.append(el('p','学习帮助情境已提交，等待研究人员评分。'));
+    else{const b=button(j.status==='active'?'继续学习帮助情境':'开始学习帮助情境',()=>openJudgment());b.disabled=j.status==='locked';d.append(b);}
+    if(data.finalFeedback?.available)d.append(button('查看独立测量反馈',openFinalFeedback));
+    else if(data.finalFeedback?.reason)d.append(el('p',data.finalFeedback.reason));
+    if(run.mode==='preview'){
+      const optional=el('details');optional.append(el('summary','需要重新开始时'),el('p','可从头开始另一轮学习。本轮记录会保留；继续当前任务无需重新开始。'),
+        button('重新开始一次学习（当前记录保留）',async()=>{
+          const previous=run.id,confirm=modal('重新开始一次学习');confirm.append(el('p','确认后将从学习前问卷和独立前测重新开始。本轮的答题、笔记和设置会保留，可在后续任务中查看上一轮记录。'),
+            button('确认从头开始',async()=>{await request('preview/new',{previousRunId:previous});location.reload();}),button('返回本轮任务',openTasks));await show();
+        }));d.append(optional);
+    }
     d.append(button('返回学习',()=>dialog.close()));show();
+  }
+  async function openFinalFeedback(){
+    const feedback=await request('final-feedback'),d=modal('独立测量教学反馈');
+    d.append(el('p','以下内容对应本轮保存的作答。未作答题目不会显示答案。'));
+    for(const phase of feedback.phases){
+      d.append(el('h3',phase.label));
+      for(const item of phase.items){
+        const section=el('section');section.append(el('h4',item.submitted?item.prompt:'本题未作答'));
+        if(item.submitted){
+          if(item.figure&&typeof renderAssessmentFigure==='function'){const figure=el('div');figure.innerHTML=renderAssessmentFigure(item.figure);section.append(figure);}
+          section.append(el('p','你的作答：'+(item.response||'未作答')),el('p','参考答案：'+(item.correctAnswer||'等待人工评分')));
+          if(item.explanation)section.append(el('p','解析：'+item.explanation));
+        }
+        d.append(section);
+      }
+    }
+    for(const stage of feedback.delayed){
+      d.append(el('h3',stage.label));
+      for(const item of stage.review?.items||[]){const section=el('section');section.append(el('h4',item.prompt),el('p','你的作答：'+item.responseLabel),el('p','参考答案：'+(item.correctOptionLabel||'未提供')));if(item.figure&&typeof renderAssessmentFigure==='function'){const figure=el('div');figure.innerHTML=renderAssessmentFigure(item.figure);section.append(figure);}d.append(section);}
+    }
+    d.append(button('返回后续任务',openTasks));await show();
   }
   async function openJudgment(){
     if(run?.regulationVersion){attempted.add('judgment');dialog?.close();return global.RegulationTransferUI.open();}
     let task=await request('judgment');if(task.status==='available')task=await request('judgment',{action:'start'});if(task.status!=='active')throw new Error(task.status==='submitted'?'配置判断已经提交':task.reason);
-    attempted.add('judgment');judgmentActive=true;global.KnowledgeAssistant.refreshSupportSurface();const d=modal('配置判断：根据经历决定怎样帮助');
-    d.append(el('p','请独立回答六个情境。没有要求你一定多用或少用AI：请说明保持还是调整、依据是什么、之后观察什么。不会可写“暂时无法判断”。草稿会自动保存，离开后可继续。'));
+    attempted.add('judgment');judgmentActive=true;global.KnowledgeAssistant.refreshSupportSurface();const d=modal('学习帮助情境：怎样选择帮助');
+    d.append(el('p','请独立回答下列情境。没有要求你一定多用或少用AI：请说明保持还是调整、依据是什么、之后观察什么。不会可写“暂时无法判断”。草稿会自动保存，离开后可继续。'));
     const answers={...task.draft};let timer=0,saving=Promise.resolve(),closed=false,pendingWrite=null;
     const status=el('p');status.setAttribute('role','status');
     function persist(){saving=saving.catch(()=>{}).then(async()=>{
@@ -184,7 +207,7 @@
     for(const q of task.items){const field=el('fieldset');field.append(el('legend',q.focus),el('p',q.prompt));const input=el('textarea');input.rows=4;input.maxLength=3000;input.dataset.judgment=q.id;input.setAttribute('aria-label',q.focus);input.value=answers[q.id]||'';input.oninput=()=>{answers[q.id]=input.value;clearTimeout(timer);timer=setTimeout(()=>{if(!closed)persist().catch(e=>status.textContent=e.message);},700);};field.append(input);d.append(field);}
     const extra=el('textarea');extra.rows=2;extra.maxLength=1000;extra.setAttribute('aria-label','课外练习情况');extra.placeholder='从上次学习到现在，是否另外练习过？大约多久、用了什么资源？没有可写“没有”。';extra.value=task.outsidePractice||'';extra.oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!closed)persist().catch(e=>status.textContent=e.message);},700);};d.append(el('p','最后补充一下三天内的额外学习情况（可不填）：'),extra,status);
     const leave=async()=>{clearTimeout(timer);await persist();closed=true;dialog.close();};
-    d.append(button('保存草稿，稍后继续',leave),button('提交六个情境回答',async()=>{clearTimeout(timer);await persist();const result=await request('judgment',{action:'submit',answers,revision:task.revision,outsidePractice:extra.value});judgmentActive=result.status==='active';closed=true;dialog.close();global.KnowledgeAssistant.refreshSupportSurface();await openTasks();}));
+    d.append(button('保存草稿，稍后继续',leave),button('提交情境回答',async()=>{clearTimeout(timer);await persist();const result=await request('judgment',{action:'submit',answers,revision:task.revision,outsidePractice:extra.value});judgmentActive=result.status==='active';closed=true;dialog.close();global.KnowledgeAssistant.refreshSupportSurface();await openTasks();}));
     d.oncancel=e=>{e.preventDefault();leave().catch(err=>status.textContent=err.message);};show();
   }
   async function openEnrollment(){const d=modal('参加本次学习研究');d.append(el('p','本次包括一次学习，以及三天后的独立任务。系统会分配一种帮助方式；将记录你的学习操作、设置、答题与问卷，用于研究学习与帮助之间的关系。你可以暂时离开，已有作答会保留；参与或数据问题请联系研究负责人。'));const label=el('label'),input=el('input');input.type='checkbox';label.append(input,document.createTextNode('我已了解研究安排，自愿参加'));d.append(label,button('确认参加并进入学习',async()=>{if(!input.checked)throw new Error('请先确认自愿参加');await request('enroll',{consent:true});location.reload();}),button('暂不参加',()=>dialog.close()));show();}
