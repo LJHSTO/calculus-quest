@@ -12,7 +12,7 @@ async function main(){
  const profile={...require('../lib/research-controls').defaults,supportFollowups:1,cooldownSeconds:60,ttlSeconds:900};
  let revision=preferences.read(run.id).revision;
  const guard=()=>({profileRevision:revision,boundary:true,protected:false,disabled:false,occupied:false});
- const generate=async()=>({message:'核对同一个输入的输出是否唯一。',nextStep:'选择一个输入检查连线。',audit:{provider:'synthetic',contentHash:'hash-'+time}});
+ const generate=async()=>({message:'核对同一个输入的输出是否唯一。',nextStep:'选择一个输入检查连线。',audit:{provider:'synthetic',contentHash:'hash-'+time,promptSnapshot:{system:'合成提示',user:'合成任务'}}});
  let c=support.report(run.id,'GH-01-K01',1,{need:'concept',confirmed:true,sceneType:'game'},profile,revision);
  c=await support.advance(run.id,c.scope,1,{guard,generate});
  const expose=()=>support.act(run.id,c.id,1,{action:'exposed',round:c.rounds,visibleMs:1000,visibleFraction:.5},{});
@@ -34,6 +34,12 @@ async function main(){
  c=support.report(run.id,'GH-01-K02',1,{need:'concept',confirmed:true,sceneType:'game'},profile,revision);c=await support.advance(run.id,c.scope,1,{guard,generate});c=expose();
  const history=study.review(run.id,[]).linked;assert.equal(history.find(x=>x.revision===revision).visible,1);assert.equal(history.find(x=>x.revision===revision-1).visible,2);
  const exported=study.exportData();assert.equal(exported.tables.learner_support_rounds.length,3);assert.ok(exported.tables.learner_support_rounds.every(r=>JSON.parse(r.document).research.runId===run.id));
+ const originalRounds=exported.tables.learner_support_rounds.map(r=>r.document).sort();
+ const projected=support.state(run.id,1).map(c=>({...c,content:c.content&&{...c.content,audit:{...c.content.audit,promptSnapshot:undefined}}}));
+ require('../lib/support-history').createStore({db}).hydrate(run.id,projected);
+ const saved=database.exec('SELECT document FROM learner_support_rounds ORDER BY rowid')[0].values.map(r=>r[0]).sort();
+ assert.deepEqual(saved,originalRounds,'精简内容不能在恢复时覆盖原始帮助审计');
+ assert.deepEqual(study.exportData().tables.learner_support_rounds.map(r=>r.document).sort(),originalRounds,'公开精简内容和重复导出不能覆盖已保存的原始帮助审计');
  const p=study.approveBaseline({reviewer:'合成测试教师',confirmed:true});const formal=study.enroll({id:'synthetic-formal'},{consent:true});
  assert.equal(formal.protocolFingerprint,p.fingerprint);assert.equal(formal.studyId,p.id);assert.deepEqual(formal.runtimeManifest,runtime);
  runtime={build:'fixture-2',prompt:'prompt-2'};
