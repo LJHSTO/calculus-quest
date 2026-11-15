@@ -7,7 +7,7 @@ async function main(){
  const port=await new Promise(resolve=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});}),base=`http://127.0.0.1:${port}`;
  const admin=crypto.randomBytes(20).toString('hex'),password='synthetic-r15-password';
  const env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),ADMIN_TOKEN:admin,LOCAL_ADMIN_AUTH_BYPASS:'false',MAIN_LEARNING_PROTOCOL_FILE:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r13',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',LEARNER_ONBOARDING_REQUIRED:'true',RATE_LIMIT_MAX:'5000'};
- const log=fs.openSync(path.join(dir,'server.log'),'w'),server=spawn(process.execPath,['server.js',String(port)],{cwd:root,env,stdio:['ignore',log,log]});let browser,token='';const checks=[],errors=[];
+ const log=fs.openSync(path.join(dir,'server.log'),'w'),server=spawn(process.execPath,['server.js',String(port)],{cwd:root,env,stdio:['ignore',log,log],windowsHide:true});let browser,token='';const checks=[],errors=[];
  const check=name=>{checks.push(name);console.log('通过：'+name);};
  const api=async(route,body,arm='B',auth=token)=>{const r=await fetch(base+route,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(auth?{Authorization:`Bearer ${auth}`} :{}),...(arm?{'X-Study-Arm':arm}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,...await r.json()};};
  try{
@@ -54,6 +54,35 @@ async function main(){
   assert(await dialog.locator('input[name=study-demo_age][value="2"]').isChecked());assert.equal(await dialog.locator('textarea').first().inputValue(),'刷新后保留的合成想法');check('问卷选择和开放题草稿跨刷新与退出重进恢复，无不愿回答选项');
   await dialog.getByRole('button',{name:'稍后继续',exact:true}).click();await page.evaluate(()=>ThreeArmStudyUI.openTasks());await page.getByRole('button',{name:'查看已签署的知情同意书',exact:true}).click();await dialog.getByText('参与者姓名：合成测试者',{exact:true}).waitFor({state:'visible'});await page.screenshot({path:path.join(out,'已签署同意书.png')});
   assert.deepEqual(errors,[]);check('已签署同意书可再次读取并保存副本，浏览器无未捕获错误');
+  await api('/api/admin/three-arm/baseline',{reviewer:'仅隔离合成测试',confirmed:true},'',admin);
+  const formalArms=[];
+  for(const entry of ['A','B','C',...Array(6).fill('assigned')]){
+   const nickname='合并签署'+entry+crypto.randomBytes(4).toString('hex');await api('/api/auth/register',{nickname,password},'','');
+   const context=await browser.newContext({viewport:{width:1366,height:900}}),p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
+   await p.goto(base+'/?study='+entry);await p.locator('#login-identifier').fill(nickname);await p.locator('#login-password').fill(password);await p.locator('#login-submit').click();await p.locator('#auth-gate').waitFor({state:'hidden'});
+   await p.evaluate(()=>ThreeArmStudyUI.openTasks());if(entry!=='assigned')await p.getByRole('button',{name:'继续准备',exact:true}).click();
+   const combined=p.locator('#three-arm-dialog');await combined.locator('[name=participant-name]').waitFor({state:'visible'});
+   assert.equal(await combined.locator('input[name^="study-"]').count(),0,'签署前不收集问卷');
+   await p.evaluate(()=>{window.consentDialogBefore=document.querySelector('#three-arm-dialog');window.consentPageMarker='same-page';});
+   await combined.locator('[name=participant-name]').fill('合成测试者');await combined.locator('[name=participant-signature]').fill('合成测试者');for(const c of await combined.locator('input[type=checkbox]').all())await c.check();
+   await combined.getByRole('button',{name:'签署并填写学习前问卷',exact:true}).click();await combined.locator('input[name=study-demo_age]').first().waitFor({state:'visible'});
+   assert(await p.evaluate(()=>window.consentPageMarker==='same-page'&&window.consentDialogBefore===document.querySelector('#three-arm-dialog')&&consentDialogBefore.open),'同一页面和窗口连续完成');
+   assert.equal(await combined.locator('details summary').innerText(),'1. 知情同意（已签署，可查看或保存副本）');
+   const study=await p.evaluate(()=>ThreeArmStudyUI.run);assert(study.consentReceiptHash);if(entry==='assigned'){formalArms.push(study.arm);assert.equal(study.mode,'formal');assert(study.firstSessionClock.elapsedSeconds<30);}
+   for(const field of await combined.locator('fieldset').all()){const radios=field.locator('input[type=radio]');if(await radios.count())await radios.first().check();}
+   await combined.getByRole('button',{name:'保存并继续',exact:true}).click();await combined.waitFor({state:'hidden'});
+   await p.waitForFunction(()=>LearnerSetup.preparation?.stage==='pretest');
+   assert.equal((await p.evaluate(()=>ThreeArmStudyUI.request('state'))).run.baselineAt!==null,true);
+   if(entry==='B')await p.screenshot({path:path.join(out,'合并签署进入前测.png')});await context.close();
+  }
+  assert.deepEqual(formalArms.sort(),['A','A','B','B','C','C']);check('三组体验与随机正式入组在同一页签署并填写问卷，正式计时不中断，正确进入前测');
+  await page.evaluate(()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());FirstSessionBudget.update({id:'clock-combined-test',firstSessionClock:{elapsedSeconds:3839,completed:false,enforce:true,maximumSeconds:5400,posttestReserveFromSeconds:3840}});});
+  assert.equal(await page.locator('.first-session-budget-reminder').count(),0);
+  await page.waitForTimeout(1500);await page.locator('.first-session-budget-reminder').waitFor({state:'visible'});
+  assert.equal(await page.locator('.first-session-budget-dialog[open]').count(),0,'预留提醒不抢占任务窗口');
+  await page.locator('.first-session-budget-reminder button').click();await page.waitForTimeout(1100);assert.equal(await page.locator('.first-session-budget-reminder').count(),0,'同一轮不重复提醒');
+  await page.evaluate(()=>FirstSessionBudget.update({id:'clock-combined-test',firstSessionClock:{elapsedSeconds:5400,completed:false,enforce:true,maximumSeconds:5400,posttestReserveFromSeconds:3840}}));
+  await page.locator('.first-session-budget-dialog[open]').waitFor({state:'visible'});assert.deepEqual(errors,[]);check('64分钟轻提示、关闭后不重复、90分钟截止提示保持有效');
  }finally{if(browser)await browser.close();if(server.exitCode===null){const ended=new Promise(r=>server.once('exit',r));server.kill();await ended;}fs.closeSync(log);fs.writeFileSync(path.join(out,'consent-resume-result.json'),JSON.stringify({checks,errors,synthetic:true},null,2));}
  console.log(JSON.stringify({passed:true,checks:checks.length,output:out}));
 }

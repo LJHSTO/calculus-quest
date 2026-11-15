@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
-  let budget = null, runId = null, receivedAt = 0, badge = null, notice = null, warned = new Set();
-  const format = n => Math.floor(Math.max(0, n) / 60) + ':' + String(Math.floor(Math.max(0, n)) % 60).padStart(2, '0');
+  let budget = null, runId = null, receivedAt = 0, reminder = null, notice = null;
+  const warned = new Set(), reminded = new Set();
   const elapsedNow = () => {
     if (!budget) return 0;
     const elapsed = budget.elapsedSeconds + (budget.completed ? 0 : Math.max(0, Math.floor((performance.now() - receivedAt) / 1000)));
@@ -18,12 +18,18 @@
     notice.append(title, description, close); document.body.append(notice); notice.showModal();
   }
   function paint() {
-    badge?.remove(); badge = null;
     if (!budget) return;
+    if (budget.completed || closed()) { reminder?.remove(); reminder = null; }
     if (closed() && !warned.has(runId)) { warned.add(runId); global.dispatchEvent(new CustomEvent('cq:first-session-closed', { detail: { runId } })); explain(true); }
+    if (budget.enforce && !budget.completed && !closed() && elapsedNow() >= budget.posttestReserveFromSeconds && !reminded.has(runId)) {
+      reminded.add(runId);reminder = document.createElement('section');reminder.className = 'first-session-budget-reminder';
+      const text = document.createElement('p');text.setAttribute('role','status');text.textContent = '请留出约16分钟完成独立后测、最终回顾与问卷。若当前任务尚未完成，请告知主试。';
+      const dismiss = document.createElement('button');dismiss.type = 'button';dismiss.textContent = '知道了';dismiss.onclick = () => { reminder?.remove(); reminder = null; };
+      reminder.append(text,dismiss);document.body.append(reminder);
+    }
   }
   function update(run) {
-    if (runId !== run?.id) { notice?.close(); notice?.remove(); notice = null; }
+    if (runId !== run?.id) { notice?.close(); notice?.remove(); notice = null; reminder?.remove(); reminder = null; }
     runId = run?.id || null; budget = run?.firstSessionClock || null; receivedAt = performance.now(); paint();
   }
   global.FirstSessionBudget = Object.freeze({ update, get closed() { return closed(); } });

@@ -5,3 +5,5 @@
 .first-session-budget-dialog::backdrop{background:#18243366}
 .first-session-budget-dialog h2{margin:0 0 12px;font-size:20px}.first-session-budget-dialog p{line-height:1.7;margin:0 0 20px}.first-session-budget-dialog button{padding:10px 16px;border:0;border-radius:8px;background:#6954ce;color:white;font:inherit}
 @media(max-width:600px){.first-session-budget{font-size:11px;padding:5px}.first-session-budget-dialog{padding:20px}}
+.first-session-budget-reminder{position:fixed;bottom:16px;left:16px;z-index:1000;max-width:min(400px,calc(100vw - 32px));box-sizing:border-box;padding:12px 16px;border:1px solid #ead6a0;border-radius:10px;background:#fff8e7;color:#523e14;box-shadow:0 4px 20px #17263818}
+.first-session-budget-reminder p{margin:0 0 8px;line-height:1.6}.first-session-budget-reminder button{font:inherit;padding:5px 12px;border:1px solid #ad9662;border-radius:6px;background:white;color:inherit}

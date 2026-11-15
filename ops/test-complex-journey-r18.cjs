@@ -40,7 +40,7 @@ async function journey(browser,arm){
   await dialog.getByLabel('参与者完整姓名',{exact:true}).fill('合成流程'+arm);
   await dialog.getByLabel('电子签名（再次输入完整姓名）',{exact:true}).fill('合成流程'+arm);
   for(const checkbox of await dialog.locator('input[type=checkbox]').all())await checkbox.check();
-  await dialog.getByRole('button',{name:'签署并继续',exact:true}).click();await dialog.locator('[data-study-question]').first().waitFor();step('阅读并签署知情同意');
+  await dialog.getByRole('button',{name:'签署并填写学习前问卷',exact:true}).click();await dialog.locator('[data-study-question]').first().waitFor();step('阅读并签署知情同意');
   for(const field of await dialog.locator('[data-study-question]').all()){
    if(await field.locator('textarea').count())await field.locator('textarea').fill('希望能解释我具体错在哪一步，并让我自己检验。');
    else await field.locator('input[value="3"]').check();

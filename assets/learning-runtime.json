@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "8fa485c6fe9ea208ffd8",
+  "version": "d081b8a045fa31bc6594",
   "indexSha256": "1e47a8c7e44e850db8251c65bdf7c050d55f15867f9fd3163f31ea82baa082c0",
   "scripts": [
     {
@@ -246,12 +246,12 @@
     {
       "tag": "<script src=\"app/main/first-session-budget.js?v=r11\"></script>",
       "file": "app/main/first-session-budget.js",
-      "sha256": "f58c2f8674677e9f388d07e878956cf5dad7d4a943604dc7bb540697c512af7c"
+      "sha256": "eea35b262d413a3ec488d1308cfb0cab3a917457f8dfe5217c74c65d6157c775"
     },
     {
       "tag": "<script src=\"app/main/three-arm-study.js?v=20261031\"></script>",
       "file": "app/main/three-arm-study.js",
-      "sha256": "f56825b6e91bbeb26d28ab36cbe3e7cfa704f54956c0d0ebc19a1d4b4922edb8"
+      "sha256": "bbeab26f220a4ceef414fe014798733e41d4281d03c6a0f0b2ad8d93c5059921"
     },
     {
       "tag": "<script src=\"app/main/regulation-transfer.js?v=r11\"></script>",
@@ -333,7 +333,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "30739afcfdfec0bad276",
+  "styleVersion": "7ab49cf7fd689e4ec1ab",
   "styleSources": [
     {
       "file": "styles.css",
@@ -353,7 +353,7 @@
     },
     {
       "file": "app/main/first-session-budget.css",
-      "sha256": "1edbe5103e9e154fbd915cc5acdaddad3e50cd91ef6f4a2f44111fb92431452c"
+      "sha256": "60901546959e8ef37fdad4b31685c8483854620db595c5670db8decf082a1424"
     },
     {
       "file": "app/main/regulation-transfer.css",

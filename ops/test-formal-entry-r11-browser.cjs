@@ -34,7 +34,7 @@ async function main(){
   const dialog=page.locator('#three-arm-dialog[open]');await dialog.locator('input[type=checkbox]').check();await dialog.getByRole('button',{name:'确认参加并进入学习',exact:true}).click();await dialog.getByRole('status').filter({hasText:'研究负责人尚未确认'}).waitFor();assert.equal((await formalRuns()).length,0);report.checks.push('教师pending时确认参加仍被拒绝，正式run保持0');
   const approved=await api('/api/admin/three-arm/baseline',{reviewer:'仅本机合成审批夹具',confirmed:true,note:'只验证入口状态机，不是实际教师审定'},admin,'');assert.equal(approved.status,200);
   await dialog.getByRole('button',{name:'确认参加并进入学习',exact:true}).click();await page.waitForFunction(()=>window.ThreeArmStudyUI?.run?.mode==='formal');
-  await page.locator('#auth-gate').waitFor({state:'hidden'});await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').getByRole('heading',{name:'开始前，先了解一下你',exact:true}).waitFor();
+  await page.locator('#auth-gate').waitFor({state:'hidden'});await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').getByRole('heading',{name:'参与确认与学习前问卷',exact:true}).waitFor();
   assert.equal((await formalRuns()).length,1);await page.screenshot({path:path.join(dir,'仅合成审批夹具-入组后基线问卷.png')});report.checks.push('仅隔离审批夹具：确认入组创建一个formal run并进入baseline问卷');
   const joinedToken=await page.evaluate(()=>state.authToken);const joinedId=(await formalRuns())[0].id;
   await stop();env.APP_VERSION='synthetic-formal-entry-r11-incompatible';await boot();

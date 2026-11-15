@@ -21,7 +21,7 @@
     const token=state.authToken,payload=body?JSON.stringify(body):null;
     // These writes are keyed records on the server. Repeating an identical
     // save after a lost response cannot add a second survey or review.
-    const retrySafe=!body||['survey','review','enroll'].includes(path)||(path==='judgment'&&body.action==='draft'&&Boolean(body.requestId));
+    const retrySafe=!body||['survey','review','enroll','consent'].includes(path)||(path==='judgment'&&body.action==='draft'&&Boolean(body.requestId));
     const attempts=options.attempts||3;
     for(let attempt=0;attempt<attempts;attempt++){
       if(token!==state.authToken)throw new Error('账号已变化，请重新打开');
@@ -222,11 +222,13 @@
     // Bind the draft to the response's owner/version even when the background
     // study-state request has not finished immediately after login or reload.
     if(data.run)setRun(data.run);
-    if(stage==='baseline'&&run&&!run.consentReceiptHash){await openEnrollment(()=>openSurvey(stage));return;}
+    if(stage==='baseline'&&run&&!run.consentReceiptHash){await openEnrollment();return;}
     if(data.saved){if(stage==='baseline')await global.LearnerSetup.resumePreparation();else await openTasks();return;}
     if(stage==='final'&&!run.finalReviewAt){await openReview();return;}
     const answers=formDraft('survey:'+stage);
-    const d=modal(stage==='baseline'?'开始前，先了解一下你':'回想这次学习体验');
+    const consent=stage==='baseline'?await request('consent'):null;
+    const d=modal(stage==='baseline'?'参与确认与学习前问卷':'回想这次学习体验');
+    if(consent?.receipt){const signed=el('details');signed.append(el('summary','1. 知情同意（已签署，可查看或保存副本）'));renderConsent(signed,consent.receipt.document,consent.receipt);d.append(signed,el('h3','2. 学习前问卷'));}
     if(stage==='baseline'&&run?.previousRunId)d.append(el('p','这是新开始的一轮学习。此前的答题、笔记与设置仍保留在上一轮记录中。'));
     d.append(el('p',stage==='baseline'?'问卷没有标准答案，请按真实情况填写。之后是独立前测，遇到没学过的概念可以选择“我不会”，无需猜测。':'请只考虑刚才这次学习。1＝完全不符合，5＝完全符合。'));
     if(stage==='baseline')d.append(el('p','本站的 AI 学习伙伴叫“知点”，入口在学习页面右上角。它可以解释概念、提供线索并回应问题；前测请先独立完成。你还没有用过它也没关系，下面按自己目前的情况回答。'));
@@ -318,22 +320,37 @@
     d.append(button('保存草稿，稍后继续',leave),button('提交情境回答',async()=>{clearTimeout(timer);await persist();const result=await request('judgment',{action:'submit',answers,revision:task.revision,outsidePractice:extra.value});judgmentActive=result.status==='active';closed=true;dialog.close();global.KnowledgeAssistant.refreshSupportSurface();await openTasks();}));
     d.oncancel=e=>{e.preventDefault();leave().catch(err=>status.textContent=err.message);};show();
   }
-  async function openEnrollment(afterSign){
-    const existing=Boolean(run),data=await request(existing?'consent':'enrollment-document'),receipt=data.receipt,doc=receipt?.document||data.document;
-    const d=modal(receipt?'已签署的知情同意书':doc.title);d.dataset.consentForm='';
-    if(run?.mode==='preview')d.append(el('p','当前是体验入口，可用测试姓名检查签署流程；不会作为正式入组。'));
-    for(const [heading,text] of doc.sections){const section=el('section');section.append(el('h3',heading),el('p',text));d.append(section);}
-    d.append(el('small','同意书版本：'+doc.version));
+  function renderConsent(parent,doc,receipt){
+    for(const [heading,text] of doc.sections){const section=el('section');section.append(el('h3',heading),el('p',text));parent.append(section);}
+    parent.append(el('small','同意书版本：'+doc.version));
     if(receipt){
-      d.append(el('p','参与者姓名：'+receipt.participantName),el('p','电子签名：'+receipt.signature),el('p','签署时间：'+new Date(receipt.signedAt).toLocaleString('zh-CN')));
-      d.append(button('保存签署副本',()=>{const text=[doc.title,...doc.sections.flat(),`姓名：${receipt.participantName}`,`电子签名：${receipt.signature}`,`签署时间：${receipt.signedAt}`,`同意书版本：${doc.version}`,`记录校验：${receipt.receiptHash}`].join('\n\n');const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),a=el('a');a.href=url;a.download='知情同意签署副本.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}),button('返回学习',()=>d.close()));await show();return;
+      parent.append(el('p','参与者姓名：'+receipt.participantName),el('p','电子签名：'+receipt.signature),el('p','签署时间：'+new Date(receipt.signedAt).toLocaleString('zh-CN')));
+      parent.append(button('保存签署副本',()=>{const text=[doc.title,...doc.sections.flat(),`姓名：${receipt.participantName}`,`电子签名：${receipt.signature}`,`签署时间：${receipt.signedAt}`,`同意书版本：${doc.version}`,`记录校验：${receipt.receiptHash}`].join('\n\n');const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),a=el('a');a.href=url;a.download='知情同意签署副本.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}));
     }
+  }
+  async function openEnrollment(){
+    const existing=Boolean(run),data=await request(existing?'consent':'enrollment-document'),receipt=data.receipt,doc=receipt?.document||data.document;
+    const d=modal(receipt?'已签署的知情同意书':'参与确认与学习前问卷');d.dataset.consentForm='';
+    if(run?.mode==='preview')d.append(el('p','当前是体验入口，可用测试姓名检查签署流程；不会作为正式入组。'));
+    if(!receipt)d.append(el('p','请先阅读并签署知情同意书，随后在本页填写学习前问卷。签署前不会填写或保存问卷答案。'),el('h3','1. 阅读并签署知情同意书'));
+    renderConsent(d,doc,receipt);
+    if(receipt){d.append(button('返回学习',()=>d.close()));await show();return;}
     const form=el('form');form.className='study-consent-signature';
     const nameLabel=el('label','参与者完整姓名'),name=el('input');name.name='participant-name';name.autocomplete='name';name.required=true;name.minLength=2;name.maxLength=80;nameLabel.append(name);
     const signLabel=el('label','电子签名（再次输入完整姓名）'),signature=el('input');signature.name='participant-signature';signature.required=true;signature.maxLength=80;signLabel.append(signature);
     const ageLabel=el('label'),adult=el('input');adult.type='checkbox';adult.required=true;ageLabel.append(adult,document.createTextNode('我已年满18周岁'));
     const consentLabel=el('label'),agreed=el('input');agreed.type='checkbox';agreed.required=true;consentLabel.append(agreed,document.createTextNode('我已阅读并理解以上说明，疑问已得到解答，自愿参加，并确认上述姓名作为我的电子签名'));
-    const submit=button('签署并继续',async()=>{if(!form.reportValidity())return;const payload={participantName:name.value,signature:signature.value,adult:adult.checked,consent:agreed.checked,consentVersion:doc.version,consentHash:doc.hash};const result=await request(existing?'consent':'enroll',payload);if(existing){setRun(result.run);d.close();if(typeof afterSign==='function')await afterSign();}else location.reload();});
+    const submit=button('签署并填写学习前问卷',async()=>{
+      if(!form.reportValidity())return;
+      const payload={participantName:name.value,signature:signature.value,adult:adult.checked,consent:agreed.checked,consentVersion:doc.version,consentHash:doc.hash};
+      const result=await request(existing?'consent':'enroll',payload);setRun(existing?result.run:result);
+      if(!existing){
+        // Enrollment binds a new learning owner and may assign the other test form.
+        multiSceneLearningRoute=null;courseIndex=null;await loadMultiSceneLearningRoute();buildCurriculum();
+        await hydrateLearningState({replace:true});renderAll();
+      }
+      await openSurvey('baseline');
+    });
     form.append(nameLabel,signLabel,ageLabel,consentLabel,submit);form.onsubmit=e=>{e.preventDefault();submit.click();};d.append(form,button('暂不参加',()=>{d.close();if(typeof switchView==='function')switchView('home');}));await show();
   }
   function probeIcon(){
