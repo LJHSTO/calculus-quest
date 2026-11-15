@@ -1,7 +1,7 @@
 {
   "sourceLineEndings": "lf",
-  "version": "f6fbc44a3cce1c594053",
-  "indexSha256": "e20a0fa46020ca62745cd5e72679c97f967dfaee4c97e44526cc1e8be1ba0e66",
+  "version": "8fa485c6fe9ea208ffd8",
+  "indexSha256": "1e47a8c7e44e850db8251c65bdf7c050d55f15867f9fd3163f31ea82baa082c0",
   "scripts": [
     {
       "tag": "<script src=\"app/main/request-coalescing.js?v=20260917\"></script>",
@@ -226,12 +226,12 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "2fecb50b76ac0a4f5e81e6a015e1a90bba5c5449efcbdf2c2a6073d1d75b2e18"
+      "sha256": "01cb107554e55f31a4d1e405d205472f3ad60a9389862b5e1d8bf5bcd6eb4061"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
       "file": "app/shared/learner-preferences.js",
-      "sha256": "2820f4fa97a69206eb188b5192c2785e4391c7eb09186fc2db73ace9da34fb9e"
+      "sha256": "3d8a5cd5447517d356cd19fdb83212e4ce77f2357cf2d7606a6bf95038c1421a"
     },
     {
       "tag": "<script src=\"app/shared/study-stages.js?v=20261031\"></script>",
@@ -251,7 +251,7 @@
     {
       "tag": "<script src=\"app/main/three-arm-study.js?v=20261031\"></script>",
       "file": "app/main/three-arm-study.js",
-      "sha256": "e8932fc1986b851efe51926321054ec43fdb7b3ea4d80cda236beb356b69cb47"
+      "sha256": "f56825b6e91bbeb26d28ab36cbe3e7cfa704f54956c0d0ebc19a1d4b4922edb8"
     },
     {
       "tag": "<script src=\"app/main/regulation-transfer.js?v=r11\"></script>",

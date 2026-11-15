@@ -16,7 +16,7 @@
         window.StudyEntry=Object.freeze({arm:value,storageSuffix:':study:'+value});
         var originalFetch=window.fetch;
         window.fetch=function(input,init){
-          var url=new URL(typeof input==='string'?input:input.url,document.baseURI);
+          var url=new URL(input instanceof Request?input.url:input,document.baseURI);
           if(url.origin===location.origin&&url.pathname.includes('/api/')){
             var options=Object.assign({},init||{}),headers=new Headers(options.headers||(input instanceof Request?input.headers:undefined));
             headers.set('X-Study-Arm',value);

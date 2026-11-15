@@ -92,8 +92,8 @@
         setRun(await request('review',answers));clearDraft(draftSlot);stopCountdown();dialog.close();if(answers.decision==='change')await global.LearnerSetup.open();else if(pendingUnit){const target=pendingUnit;pendingUnit=null;selectUnit(target);}});
       const timer=el('p');timer.className='study-review-timer';timer.setAttribute('aria-live','polite');
       let remaining=data.reviewWindow?.remainingSeconds||0,receivedAt=Date.now(),timingQueue=Promise.resolve();
-      const minutes=Math.round((data.reviewWindow?.minimumSeconds||0)/60),sessionId=crypto.randomUUID(),timingOwner=state.authToken;
-      const tick=()=>{const left=remaining?Math.max(1,remaining-(document.hidden?0:Math.floor((Date.now()-receivedAt)/1000))):0;save.disabled=remaining>0;timer.textContent=left>0?`回顾页累计阅读至少 ${minutes} 分钟，还需 ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}。关闭回顾或切到后台时暂停。`:'可以保存了。';};
+      const minimumSeconds=data.reviewWindow?.minimumSeconds??0,sessionId=crypto.randomUUID(),timingOwner=state.authToken;
+      const tick=()=>{const left=remaining?Math.max(1,remaining-(document.hidden?0:Math.floor((Date.now()-receivedAt)/1000))):0;save.disabled=remaining>0;timer.textContent=left>0?`请先查看本阶段回顾（累计阅读至少 ${minimumSeconds} 秒，还需 ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}）。关闭回顾或切到后台时暂停。`:'已完成回顾阅读，可以保存并继续。';};
       const pulse=visible=>{timingQueue=timingQueue.then(async()=>{if(timingOwner!==state.authToken)return;try{const w=await request('review-pulse',{stage:data.pendingStage.id,sessionId,visible},{attempts:1});remaining=w.remainingSeconds;receivedAt=Date.now();tick();}catch(e){if(d.open)timer.textContent='计时尚未同步，请保持网络连接；填写内容会保留。';}});return timingQueue;};
       const visibility=()=>{receivedAt=Date.now();pulse(!document.hidden&&d.open);};
       document.addEventListener('visibilitychange',visibility);
@@ -228,7 +228,7 @@
     const answers=formDraft('survey:'+stage);
     const d=modal(stage==='baseline'?'开始前，先了解一下你':'回想这次学习体验');
     if(stage==='baseline'&&run?.previousRunId)d.append(el('p','这是新开始的一轮学习。此前的答题、笔记与设置仍保留在上一轮记录中。'));
-    d.append(el('p',stage==='baseline'?'没有标准答案。填完后进入独立前测；不会的题可以选择“我不会”。':'请只考虑刚才这次学习。1＝完全不符合，5＝完全符合。'));
+    d.append(el('p',stage==='baseline'?'问卷没有标准答案，请按真实情况填写。之后是独立前测，遇到没学过的概念可以选择“我不会”，无需猜测。':'请只考虑刚才这次学习。1＝完全不符合，5＝完全符合。'));
     if(stage==='baseline')d.append(el('p','本站的 AI 学习伙伴叫“知点”，入口在学习页面右上角。它可以解释概念、提供线索并回应问题；前测请先独立完成。你还没有用过它也没关系，下面按自己目前的情况回答。'));
     d.append(el('p','请完成必答题；标注选填的内容可留空。填写会自动保存在当前浏览器，稍后可继续。'));
     let section=null;

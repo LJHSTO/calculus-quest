@@ -39,7 +39,7 @@ async function main(){
  const budgeted=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{model,complete:async args=>{assert.equal(args.maxTokens,1600);return {provider:'synthetic',text:JSON.stringify({message:'可以先比较输入与输出的含义，再独立说出一个例子。',nextStep:'由你选择是否继续。'})};}});
  assert.equal(budgeted.audit.requestOptions.maxTokens,1600);assert.equal(budgeted.audit.fallback,false);
  }
- const scope="GH-02-K01",profile={...defaults,ttlSeconds:120,cooldownSeconds:60,supportFollowups:1};
+ const scope="GH-02-K01",profile={...defaults,ttlSeconds:120,cooldownSeconds:180,boundaryOnly:true,supportFollowups:1};
  let c=store.report("alice",scope,1,input,profile,0);assert.equal(c.status,"queued");
  const idem={...input,requestId:'synthetic-idempotency-request'};
  const first=store.report('dedupe',scope,1,idem,profile,0);
@@ -59,8 +59,10 @@ async function main(){
  assert.throws(()=>store.act("alice",c.id,1,{action:"accept",revision:0},{adapter}),/另一页面/);
  c=store.act("alice",c.id,1,{action:"feedback",result:"helped",ratings:{confidence:3},requestMore:true},{adapter});
  assert.equal(c.status,"queued");assert.equal(c.checkResult,null);assert.equal(c.feedback.selfReportNotLearningGain,true);
- await store.advance("alice",scope,1,{guard,generate});assert.equal(calls,1);
- time+=61000;c=await store.advance("alice",scope,1,{guard,generate});assert.equal(calls,2);
+ assert.equal(Date.parse(c.dueAt),time,'学生主动请求的补充不再等待自动提醒冷却');
+ await store.advance("alice",scope,1,{guard:()=>({...guard(),protected:true}),generate});assert.equal(calls,1,'主动补充仍不能越过独立作答保护');
+ await store.advance("alice",scope,1,{guard:()=>({...guard(),boundary:false}),generate});assert.equal(calls,1,'未到合适小步边界仍不打断');
+ c=await store.advance("alice",scope,1,{guard,generate});assert.equal(calls,2);
  assert.equal(c.exposure,null,'补充一轮需重新记录展示，不能沿用上一轮');
  assert.throws(()=>store.act('alice',c.id,1,{action:'exposed',round:1,visibleMs:1000,visibleFraction:.5},{adapter}),/轮次/);
  c=store.act("alice",c.id,1,{action:"feedback",result:"helped",requestMore:true},{adapter});assert.equal(c.status,"engaged","达到轮数上限不再自动追加");

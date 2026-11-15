@@ -28,7 +28,7 @@
   async function request(command){
     if(busy&&command.action!=='close')return false;
     const sequence=++requestSequence;
-    busy=true;pendingAction=command.action;error="";global.KnowledgeAssistant.refreshSupportSurface();
+    busy=true;pendingAction=command.action==='feedback'&&command.requestMore?'followup':command.action;error="";global.KnowledgeAssistant.refreshSupportSurface();
     const startOwner=owner;
     try {await global.KnowledgeAssistant.supportCycleRequest(command);if(startOwner===owner){
       if(command.action==='report')drafts.delete(`${owner}:${snapshot.scopeKey}:need`);
@@ -110,7 +110,7 @@
     section.append(el('h5','看过之后，接下来怎么做？'));
     const actions=el('div');actions.className='support-message-actions';
     actions.append(button('有帮助，我先自己试',()=>request({action:'feedback',id:c.id,result:'helped',requestMore:false,note:d.note})));
-    if(c.rounds<=Number(c.profile?.supportFollowups||0))actions.append(button('还没弄懂，安排一次补充',()=>request({action:'feedback',id:c.id,result:'not_helped',requestMore:true,note:d.note})));
+    if(c.rounds<=Number(c.profile?.supportFollowups||0))actions.append(button('还没弄懂，再讲一步',()=>request({action:'feedback',id:c.id,result:'not_helped',requestMore:true,note:d.note})));
     actions.append(button('结束这次帮助',()=>request({action:'close',id:c.id})));
     const extra=el('details');extra.append(el('summary','补充一句（选填）'));note(extra,d,'哪里有用，或哪里还没弄懂');section.append(actions,extra);return section;
   }
@@ -192,7 +192,7 @@
       else if(c?.closeReason==="need_unresolved")root.append(el("p","暂时不确定也没关系。可以补充一句你卡住的地方，或先继续探索。"));
       if(manualScope===next.scopeKey)root.append(checkin(next,true),button('收起求助入口',()=>{manualScope="";global.KnowledgeAssistant.refreshSupportSurface();}));
     }
-    const generating=busy&&['report','advance'].includes(pendingAction);
+    const generating=busy&&['report','advance','followup'].includes(pendingAction);
     const status=el("p",busy?(generating?"知点正在准备，请稍候…":pendingAction==='close'?"正在结束这轮帮助…":"正在保存，请稍候…"):error);status.setAttribute("role","status");if(!busy&&!error)status.hidden=true;root.append(status);
     if(generating&&active(c)&&c.status!=='awaiting_check'){
       const cancel=button('取消讲解，继续学习',()=>request({action:'close',id:c.id}));cancel.disabled=false;root.append(cancel);

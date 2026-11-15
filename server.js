@@ -135,6 +135,8 @@ function rejectUnpreparedLearner(res,user,assessment,{manualConceptAfterPretest=
 const researchControlStore = {
   enabled:engineeringControlStore.enabled,
   canEdit:user=>engineeringControlStore.canEdit(user),
+  // Study learning access is independent of the engineering control panel.
+  canUseSupport(user){const run=threeArmStudy.get(user);return run?run.status==='active':this.canEdit(user);},
   read(user){const e=learnerEnrollment(user);if(e){const r=e.configuration||{revision:0,profile:{...researchControls.defaults},kind:'learner_pilot'};
     const profile=learnerStudyBlocked(user)?{...researchControls.defaults,proactivity:'reactive',supportInquiryEnabled:false}:r.profile;
     return {...r,profile,hash:crypto.createHash('sha256').update(JSON.stringify(profile)).digest('hex'),studyArm:e.arm,studyVersion:e.versionId};}
@@ -413,7 +415,7 @@ const proactiveStoppingRules = Object.freeze({
       enableThinking: modelRuntime.enableThinking ?? null,
       scheduler: {...require('./lib/model-scheduler').shared.limits},
       outageProtection: {...require('./lib/model-circuit-breaker').shared.limits},
-      assistantDailyQuota:Math.max(1,Math.min(10000,Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA||30)||30)),
+      assistantDailyQuota:Math.max(1,Math.min(10000,Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA||120)||120)),
       assistantTemperature:0.2,
       supportTemperature:0.2
     },
@@ -659,7 +661,7 @@ const assistantHistoryMessageLimit = 60;
 const assistantConversationTurnLimit = 30;
 const assistantDailyQuotaLimit = Math.max(
   1,
-  Math.min(10000, Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA || 30) || 30)
+  Math.min(10000, Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA || 120) || 120)
 );
 const assistantDailyInterventionLimit = Math.max(
   0,
@@ -4825,7 +4827,7 @@ async function handleManagedProactiveIntervention({
   let needInquiry=null;
   if(policyDecision.displayAllowed && renderedDecision.intervene && !policyDecision.stateTransition
       && !resolved.isQuiz && signal.kind!=="student_requested_alternative"
-      && researchControlStore.canEdit(auth.participant.id)) {
+      && researchControlStore.canUseSupport(auth.participant.id)) {
     const recentCheck=agentRuntime.state(auth.participant.id,generation).memory.find(r=>r.scope===policyScopeKey);
     const latestAnswerAt=Math.max(0,...(evidence.evidenceRefs||[]).filter(r=>["quiz_result","common_independent_probe"].includes(r.sourceType)||r.serverRechecked===true).map(r=>Date.parse(r.capturedAt)||0));
     const inquiryContext={...evidence,independentAttemptSuccess:evidence.independentAttemptSuccess===true||Boolean(recentCheck?.payload.outcome.success===true&&Date.parse(recentCheck.created_at)>latestAnswerAt)};
@@ -6107,7 +6109,7 @@ async function handleApi(req, res, url) {
         const run=threeArmStudy.get(user);
         const window=threeArmStudy.editWindow(run,snapshot,pilotProtection(user,generation))||require('./lib/learner-journey').editWindow(e,snapshot,db.getQuizResultsByUser(user));
         const preparation=ordinaryPreparation(user);
-        const enabled=researchControlStore.canEdit(user)&&(!preparation.required||!['entry','baseline','pretest'].includes(preparation.stage))&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
+        const enabled=researchControlStore.canUseSupport(user)&&(!preparation.required||!['entry','baseline','pretest'].includes(preparation.stage))&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
         if(req.method==='POST'){
           assertFirstSessionOpen(user);
           if(!enabled)throw Object.assign(new Error(preparation.stage==='pretest'?'请先完成知识前测，再设置学习方式。':window.message||'当前预试条件不能修改学习偏好'),{status:403});
@@ -6200,7 +6202,7 @@ async function handleApi(req, res, url) {
       const auth=authenticate(req);
       if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
       const user=auth.participant.id,generation=db.currentLearningGeneration(user);
-      if(!researchControlStore.canEdit(user)){sendJson(res,403,{ok:false,message:"当前协议未开放多目标支持；正式研究需另行冻结条件。"});return;}
+      if(!researchControlStore.canUseSupport(user)){sendJson(res,403,{ok:false,message:"当前协议未开放多目标支持；正式研究需另行冻结条件。"});return;}
       if(req.method==="GET"){
         const protectedMeasure=activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user);
         sendJson(res,200,{ok:true,data:{cycles:protectedMeasure?[]:publicSupportCycles(user,generation),goals:supportGoals.GOALS,strategies:supportGoals.STRATEGIES,needs:supportGoals.NEEDS}});return;
@@ -6208,7 +6210,7 @@ async function handleApi(req, res, url) {
       const body=await readJsonBody(req),scope=boundedLearningText(body.scope,180),unitId=boundedLearningText(body.unitId,180);
       if(rejectUnpreparedLearner(res,user))return;
       try {
-        if(pilotStudy.activeProbe(user,generation)&&["report","advance"].includes(body.action))throw Object.assign(new Error("请先回答或跳过这次预试记录，再继续请求帮助。"),{status:409});
+        if(pilotStudy.activeProbe(user,generation)&&(["report","advance"].includes(body.action)||(body.action==='feedback'&&body.requestMore===true)))throw Object.assign(new Error("请先回答或跳过这次预试记录，再继续请求帮助。"),{status:409});
         const resolved=learningAssistant.resolveAssistantContext({index:assistantIndexForUser(auth.participant.id),chapterId:proactiveStudyConfig.chapterId,
           unitId,sceneType:boundedLearningText(body.sceneType,80),contextRef:{kind:"lesson",scope:"lesson"},quizSubmitted:false});
         if(resolved.isQuiz || (resolved.unit.knowledgePointId||resolved.unit.id)!==scope || !supportGoals.CURRICULUM[scope])throw Object.assign(new Error("请在对应知识点的学习任务中使用帮助"),{status:409});
@@ -6235,8 +6237,10 @@ async function handleApi(req, res, url) {
           if(cycle.checkResult && finishingCheck)agentRuntime.remember({user,scope,generation,sourceId:`support-cycle:${cycle.id}:${cycle.checkResult.checkId}`,
             outcome:{...cycle.checkResult,success:cycle.checkResult.correct},reviewHours:profile.reviewAfterHours});
         }
-        if(["report","advance"].includes(body.action)) {
+        const requestedFollowup=body.action==='feedback'&&cycle?.status==='queued'&&Boolean(cycle.followupRequestedAt);
+        if(["report","advance"].includes(body.action)||requestedFollowup) {
           const pendingInquiry=supportCycles.current(user,scope,generation);
+          const explicitRequest=body.action==='report'||Boolean(pendingInquiry?.followupRequestedAt);
           if(body.action==="advance"&&pendingInquiry?.status==="awaiting_confirmation"){
             const fresh=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:pendingInquiry.inquiry.basis==="repeated_task_failures"?"task_difficulty":"quiet_dwell"},policyState:{},now:Date.now()});
             const disabled=proactiveStudentPreference(user,scope)==="off"||!require('./lib/support-cycle').inquiryAllowed(profile,pendingInquiry.inquiry)
@@ -6251,7 +6255,7 @@ async function handleApi(req, res, url) {
           let automaticBudgetReserved=false;
           cycle=await supportCycles.advance(user,scope,generation,{
             guard:()=>{
-              const fresh=supportCycles.current(user,scope,generation), explicit=body.action==="report";
+              const fresh=supportCycles.current(user,scope,generation), explicit=explicitRequest;
               const evidence=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},sceneType:body.sceneType,policyState:{},now:Date.now()});
               return {protected:protectedNow() || supportCycles.protects(user,generation),
                 contextKey:(()=>{const raw=db.getLearningSnapshotState(user,nowIso()).snapshot?.data;const s=typeof raw==='string'?parseStoredJson(raw,{}):raw||{};return `${s.currentUnitId||scope}:${s.learningSurface==='slide'?'slide':s.selectedKnowledgeScenes?.[s.currentUnitId]||body.sceneType||'slide'}`;})(),
@@ -6265,8 +6269,8 @@ async function handleApi(req, res, url) {
             memory:agentRuntime.state(user,generation).memory.filter(r=>r.scope===scope).slice(0,3).map(r=>({sourceId:r.source_id,outcome:r.payload.outcome,at:r.created_at})),
             generate:async input=>{
               const at=new Date(), live=assistantProviderInfo().live;
-              if(body.action!=="report" && !consumeAssistantInterventionBudget(user,at).ok)throw Object.assign(new Error("今日主动建议预算已用完，可以主动选择当前需要"),{status:429});
-              automaticBudgetReserved=body.action!=="report";
+              if(!explicitRequest && !consumeAssistantInterventionBudget(user,at).ok)throw Object.assign(new Error("今日主动建议预算已用完，可以主动选择当前需要"),{status:429});
+              automaticBudgetReserved=!explicitRequest;
               const reserved=assistantRequestConsumesQuota();
               if(reserved && !consumeAssistantQuota(user,at).ok)throw Object.assign(new Error("今日模型调用额度已用完，请稍后再试"),{status:429});
               const content=await supportGoals.generateSupport(input,{complete:llm.completeChat,live,model:process.env.LEARNING_ASSISTANT_MODEL});
