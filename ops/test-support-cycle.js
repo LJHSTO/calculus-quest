@@ -40,13 +40,16 @@ async function main(){
  assert.equal(budgeted.audit.requestOptions.maxTokens,1600);assert.equal(budgeted.audit.fallback,false);
  }
  const scope="GH-02-K01",profile={...defaults,ttlSeconds:120,cooldownSeconds:180,boundaryOnly:true,supportFollowups:1};
+ const previous={message:'先核对输入误差与输出误差。',nextStep:'比较4d与0.8。',feedback:{note:'我不明白为什么要乘4。'}};
+ const followPrompt=goals.promptFor({scope,need:input,plan:goals.selectPlan(input,profile),previous});
+ const followContext=JSON.parse(followPrompt.user);assert.equal(followContext.currentRequest.text,previous.feedback.note);assert.equal(followContext.previousSupport.nextStep,previous.nextStep);
  let c=store.report("alice",scope,1,input,profile,0);assert.equal(c.status,"queued");
  const idem={...input,requestId:'synthetic-idempotency-request'};
  const first=store.report('dedupe',scope,1,idem,profile,0);
  assert.equal(store.report('dedupe',scope,1,idem,profile,0).id,first.id);
  assert.equal(store.current("bob",scope,1),null);assert.equal(store.current("alice",scope,2),null);
  let calls=0;
- const generate=async args=>{calls++;return goals.generateSupport(args,{live:true,complete:async()=>({provider:"synthetic",modelInfo:{returnedModel:"fixture"},text:JSON.stringify({message:"可以先看看测量越来越细时，结果有什么趋势。这个情境能否与你关心的测量误差联系起来？",nextStep:"由你选择是否继续这个例子。"})})});};
+ const generate=async args=>{calls++;if(calls===2)assert.equal(args.previous.nextStep,'由你选择是否继续这个例子。','补充请求须保留前轮具体动作');return goals.generateSupport(args,{live:true,complete:async()=>({provider:"synthetic",modelInfo:{returnedModel:"fixture"},text:JSON.stringify({message:"可以先看看测量越来越细时，结果有什么趋势。这个情境能否与你关心的测量误差联系起来？",nextStep:"由你选择是否继续这个例子。"})})});};
  await store.advance("alice",scope,1,{guard:()=>({...guard(),protected:true}),generate});assert.equal(calls,0);
  const pair=await Promise.all([store.advance("alice",scope,1,{guard,generate}),store.advance("alice",scope,1,{guard,generate})]);
  c=pair[0];assert.equal(calls,1);assert.equal(c.status,"offered");assert.equal(c.content.audit.fallback,false);
