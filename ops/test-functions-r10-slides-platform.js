@@ -27,7 +27,7 @@ async function main(){
   await page.locator('#register-password').fill('Synthetic-r10-slides-123');await page.locator('#register-password-confirm').fill('Synthetic-r10-slides-123');await page.locator('#login-submit').click();
   await page.locator('#auth-gate').waitFor({state:'hidden'});await page.locator('[data-view="learn"]').first().click();
   const survey=(await api('api/study/survey?stage=baseline')).data;
-  await api('api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.options?.find(o=>o.value===3)?.value??3]))});
+  await api('api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':q.options?.find(o=>o.value===3)?.value??3]))});
   if(await page.locator('#three-arm-dialog[open]').count())await page.locator('#three-arm-dialog').getByRole('button',{name:'稍后继续',exact:true}).click();
   await page.waitForTimeout(2200);
   if(await page.getByRole('button',{name:'进入知识前测',exact:true}).isVisible())await page.getByRole('button',{name:'进入知识前测',exact:true}).click();

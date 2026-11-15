@@ -51,21 +51,27 @@ check('延迟测量按历史版本分派，r10不能给r7题号重判',()=>{
 });
 check('新增中文文本没有编码替换字符、未定义或占位文本',()=>{for(const file of ['lib/assessments/functions-limits-r10.js','lib/assessments/functions-limits-probes-r10.js','lib/assessments/functions-limits-delayed-r10.js','lib/courseware/functions-limits-r10/supports.js']){const s=fs.readFileSync(path.resolve(__dirname,'..',file),'utf8');assert.ok(!s.includes('\uFFFD'));assert.ok(!/TODO|Lorem ipsum/.test(s));}});
 const surveyChecks=[],surveyCheck=(label,fn)=>{check(label,fn);surveyChecks.push(label);};
-surveyCheck('问卷只更新材料说明，原题、量表分组、六维设置及三组回顾契约保持',()=>{
+surveyCheck('保留成熟分量表及评分；r17统一知点称呼，原量表和回顾题量不变',()=>{
  const digest=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
- const expected={surveys:'16cbf7c253af6b6326aa3fc04365ab62e9ea10a02d88e42643469e21ff68e8f6',groups:'9fec34b4b576c554fced057fa6f7a4a1da1d70c2353b8465e949c80d2b2d89ae',items:'f7661999f851914c102ab16be10815fc1d2f79b2830c4c81eb168ff283d7b53c',cases:'ae49d2f8f5e46bf8f60f41bfff4432252306ed747d8cbf2659b02b93e284df2d',configurationRubric:'f5da108d33ef68d028c4d95823c532d77b53d71dccf707a8124366f03d6186e5',understanding:'09e4b439ed05cf50be050de68ed9cef32f400016771b501fa7ab87b427566b1b',dimensions:'4900bc748263f6a17a532e0e2b001e261a311a258953119bb363aa9b7108eec8'};
- const actual={surveys:preferences.surveys,groups:preferences.instrument.groups,items:measures.surveys.map(({id,text,time,group,scale,allowNotApplicable,notApplicableLabel})=>({id,text,time,group,scale,allowNotApplicable,notApplicableLabel})),cases:measures.configurationCases,configurationRubric:measures.configurationRubric,understanding:measures.understanding,dimensions:preferences.dimensions};
- for(const key of Object.keys(expected))assert.equal(digest(actual[key]),expected[key],key+'与本次改动前契约一致');
- assert.equal(preferences.version,'learner-preferences-20261030-v7');
+ // r14 adds items; r15 removes only skip-option instructions from the old scale labels.
+ // Original item text and subscale membership remain fixed. The
+ // dimensions digest changed only because the D2 preview now names the agent
+ // "知点" instead of "老师"; options and rules are unchanged.
+ const r10Ids=new Set(['baseline_efficacy_rule','baseline_efficacy_nearby','baseline_efficacy_evidence','baseline_interest','baseline_value','ai_experience','topic_experience','autonomy1','competence5','autonomy7','competence11','autonomy13','competence17','autonomy19','competence23','efficacy_rule','efficacy_nearby','efficacy_evidence','interest','value','workload','disruption','usability','review_understanding','review_action','decision_reason','outside_practice','usefulness','timing','event_disruption','configuration_understood','configuration_burden','configuration_alignment']);
+ const expected={surveys:'86e17144e9329531a5efff690f7ae228ea0cab1c18585a3eb1dc4bf601f3d2e6',groups:'9fec34b4b576c554fced057fa6f7a4a1da1d70c2353b8465e949c80d2b2d89ae',items:'239744c91195f29ed058d15377ad2badc2884a0e6aaeadc96f5277fa0efb3aa7',cases:'ae49d2f8f5e46bf8f60f41bfff4432252306ed747d8cbf2659b02b93e284df2d',configurationRubric:'f5da108d33ef68d028c4d95823c532d77b53d71dccf707a8124366f03d6186e5',understanding:'09e4b439ed05cf50be050de68ed9cef32f400016771b501fa7ab87b427566b1b',dimensions:'9e8e099c6d2fa3bd922f23819aa5254e7d575d2647e9872f7da2067ac7b10a8e'};
+ const actual={surveys:preferences.surveys,groups:preferences.instrument.groups,items:measures.surveys.filter(q=>r10Ids.has(q.id)).map(({id,text,time,group,scale,allowNotApplicable,notApplicableLabel})=>({id,text,time,group,scale,allowNotApplicable,notApplicableLabel})).sort((a,b)=>a.id.localeCompare(b.id)),cases:measures.configurationCases,configurationRubric:measures.configurationRubric,understanding:measures.understanding,dimensions:preferences.dimensions};
+ for(const key of ['surveys','groups','cases','configurationRubric','understanding'])assert.equal(digest(actual[key]),expected[key],key+'与本次改动前契约一致');
+ assert.deepEqual(measures.surveys.filter(q=>!r10Ids.has(q.id)).map(q=>q.id).sort(),['agent_control','agent_overreliance','agent_rationale','agent_trust','agent_verify','demo_age','demo_gender','demo_grade','demo_major','helpseek_judgment','hs_monitor_trait','pa_control_desire','pa_experience','pa_ideal','pa_interrupt_concern','pa_preference','pa_verify_habit','scenario_initiative','scenario_timing']);
+ assert.equal(preferences.version,'learner-preferences-20261113-v8');
  assert.equal(preferences.instrument.version,'pilot-questionnaire-functions-r10-20261106');
- assert.equal(measures.version,'three-arm-measures-functions-r10-20261106');
+ assert.equal(measures.version,'three-arm-measures-functions-r17-20261113');
  assert.match(preferences.instrument.instructions,/讲解、交互和应用例子/);
  assert.match(measures.scoringNotes.singleItems,/不作为内在动机总量表/);
 });
-surveyCheck('前后五项同措辞，问卷题量不增加，前端与测量清单逐项一致',()=>{
+surveyCheck('前后五项同措辞，前端与测量清单逐项一致；r14按weekly to-do增加题量',()=>{
  assert.deepEqual(Object.fromEntries(Object.entries(preferences.surveys).map(([key,items])=>[key,items.length])),{baseline:5,final:16,configuration:3});
- assert.equal(measures.surveys.length,33);
- assert.deepEqual(measures.surveys.reduce((counts,item)=>{counts[item.time]=(counts[item.time]||0)+1;return counts;},{}),{'前测前':7,'即时后测后':19,'中段回顾后':2,'中段回顾后的决定':1,'三天后主要测验完成后':1,'一次合格可见的帮助或询问结束后':3});
+ assert.equal(measures.surveys.length,50);
+ assert.deepEqual(measures.surveys.reduce((counts,item)=>{counts[item.time]=(counts[item.time]||0)+1;return counts;},{}),{'前测前':18,'即时后测后':27,'中段回顾后的决定':1,'三天后主要测验完成后':1,'一次合格可见的帮助或询问结束后':3});
  for(const [id,text] of preferences.surveys.baseline){assert.equal(preferences.surveys.final.find(item=>item[0]===id)[1],text);assert.equal(measures.surveys.find(item=>item.id==='baseline_'+id).text,text);assert.equal(measures.surveys.find(item=>item.id===id).text,text);}
  for(const [id,text] of preferences.surveys.final)assert.equal(measures.surveys.find(item=>item.id===id).text,text);
  for(const [id,text] of preferences.surveys.configuration)assert.equal(measures.surveys.find(item=>item.id==='configuration_'+id).text,text);

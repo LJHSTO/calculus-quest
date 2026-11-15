@@ -29,3 +29,33 @@ for(const [question,position] of [['请解释这道题',2],['改看第3题',3],[
  assert.equal(data.quizReview.incorrectItems.length,position===2?0:1,'答对题不能标记为错题');
 }
 console.log('通过：理解自述、已完成提醒、同意复盘、执行已同意步骤，均保留当前题与真实上一轮上下文。');
+const questionOne=mixed.unit.quizQuestions[0].id,questionTwo=mixed.unit.quizQuestions[1].id;
+const scopedHistory=[{role:'user',content:'刚才独立检查选了r=0.4。',questionId:questionOne},{role:'assistant',content:'继续计算4乘0.4。',questionId:questionOne}];
+let scoped=assistant.buildAssistantPrompt({resolved:mixed,question:'请讲第二题',quizSubmitted:true,history:scopedHistory,supportContext:{lastCompletedCheck:{sourceQuestionId:questionOne,prompt:'上一题检查'}}});
+let data=JSON.parse(scoped.user.slice(scoped.user.indexOf('{')));
+assert.deepEqual(data.recentConversation,[]);assert.equal(data.supportContext.lastCompletedCheck,null);assert.equal(scoped.contextAudit.excludedOtherQuestionMessages,2);assert.equal(scoped.contextAudit.questionId,questionTwo);
+scoped=assistant.buildAssistantPrompt({resolved:{...mixed,contextRef:{...mixed.contextRef,questionId:questionOne}},question:'请继续解释',quizSubmitted:true,history:scopedHistory});
+data=JSON.parse(scoped.user.slice(scoped.user.indexOf('{')));assert.equal(data.recentConversation.length,2);assert.match(data.conversationContinuity.latestAssistantMessage,/4乘0.4/);
+console.log('通过：换题过滤旧题消息与检查；同题补充解释仍保留完整接续依据。');
+const emptyMemory={version:'synthetic',points:[{id:'empty',correct:0,incorrect:0,pending:0,lastObservedAt:null,sources:[]}]};
+let memoryPrompt=assistant.buildAssistantPrompt({resolved:mixed,quizSubmitted:true,question:'请解释',learningMemory:emptyMemory});
+assert.equal(JSON.parse(memoryPrompt.user.slice(memoryPrompt.user.indexOf('{'))).learningMemory,null);
+const observation={id:'observed',correct:0,incorrect:0,pending:1,sources:[{id:'pending-source',status:'pending'}]};
+memoryPrompt=assistant.buildAssistantPrompt({resolved:mixed,quizSubmitted:true,question:'请解释',learningMemory:{...emptyMemory,points:[...emptyMemory.points,observation]}});
+assert.deepEqual(JSON.parse(memoryPrompt.user.slice(memoryPrompt.user.indexOf('{'))).learningMemory.points,[observation]);
+console.log('通过：未观察知识点按未知处理，真实记录及待评分来源完整保留。');
+const withCheck=assistant.buildAssistantPrompt({resolved:mixed,quizSubmitted:true,question:'请比较刚才的独立检查与当前题',supportContext:{lastCompletedCheck:{sourceQuestionId:questionTwo,prompt:'已提供的真实检查题',response:'学生作答'}}});
+assert(!withCheck.system.includes('这里没有提供上一道题的可靠题干'),'有明确检查上下文时不能声称没有题干');
+const checkContext={lastCompletedCheck:{checkId:'check-current',sourceQuestionId:questionTwo,prompt:'左侧x+4，右侧2x+6',response:'取平均值5',correctAnswer:'不能',explanation:'左右极限4和6不同'}};
+const checkHistory=[{role:'assistant',content:'检查题的左右极限是4和6。',questionId:questionTwo,discussionTarget:'completed_independent_check',activeCheckId:'check-current'}];
+const firstCheck=assistant.buildAssistantPrompt({resolved:mixed,quizSubmitted:true,question:'刚才的独立检查为什么错了？',history:[{role:'user',content:'解释原题',questionId:questionTwo},{role:'assistant',content:'原题左右极限14和15。',questionId:questionTwo}],supportContext:checkContext});
+assert.equal(firstCheck.contextAudit.excludedOtherTaskMessages,2);assert.deepEqual(JSON.parse(firstCheck.user.slice(firstCheck.user.indexOf('{'))).recentConversation,[]);
+for(const question of ['刚才的独立检查为什么错了？','第二步还是不懂','为什么不能取平均值？']){
+ const p=assistant.buildAssistantPrompt({resolved:mixed,quizSubmitted:true,question,history:checkHistory,supportContext:checkContext}),d=JSON.parse(p.user.slice(p.user.indexOf('{')));
+ assert.equal(p.contextAudit.activeCheckId,'check-current');assert.equal(d.activeLearningTask.prompt,checkContext.lastCompletedCheck.prompt);
+ assert.equal(d.recentConversation[0].content,checkHistory[0].content,'检查题自己的上一轮必须保留');
+ for(const key of ['quiz','quizReview','quizReviewFocus','verifiedQuestionFacts','proactiveAssistantPrompt'])assert.equal(d[key],null,'检查复盘不得混入原题 '+key);
+}
+const back=assistant.buildAssistantPrompt({resolved:mixed,quizSubmitted:true,question:'回到原题，请解释原题',history:checkHistory,supportContext:checkContext});
+assert.equal(back.contextAudit.activeCheckId,'');assert(JSON.parse(back.user.slice(back.user.indexOf('{'))).quizReviewFocus);
+console.log('通过：检查题优先、隐式多轮接续、显式回到原题，均保留任务归属。');

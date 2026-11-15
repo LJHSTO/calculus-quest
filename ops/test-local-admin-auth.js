@@ -80,6 +80,12 @@ async function runCase(root, dbPath, expected, overrides = {}) {
 
     const anonymousOverview = await requestJson(baseUrl, "/api/admin/stats/overview");
     assert.equal(anonymousOverview.response.status, expected.anonymousStatus);
+    const timeline = '/api/admin/three-arm/timeline?mode=preview&fingerprint=fixture';
+    const anonymousTimeline = await requestJson(baseUrl, timeline);
+    assert.equal(anonymousTimeline.response.status, expected.anonymousStatus);
+    const allowedTimeline = await requestJson(baseUrl, timeline, token);
+    assert.equal(allowedTimeline.response.status, 200);
+    assert.equal(allowedTimeline.response.headers.get('cache-control'), 'no-store');
 
     if (expected.bypass) {
       for (const headers of [

@@ -1,6 +1,6 @@
 (function(global){
   'use strict';
-  const VERSION='workspace-tour-v4',FIRST='GH-01-K01',seen=new Set();
+  const VERSION='workspace-tour-v6',FIRST='GH-01-K01',seen=new Set();
   let panel=null,finish=null,owner='',step=0,ready=false,requiredTour=false,returnUnit='',highlight=null,description=null,observer=null,positionFrame=0;
   let noteFrame=null,noteRect=null;
   let progressKey='',completedActions={};
@@ -25,12 +25,13 @@
   function canPreview(unit){return unit?.id===FIRST&&preparing()&&owner===identity()&&Boolean(panel?.isConnected||seen.has(owner)||read(owner));}
   const steps=[
     ['path','你已经进入第一个知识点','这就是正式学习页面。左侧显示课件、检测与后续任务；点亮的节点可以进入，锁定的节点按流程开放。现在收起、再展开左侧路径，试试按钮。','#lesson-rail-toggle'],
-    ['lecture','听一段讲解','点击亮起的播放按钮，试听当前课件的讲解。播放后可再次点击暂停；正式学习时，还可以使用重播、倍速和全屏按钮。','[data-classroom-action="play"]'],
-    ['scenes','选择真实的互动课件','点击一个互动方式，下方会真正加载这个活动。四种方式服务于同一个知识点，先选一种即可；“系统推荐”不是必选项。','[data-knowledge-scene]'],
-    ['assistant','认识知点：本站的 AI 学习助手','点击右上角“知点”，打开真实提问区。前测提交后就能主动提问课程概念；六维设置影响主动帮助的方式。进入课件后，还可以划选文字并点“问知点”。','#workspace-tools-toggle'],
+    ['lecture','听一段讲解','点击亮起的播放按钮，试听当前讲解。再次点击可以暂停，也可使用重播、倍速和全屏。正式学习时，用“下一页”浏览本节全部讲解页，再进入互动探索。','[data-classroom-action="play"]'],
+    ['scenes','点亮起的按钮，开始一个互动活动','点击“互动模拟”“关系图”“闯关练习”或“情境讨论”中的一种，下方会加载活动。先看活动内的目标，再按提示拖动、选择或作答。想换一种时，仍点击这里；当前操作会保存。','[data-knowledge-scene]'],
+    ['assistant','认识知点：可以和你讨论课程的 AI 学习伙伴','点击右上角“知点”，打开提问区。写下不懂的地方，点击发送。也可以在课件里划选文字后点“问知点”。知点回复时，从新回答的开头开始阅读。','#workspace-tools-toggle'],
     ['notes','把课件里的文字记下来','按住鼠标，从亮起的文字上拖过，划选一小段；松开后点“记一笔”。选中的原文会自动带入笔记，再写下自己的想法、选颜色并保存。','[data-classroom-action="note"]'],
-    ['assessment','先学习，再独立检测','完成知识点后，底部按钮会带你进入检测；不会可以选“我不会”。前后测、保持与迁移任务不自动提供教学帮助。形成测提交后，知点可能邀请你复盘具体错题。','#learning-action-dock'],
-    ['settings','接下来，确认六项帮助设置','六项设置决定知点怎样判断、何时出现、先帮到哪一步、在哪里显示、是否先询问，以及仍有困难时怎样继续。没有一套设置对所有人都最好；你仍可拒绝或结束单次帮助。','#workspace-tools-toggle']
+    ['assessment','看清下一步，再进入检测','页面底部显示下一步和完成条件。按课件里的目标做一次尝试，再进入知识点检测；不会可以选“我不会”。提交后能看到结果并请知点讲解。前测、后测和三天后的测验需要独立完成。','#learning-action-dock'],
+    ['help','试一下：收到帮助以后怎么继续','依次试试打开帮助、继续追问、独立检查和切换下一题。下面只练习按钮的用法，不计入课程成绩。正式学习时，你也可以随时结束讨论。','#workspace-tools-toggle'],
+    ['settings','接下来，确认六项帮助设置','你可以选择知点何时出现、怎样讲解和在哪里显示。每项都有一个例子，按自己的学习习惯选择即可。','#workspace-tools-toggle']
   ];
   function clearHighlight(){if(highlight){highlight.classList.remove('operation-guide-target');if(description===null)highlight.removeAttribute('aria-describedby');else highlight.setAttribute('aria-describedby',description);}highlight=null;description=null;}
   const visible=selector=>[...document.querySelectorAll(selector)].find(n=>n.getClientRects().length&&!n.closest('[hidden]'));
@@ -96,15 +97,37 @@
     schedule();
   }
   function draw(){
-    if(!panel)return;const [key,title,text]=steps[step];ready=step>=5||completedActions[key]===true;
+    if(!panel)return;const [key,title,text]=steps[step];ready=['assessment','settings'].includes(key)||completedActions[key]===true;
     panel.dataset.step=key;panel.querySelector('[data-guide-title]').textContent=title;panel.querySelector('[data-guide-copy]').textContent=text;
     panel.querySelector('[data-guide-progress]').textContent='操作指引 '+(step+1)+' / '+steps.length;panel.querySelector('[data-guide-feedback]').textContent=completedActions[key]?'这一步已操作过，可以继续。':'';
     panel.querySelector('[data-guide-next]').disabled=!ready;panel.querySelector('[data-guide-back]').disabled=step===0;
-    panel.querySelector('[data-guide-next]').textContent=step===steps.length-1?(!requiredTour?'完成指引':global.ThreeArmStudyUI?.run?.arm==='A'?'确认统一设置，开始学习':'进入六维配置'):'下一步';
-    const settings=panel.querySelector('[data-guide-settings]');settings.hidden=step!==6;settings.replaceChildren();
+    panel.querySelector('[data-guide-next]').textContent=step===steps.length-1?(!requiredTour?'完成指引':global.ThreeArmStudyUI?.run?.arm==='A'?'确认统一设置，开始学习':'选择六项帮助设置'):'下一步';
+    const settings=panel.querySelector('[data-guide-settings]');settings.hidden=key!=='settings';settings.replaceChildren();
     panel.querySelector('[data-guide-note-blank]').hidden=step!==4;
-    if(step===6)for(const d of global.LearnerPreferences.dimensions)settings.append(el('li',d.short+'：'+d.options.find(o=>o[0]===d.default)[1]));
-    if(step===6)panel.querySelector('[data-guide-copy]').textContent+=!requiredTour?' 下面是初始默认值示例；重看指引不会覆盖你已保存的设置。':global.ThreeArmStudyUI?.run?.arm==='A'?' 本次学习使用下面统一的六项设置；它们不是对你能力的判断。':' 下面是初始默认值，下一步可以逐项查看、选择并说明理由，也可以保留默认。';
+    if(key==='settings')for(const d of global.LearnerPreferences.dimensions)settings.append(el('li',d.short+'：'+d.options.find(o=>o[0]===d.default)[1]));
+    if(key==='settings')panel.querySelector('[data-guide-copy]').textContent+=!requiredTour?' 下面是初始设置的例子。':global.ThreeArmStudyUI?.run?.arm==='A'?' 本次学习使用下面的统一设置。':' 下面是初始设置，下一步可以逐项选择，也可以保留。';
+    panel.querySelector('[data-guide-demo]')?.remove();
+    if(key==='help'){
+      const demo=el('section');demo.dataset.guideDemo='';demo.className='guide-help-demo';
+      const title=el('strong','操作演示 · 第 1 题'),copy=el('p','知点：要一起看看刚才这一步吗？'),actions=el('div');
+      const action=(label,next)=>{const b=el('button',label);b.type='button';b.onclick=next;return b;};
+      const render=phase=>{
+        demo.dataset.phase=phase;actions.replaceChildren();
+        if(phase==='invite')actions.append(action('看看知点的提示',()=>render('help')));
+        if(phase==='help'){copy.textContent='知点：先找题目给出的条件，再看看你的回答用了哪个条件。';actions.append(action('这一步还不懂',()=>render('followup')));}
+        if(phase==='followup'){copy.textContent='知点会承接你的卡点继续解释。想检验能否自己做，可以进入一题独立检查；检查时讲解暂时隐藏。';actions.append(action('用一道题独立检验',()=>render('check')));}
+        if(phase==='check'){
+          title.textContent='操作演示 · 独立检查';copy.textContent='练习一下：独立检查时，刚才的讲解会怎样显示？';
+          actions.append(action('暂时隐藏，完成后可继续讨论',()=>render('checked')),action('一直显示在检查题旁',()=>render('retry')));
+        }
+        if(phase==='retry'){copy.textContent='独立检查时，讲解会暂时隐藏，让你自己作答。提交后可以继续讨论；暂不检查也能回到学习。';actions.append(action('再试一次',()=>render('check')));}
+        if(phase==='checked'){copy.textContent='对，检查时先自己作答。正式学习中，答错可请知点继续解释这道检查；答对后可看下一题或结束讨论。';actions.append(action('下一题：讲解第 2 题',()=>render('next')));}
+        if(phase==='next'){title.textContent='操作演示 · 第 2 题';copy.textContent='换题后会显示第 2 题的题目、你的回答和对应讲解。上一题的记录会保留。';actions.append(action('结束本次讨论',()=>render('done')));}
+        if(phase==='done'){title.textContent='操作演示完成';copy.textContent='结束讨论后，帮助区会收起，你可以继续课件或检测。以后还想提问，点击“知点”即可。';acknowledge('help_flow_demo');}
+        schedule();
+      };
+      demo.append(title,copy,actions);panel.querySelector('[data-guide-card]').insertBefore(demo,settings);render('invite');
+    }
     if(step===0&&typeof setLessonRailCollapsed==='function')setLessonRailCollapsed(false,{persist:false,focusCurrent:false});
     if(step===1)document.querySelector('[data-workspace-canvas="slide"]')?.click();
     if(step===2)global.LearningWorkspace?.showInteractive();
@@ -135,13 +158,7 @@
   }
   let sceneTip=null;
   function clearScene(){document.querySelectorAll('.scene-tour-highlight').forEach(n=>n.classList.remove('scene-tour-highlight'));sceneTip?.remove();sceneTip=null;}
-  function sceneGuide(){
-    const s=global.KnowledgeAssistant?.designSpaceSnapshot?.(),key=identity()+':scene-choice';
-    if(panel||!s?.active||s.unitType!=='knowledge'||s.taskReady!==false||document.querySelector('dialog[open]')||seen.has(key)||read(key)){clearScene();return;}
-    const choices=[...document.querySelectorAll('[data-knowledge-scene]')].find(n=>n.getClientRects().length)?.parentElement;
-    if(!choices||sceneTip?.isConnected)return;choices.classList.add('scene-tour-highlight');sceneTip=el('aside');sceneTip.className='scene-tour-tip';sceneTip.setAttribute('role','status');sceneTip.append(el('strong','从这里开始：点一个互动方式'),el('p','任选一个上方按钮。选择后会加载活动；想换一种时仍在这里切换。'));
-    const done=el('button','知道了');done.type='button';done.onclick=()=>{mark(key);clearScene();log('scene_hint_dismissed');};sceneTip.append(done);choices.after(sceneTip);log('scene_hint_shown');
-  }
+  function sceneGuide(){clearScene();}
   global.addEventListener('cq:proactive-state',()=>{if(panel&&owner!==identity())close(false);sceneGuide();});
   global.addEventListener('cq:learning-signal',e=>{if(e.detail?.eventType==='knowledge_scene_selected'){mark(identity()+':scene-choice');clearScene();log('scene_choice_completed');}});
   global.addEventListener('cq:lesson-rendered',()=>requestAnimationFrame(()=>{target();sceneGuide();}));

@@ -85,7 +85,13 @@ async function main() {
       provider: "openai-compatible", baseUrl: "https://example.invalid/v1/",
       apiKey: "synthetic-test-key", model: "auto", wireApi: "responses", user: "测试"
     });
-    assert.deepEqual(result.modelInfo, {
+    assert.ok(result.modelInfo.queueMs>=0&&result.modelInfo.executionMs>=0);
+    const {queueMs,executionMs,temperature,maxTokens,responseId,systemFingerprint,usage,finishReason,cachedPromptTokens,reasoningTokens,transport,generationControls,...identity}=result.modelInfo;
+    assert.deepEqual(generationControls,{enableThinking:null,thinkingMode:null});
+    assert.equal(finishReason,'');assert.equal(cachedPromptTokens,null);assert.equal(reasoningTokens,null);
+    assert.ok(transport.headersMs>=0&&transport.bodyMs>=0);
+    assert.equal(temperature,null);assert.equal(maxTokens,600);assert.equal(responseId,'');assert.equal(systemFingerprint,'');assert.deepEqual(usage,{});
+    assert.deepEqual(identity, {
       requestedModel: "auto", reportedModel: "", wireApi: "responses"
     });
     let active = 0, peak = 0;

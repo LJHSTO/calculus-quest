@@ -2661,7 +2661,7 @@ async function agenticResolvePendingGrading(action = "retry") {
   let records = agenticQuizRecordsForUnit(unit.id);
   path.decisionInFlight = action === "continue" ? "grading_continue" : "grading_retry";
   pending.narration = action === "continue"
-    ? "正在保存 0 分兜底结果，并据此生成后续学习建议。"
+    ? "正在保存待复核的作答，并继续学习。"
     : "正在重新批改简答题，请稍候。";
   saveState();
   renderAgenticCoachPanel();
@@ -2996,7 +2996,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
 }
 
 async function agenticAfterQuizSubmit(unit, records) {
-  if(['pre','post'].includes(unit.assessmentPhase)&&records.some(r=>/^fl-r(?:7|10|11|12|13)-/.test(r.question?.id||''))){
+  if(['pre','post'].includes(unit.assessmentPhase)&&records.some(r=>/^fl-r\d+-/.test(r.question?.id||''))){
     const path=ensureAgenticPath();path.pendingPlan=null;path.pendingAt='';
     if(unit.assessmentPhase==='pre')agenticUnlockDefaultNext(unit.id,'independent_pretest_recorded');
     else globalThis.LearnerSetup?.afterPosttest?.(unit);

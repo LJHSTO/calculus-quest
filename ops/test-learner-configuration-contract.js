@@ -12,9 +12,12 @@ async function main(){
  const config=policy.configFromEnv({PROACTIVE_POLICY_MODE:'active',PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_ASSIGNMENT_SALT:'synthetic',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full'});
  const rows=[];let combinations=[C.defaults()];
  for(const d of C.dimensions){
-  assert.equal(C.reasonsFor(d.id).length,6,'each new choice has six rationale options');
+  assert.equal(C.reasonsFor(d.id).length,5,'three dimension-specific concerns, try and other');
+  const reasonIds=C.reasonsFor(d.id).map(([id])=>id);
+  for(const other of C.dimensions.filter(x=>x.id!==d.id))assert.deepEqual(C.reasonsFor(other.id).map(([id])=>id).filter(id=>reasonIds.includes(id)),['try','other'],'only try and other are shared between dimensions');
+  for(const [value]of C.optionsFor(d.id,true))for(const reason of reasonIds){const sample=C.defaults();for(const v of Object.values(sample))v.reason='try';sample[d.id]={value,reason,note:reason==='other'?'本人的具体考虑':''};assert.doesNotThrow(()=>C.validate(sample,{experimental:true}),'concerns are not assigned to a single setting');}
   for(const [legacy]of C.reasons){
-   assert.ok(C.reasonsFor(d.id,legacy).length<=7);
+   assert.ok(C.reasonsFor(d.id,legacy).length<=6);
    assert.ok(C.reasonsFor(d.id,legacy).some(([id])=>id===legacy));
    assert.ok(C.reasonLabel(d.id,legacy));
   }
@@ -65,6 +68,6 @@ async function main(){
  const ordinary=structuredClone(legacy);ordinary.D5.value='request';assert.equal(C.profile(ordinary,{}).proactivity,'reactive');assert.throws(()=>C.validate(ordinary,{experimental:true}));
  const out=path.join(__dirname,'../output/learner-configuration-20261030');fs.mkdirSync(out,{recursive:true});
  fs.writeFileSync(path.join(out,'contract-matrix.json'),JSON.stringify({passed:true,synthetic:true,version:C.version,scope:'saved policy, support planning, confirmation gate, protected/busy/boundary silence, fallback and follow-up limits; not a real-model or human test',combinations:rows.length,eventCount:events.length,rows},null,2));
- console.log('PASS: 96 saved configurations; six/seven rationale bound; legacy compatibility; support content level, confirmation, silence, fallback and follow-up branches.');
+ console.log('PASS: 96 saved configurations; five/six rationale bound; legacy compatibility; support content level, confirmation, silence, fallback and follow-up branches.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

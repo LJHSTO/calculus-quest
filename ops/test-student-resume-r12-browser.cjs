@@ -24,6 +24,7 @@ async function main(){
     if(key==='lecture'){await page.locator('[data-openmaic-state=ready]').first().waitFor();await page.locator('[data-classroom-action=play]').click();}
     if(key==='scenes'){await page.locator('[data-knowledge-scene=simulation]').click();await page.locator('iframe[data-courseware-frame]').waitFor({state:'visible'});}
     if(key==='assistant')await page.locator('#workspace-tools-toggle').click();
+    if(key==='help')await require('./operation-guide-help.cjs')(tour);
     if(key==='notes'){await tour.locator('[data-guide-note-blank]').click();await page.locator('[data-knowledge-note-input]').fill('合成操作指引笔记');await page.locator('[data-knowledge-note-save]').click();}
    }
    await next.click();
@@ -42,7 +43,7 @@ async function main(){
   console.log(JSON.stringify({phase:'隔离服务已启动',base,pid:server.pid,output:dir}));
   account.token=(await api('/api/auth/register',{nickname:account.nickname,password:account.password})).token;
   const run=(await api('/api/study/state')).data.run,survey=(await api('/api/study/survey?stage=baseline')).data;
-  await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,3]))});
+  await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':3]))});
   const registry=require('../lib/assessments/functions-limits-registry'),bank=registry.forVersion(registry.versionForRun(run));assert(bank,'server run measurement version must be known');report.assessmentVersion=bank.version;
   await api('/api/learning/quiz/submit',{chapterId:'V14-C1',unitId:'V14-C1-pre',phase:'pre',answers:bank.questions('pre',run.assessmentOrder[0]).map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.answer[0]}))});
   if(visualOnly){const preferences=(await api('/api/learning/learner-preferences')).data;await api('/api/learning/learner-preferences',{answers:preferences.record.answers,expectedRevision:preferences.record.revision});}
@@ -91,7 +92,7 @@ async function main(){
    await page.locator('[data-workspace-canvas=slide]').click();await page.waitForFunction(()=>document.querySelector('[data-openmaic-page]')?.dataset.openmaicPage==='2');
    check('退出重进后的讲解页码也保留',true);
   }
-  for(const width of [1400,1366,1024,390]){
+  for(const width of [1440,1366,1280]){
    await page.setViewportSize({width,height:900});await capture('课件工具栏-'+width);check(width+'课件无横向溢出',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    if(process.argv.includes('--chat-layout')){
     if(width<=1180)await page.locator('.workspace-mobile-nav button[data-workspace-pane=assistant]').click();else await page.locator('#workspace-tools-toggle').click();

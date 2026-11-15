@@ -183,6 +183,7 @@ function getDbSync() {
 }
 
 function scheduleSave() {
+  responseSaves.getStore()?.reads?.clear();
   const now = Date.now();
   if (!firstPendingSaveAt) firstPendingSaveAt = now;
   const delay = Math.max(
@@ -204,7 +205,8 @@ function scheduleSave() {
 
 function saveNow() {
   const scope = responseSaves.getStore();
-  if (scope) { scope.pending = true; scheduleSave(); return; }
+  scope?.reads?.clear();
+  if (scope && scope.deferWrites !== false) { scope.pending = true; scheduleSave(); return; }
   persistNow();
 }
 
@@ -228,7 +230,20 @@ function flush() {
 }
 
 function deferResponseSaves(work) {
-  return responseSaves.run({ pending: false }, work);
+  return responseSaves.run({ pending: false, reads: new Map(), deferWrites: true }, work);
+}
+
+function withRequestReads(work) {
+  return responseSaves.run({ pending: false, reads: new Map(), deferWrites: false }, work);
+}
+
+// Only reuse read-only derived values inside this HTTP request. Every save
+// invalidates them; another request (or participant) always gets a fresh map.
+function memoizeRequestRead(key, read) {
+  const cache = responseSaves.getStore()?.reads;
+  if (!cache) return read();
+  if (!cache.has(key)) cache.set(key, read());
+  return cache.get(key);
 }
 
 function flushResponseSaves() {
@@ -7768,6 +7783,8 @@ module.exports = {
   saveNow,
   flush,
   deferResponseSaves,
+  withRequestReads,
+  memoizeRequestRead,
   flushResponseSaves,
   normalizeLearningSnapshot,
   acquireWriteLock,

@@ -17,7 +17,7 @@ async function make(label){
  const p=ok(await api(null,'/api/auth/register',{nickname,password}));
  const actor={token:p.token,nickname,password};const state=ok(await api(actor,'/api/study/state')).data;actor.runId=state.run.id;actor.run=state.run;
  const survey=ok(await api(actor,'/api/study/survey?stage=baseline')).data;
- ok(await api(actor,'/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.options?.find(o=>o.value===3)?.value??3]))}));return actor;
+ ok(await api(actor,'/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':q.options?.find(o=>o.value===3)?.value??3]))}));return actor;
 }
 const answer=q=>({questionId:q.id,response:q.type==='short_answer'?'合成工程验收回答：依据题目给定规则逐项核对；此处保留人工批改。':q.answer[0]});
 async function quiz(actor,phase,unitId,questions){return ok(await api(actor,'/api/learning/quiz/submit',{chapterId:'V14-C1',unitId,phase,answers:questions.map(answer)}));}
@@ -61,7 +61,7 @@ async function prepare(){
    if(i===2){const review=ok(await api(actor,'/api/study/review')).data;assert.equal(review.pendingStage.id,'S1');ok(await api(actor,'/api/study/review',{stage:'S1',decision:'keep',review_understanding:null,review_action:null,reason:''}));}
   }
   await quiz(actor,'post','V14-C1-post',bank.questions('post',actor.run.assessmentOrder[1]));
-  const survey=ok(await api(actor,'/api/study/survey?stage=final')).data;ok(await api(actor,'/api/study/survey',{stage:'final',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.options?.find(o=>o.value===3)?.value??3]))}));
+  const survey=ok(await api(actor,'/api/study/survey?stage=final')).data;ok(await api(actor,'/api/study/survey',{stage:'final',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':q.options?.find(o=>o.value===3)?.value??3]))}));
  }
  const state=ok(await api(main,'/api/study/state')).data;assert.equal(state.posttestComplete,true);assert.ok(state.run.finalSurveyAt);assert.equal(state.run.regulationVersion,'regulation-transfer-r11-20261107');
  const delayed=ok(await api(main,'/api/learning/proactive/outcomes?chapterId=V14-C1')).data;assert.ok(delayed.stages.every(s=>s.status==='locked'));

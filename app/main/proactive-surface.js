@@ -90,7 +90,7 @@
       ? `当前：${labels[next.view.placement]} · ${labels[next.view.modality]}。请在六维观察台的 D4 中统一设置；这里显示同一项设置的结果。是否接受帮助仍由你决定。`
       : fixed
       ? "当前提示位置由六维控制台固定；可在控制台调整后续提示的位置。是否接受帮助仍由你决定。"
-      : "提示保留原有支架；例子和动手试会增加补充练习。是否接受帮助由你决定。";
+      : "可以先看提示、换个例子，或动手试一道题。选择你现在需要的帮助。";
     const memory=toolbar.querySelector("[data-agent-controls]");
     if(memory) {
       const data=next.agentRuntime;
@@ -219,7 +219,7 @@
     const draft = drafts.get(next.scopeKey) || "";
     const sameScope = shell.dataset.scopeKey === next.scopeKey;
     const previousHistory=shell.querySelector('.task-conversation-scroll');
-    const historyTop=previousHistory?.scrollTop||0,replyId=next.reply?.id||'',followEnd=!previousHistory||previousHistory.dataset.replyId!==replyId||previousHistory.scrollHeight-historyTop-previousHistory.clientHeight<80;
+    const historyTop=previousHistory?.scrollTop||0,replyId=`${next.reply?.id||''}:${next.busy?'streaming':'complete'}`,newReply=previousHistory?.dataset.replyId!==replyId;
     const activeField = shell.contains(document.activeElement) && document.activeElement.matches('textarea,input:not([type=radio]):not([type=checkbox])') ? document.activeElement : null;
     const fieldState = sameScope && activeField ? { tag: activeField.tagName, label: activeField.getAttribute('aria-label'), name: activeField.name,
       index: [...shell.querySelectorAll(activeField.tagName)].indexOf(activeField), start: activeField.selectionStart, end: activeField.selectionEnd,
@@ -240,7 +240,7 @@
     const content = node("div", "support-surface-content");
     content.append(global.KnowledgeAssistant.createSupportContent()); shell.append(content);
     global.TaskSupport?.appendConversation(content,next);
-    const history=content.querySelector('.task-conversation-scroll');if(history){history.dataset.replyId=replyId;history.scrollTop=followEnd?history.scrollHeight:historyTop;}
+    const history=content.querySelector('.task-conversation-scroll');if(history){history.dataset.replyId=replyId;requestAnimationFrame(()=>{if(!history.isConnected)return;const answer=history.querySelector('.task-conversation-reply:last-child .knowledge-message.assistant')||history.lastElementChild;history.scrollTop=newReply&&answer?answer.getBoundingClientRect().top-history.getBoundingClientRect().top+history.scrollTop:historyTop;if(newReply)history.scrollIntoView({block:'start',behavior:'instant'});});}
     if (!next.offer && !next.prompt && !next.check && !next.feedback && !global.TaskSupport?.hasConversation(next) && !global.SupportCycleUI?.active(next.supportCycle) && next.view.modality === "tip") {
       shell.append(node("p", "support-quiet-state", "你可以继续独立探索。出现值得关注的学习证据时，知点才会提出建议。"));
     }

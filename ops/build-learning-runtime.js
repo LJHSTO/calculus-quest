@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const zlib = require("node:zlib");
-const { createRequire } = require("node:module");
+
 
 async function main() {
   const root = path.resolve(__dirname, "..");
@@ -19,9 +19,7 @@ async function main() {
     || (extensionTail.length !== 0 && JSON.stringify(extensionTail) !== JSON.stringify(knownTail))) {
     throw new Error("Unexpected script order.");
   }
-  const upstream = createRequire(path.resolve(root, "../OpenMAIC-Upstream/package.json"));
-  const vite = createRequire(createRequire(upstream.resolve("vitest/package.json")).resolve("vite"));
-  const esbuild = vite("esbuild");
+  const esbuild = require("esbuild");
   const contents = scripts.map(script => fs.readFileSync(path.join(root, script.file), "utf8"));
   const code = (await esbuild.transform(contents.join("\n;\n"), {
     minifyWhitespace: true, minifySyntax: true, minifyIdentifiers: false,

@@ -10,7 +10,7 @@ async function main(){
  account.token=(await api('/api/auth/register',account)).token;
  const preferences=(await api('/api/learning/learner-preferences')).data;
  const baseline=(await api('/api/study/survey?stage=baseline')).data;
- await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,3]))});
+ await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,q.type==='text'?'合成回答':3]))});
  const browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(20000);
  try{
   await page.goto(base+'/?study=B');await page.locator('#app-loader.hidden').waitFor({state:'attached'});

@@ -41,6 +41,7 @@ const courseAssessment = require("./lib/course-assessment");
 const mathInstruments=require('./lib/assessments/functions-limits-registry');
 const firstSession=require('./lib/first-session-budget');
 const learningAssistant = require("./lib/learning-assistant");
+const assistantPrompt = require("./lib/assistant-prompt-r17");
 const learnerMemory = require("./lib/learner-memory");
 const researchFeedback = require("./lib/research-feedback");
 const proactivePolicy = require("./lib/proactive-policy");
@@ -78,7 +79,7 @@ const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferenc
   if(!threeArmRuntimeManifest){
     const route=JSON.parse(fs.readFileSync(path.join(root,'data/multi-scene-learning-route.json'),'utf8'));
     const content=route.chapters.find(c=>c.id==='V14-C1').modules.flatMap(m=>m.knowledgePoints).flatMap(p=>p.resourceCandidates).map(r=>r.root&&r.file?'resources/'+r.root+'/'+r.file:r.path||r.src).filter(Boolean);
-    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/functions-limits-r12.js','lib/assessments/functions-limits-delayed-r12.js','lib/assessments/functions-limits-probes-r12.js','lib/assessments/functions-limits-r13.js','lib/assessments/functions-limits-probes-r13.js','lib/assessments/assessment-figures-r13.js','lib/proactive-outcomes/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r13.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
+    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/study-consent.js','lib/assessments/functions-limits-r14.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js','lib/assessments/functions-limits-registry.js','lib/assessments/functions-limits-r11.js','lib/assessments/functions-limits-delayed-r11.js','lib/assessments/functions-limits-r12.js','lib/assessments/functions-limits-delayed-r12.js','lib/assessments/functions-limits-probes-r12.js','lib/assessments/functions-limits-r13.js','lib/assessments/functions-limits-probes-r13.js','lib/assessments/assessment-figures-r13.js','lib/proactive-outcomes/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r12.js','lib/proactive-policy/adapters/functions-limits-r13.js','lib/assessments/regulation-transfer-r11.js',...mathInstruments.figurePaths,...content];
     files.push(proSupplementAssets.manifestPath,...Object.keys(proSupplementAssets.files));
     threeArmRuntimeManifest={appVersion:process.env.APP_VERSION||'development',proactiveFingerprint:proactiveProtocolFingerprint,proactiveDefinition:proactiveProtocolDefinition,files:Object.fromEntries([...new Set(files)].map(f=>[f,protocolSourceDigest(f)]))};
   }
@@ -272,7 +273,8 @@ function mathVersionFor(user){
   const run=user?threeArmStudy.get(user):null;
   if(run){const version=mathInstruments.versionForRun(run);if(!version)throw Object.assign(new Error('本轮数学测量版本不可用，原记录保留。'),{status:409});return version;}
   const ids=user?db.getQuizResultsByUser(user).map(r=>r.question_id||''):[];
-  if(ids.some(id=>/^fl-r13-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r14-/.test(id)))return mathInstruments.version;
+  if(ids.some(id=>/^fl-r13-/.test(id)))return 'functions-limits-integrated-r13-20261108';
   if(ids.some(id=>/^fl-r12-/.test(id)))return 'functions-limits-integrated-r12-20261108';
   if(ids.some(id=>/^fl-r11-/.test(id)))return 'functions-limits-integrated-r11-20261107';
   if(ids.some(id=>/^fl-r10-/.test(id)))return mathInstruments.legacyVersion;
@@ -286,7 +288,7 @@ function mathIndexesForVersion(version){
     mathRouteIndexes.set(version,{route,assessmentIndex:courseAssessment.buildAssessmentIndex(route),assistantContextIndex:learningAssistant.buildCourseContextIndex(route),fingerprint:courseAssessment.assessmentFingerprint(route)});
   }return mathRouteIndexes.get(version);
 }
-function mathIndexesForUser(user){return mathIndexesForVersion(mathVersionFor(user));}
+function mathIndexesForUser(user){return db.memoizeRequestRead(`math-index:${user||''}`,()=>mathIndexesForVersion(mathVersionFor(user)));}
 function assistantIndexForUser(user){return mathIndexesForUser(user).assistantContextIndex;}
 try {
   archivedLearningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
@@ -407,7 +409,13 @@ const proactiveStoppingRules = Object.freeze({
       provider: modelRuntime.provider || "",
       liveConfigured: modelRuntime.liveConfigured === true,
       model: modelRuntime.model || "",
-      wireApi: modelRuntime.wireApi || ""
+      wireApi: modelRuntime.wireApi || "",
+      enableThinking: modelRuntime.enableThinking ?? null,
+      scheduler: {...require('./lib/model-scheduler').shared.limits},
+      outageProtection: {...require('./lib/model-circuit-breaker').shared.limits},
+      assistantDailyQuota:Math.max(1,Math.min(10000,Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA||30)||30)),
+      assistantTemperature:0.2,
+      supportTemperature:0.2
     },
     modelRoles: {
       assistantRequestedModel: process.env.LEARNING_ASSISTANT_MODEL || modelRuntime.model || "",
@@ -419,6 +427,7 @@ const proactiveStoppingRules = Object.freeze({
         provider: gradingRuntime.provider,
         requestedModel: gradingRuntime.model,
         wireApi: gradingRuntime.wireApi,
+        enableThinking: gradingRuntime.enableThinking ?? null,
         liveConfigured: gradingRuntime.liveConfigured
       }
     },
@@ -477,6 +486,8 @@ const proactiveStoppingRules = Object.freeze({
       designSpaceProjection: protocolSourceDigest("lib/proactive-policy/design-space.js"),
       studentSignalClient: protocolSourceDigest("app/main/proactive-learning.js"),
       reactiveAssistant: protocolSourceDigest("lib/learning-assistant.js"),
+      assistantPrompt: protocolSourceDigest("lib/assistant-prompt-r17.js"),
+      assistantMathCheck: protocolSourceDigest("lib/assistant-math-check-r18.js"),
       conversationContext: protocolSourceDigest("lib/conversation-context.js"),
       pathCoach: protocolSourceDigest("lib/agentic-coach.js"),
       gradingAgent: protocolSourceDigest("lib/agents/grading.js"),
@@ -497,6 +508,8 @@ const proactiveStoppingRules = Object.freeze({
       functionsLimitsOutcomesR12:protocolSourceDigest('lib/proactive-outcomes/functions-limits-r12.js'),
       functionsLimitsAdapterR12:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r12.js'),
       functionsLimitsAdapterR13:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r13.js'),
+      functionsLimitsAdapterR16:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r16.js'),
+      functionsLimitsTargetedChecksR16:protocolSourceDigest('lib/assessments/functions-limits-targeted-checks-r16.js'),
       functionsLimitsFiguresR11:protocolSourceDigest('lib/assessments/assessment-figures-r11.js'),
       functionsLimitsAdapterR11:protocolSourceDigest('lib/proactive-policy/adapters/functions-limits-r11.js'),
       functionsLimitsProbesR6: protocolSourceDigest("lib/assessments/functions-limits-probes-r10.js"),
@@ -515,7 +528,11 @@ const proactiveStoppingRules = Object.freeze({
       functionsLimitsRetentionArchive: protocolSourceDigest("lib/assessments/functions-limits-retention-r2.js"),
       textbookReadings: protocolSourceDigest("app/main/textbook-reading.js"),
       functionsLimitsTasks: protocolSourceDigest("data/functions-limits-courseware-contracts.json"),
-      modelTransport: protocolSourceDigest("lib/llm.js")
+      modelTransport: protocolSourceDigest("lib/llm.js"),
+      modelScheduler: protocolSourceDigest("lib/model-scheduler.js"),
+      modelOutageProtection: protocolSourceDigest("lib/model-circuit-breaker.js"),
+      databaseReads: protocolSourceDigest("db.js"),
+      formativeScaffoldsR16: protocolSourceDigest("lib/courseware/quiz-scaffolds-r16.js")
     }
   };
   proactiveProtocolFingerprint = crypto
@@ -646,7 +663,7 @@ const assistantDailyQuotaLimit = Math.max(
 );
 const assistantDailyInterventionLimit = Math.max(
   0,
-  Math.min(100, Number(process.env.LEARNING_ASSISTANT_DAILY_INTERVENTIONS || 10) || 10)
+  Math.min(100, Number(process.env.LEARNING_ASSISTANT_DAILY_INTERVENTIONS || 24) || 24)
 );
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -1805,14 +1822,20 @@ function proactiveProtocolPayload(experimentId = proactiveStudyConfig.experiment
 }
 
 function assignedAssessmentEntry(entry,userId){
-  if(entry.chapterId==='V14-C1'&&['pre','post','formative'].includes(entry.phase)){
-    const assigned=/-r(11|12|13)-/.exec(mathVersionFor(userId))?.[1]||'legacy';
-    const actual=/^fl-r(11|12|13)-/.exec(entry.question.id)?.[1]||'legacy';
-    if(actual!==assigned)return false;
+  const needsMembership=entry.chapterId==='V14-C1'&&['pre','post','formative'].includes(entry.phase);
+  const needsOrder=/^fl-r\d+-(pre|post)-/.test(entry.question.id);
+  if(!needsMembership&&!needsOrder)return true;
+  const assigned=db.memoizeRequestRead(`assessment-membership:${userId||''}`,()=>({
+    index:mathIndexesForUser(userId).assessmentIndex,
+    order:(userId?threeArmStudy.get(userId)?.assessmentOrder:null)||'XY'
+  }));
+  if(needsMembership){
+    // A new reading version may reuse an unchanged formative bank. Resolve
+    // membership from the frozen registry instead of matching revision digits.
+    if(!assigned.index.has(entry.question.id))return false;
   }
-  if(!/^fl-r(?:7|10|11|12|13)-(pre|post)-/.test(entry.question.id))return true;
-  const order=(userId?threeArmStudy.get(userId)?.assessmentOrder:null)||'XY';
-  return entry.question.form===order[entry.phase==='pre'?0:1];
+  if(!needsOrder)return true;
+  return entry.question.form===assigned.order[entry.phase==='pre'?0:1];
 }
 function proactiveAssessmentQuestionCount(phase = "") {
   const normalizedPhase = boundedLearningText(phase, 40).toLowerCase();
@@ -4276,7 +4299,9 @@ async function generateAssistantTurn({
   assistantIntent = "",
   proactivePrompt = "",
   learningMemory = null,
-  supportContext = null
+  supportContext = null,
+  signal,
+  onQueue
 }) {
   const prompt = learningAssistant.buildAssistantPrompt({
     resolved,
@@ -4304,7 +4329,8 @@ async function generateAssistantTurn({
   if (!providerInfo.live) {
     return {
       provider: providerInfo.id,
-      text: learningAssistant.mockAssistantAnswer({
+      modelAudit:{contextAudit:prompt.contextAudit,promptVersion:assistantPrompt.version},
+      text: prompt.contextAudit.activeCheckId&&supportContext?.lastCompletedCheck?.explanation||learningAssistant.mockAssistantAnswer({
         resolved,
         question,
         quizSubmitted,
@@ -4317,29 +4343,40 @@ async function generateAssistantTurn({
     };
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
   const generationStarted = Date.now();
   try {
     const result = await llm.completeChat({
       system: prompt.system,
       user: prompt.user,
       maxTokens: 700,
+      temperature: 0.2,
       model: String(
         process.env.LEARNING_ASSISTANT_MODEL
         || process.env.OPENAI_COMPATIBLE_MODEL
         || ""
       ).trim() || undefined,
-      signal: controller.signal
+      signal, onQueue, timeoutMs:45000, requireModelIdentity:true
     });
-    const text = learningAssistant.enforceQuizSafety(result.text, {
+    const originalText = learningAssistant.enforceQuizSafety(result.text, {
       isQuiz: resolved.isQuiz,
       quizSubmitted,
       resolved
     });
+    const authoredMath=require('./lib/courseware/quiz-scaffolds-r16');
+    const pointCheck=require('./lib/assistant-math-check-r18'),pointFacts=!resolved.isQuiz?pointCheck.questionFacts(question):null;
+    const pointValidation=pointCheck.validateReply(pointFacts,originalText);
+    const authoredValidation=authoredMath.validateReply(prompt.guidance.focusQuestionId,originalText);
+    const scopeValidation=resolved.isQuiz&&quizSubmitted&&!supportContext?.lastCompletedCheck?pointCheck.validateQuestionScope(originalText):{valid:true,issues:[]};
+    const arithmeticValidation=pointCheck.validateArithmetic(originalText);
+    const stepValidation=authoredMath.validateGuidedStep(prompt.responseGuard?.guidedStep,originalText);
+    const validation={version:'course-response-guard-r20',valid:pointValidation.valid&&authoredValidation.valid&&scopeValidation.valid&&arithmeticValidation.valid&&stepValidation.valid,issues:[...authoredValidation.issues,...pointValidation.issues,...scopeValidation.issues,...arithmeticValidation.issues,...stepValidation.issues]};
+    const text=validation.valid?originalText:prompt.responseGuard?.guidedStep?.correction||(pointFacts?pointCheck.explanation(pointFacts):(prompt.contextAudit.activeCheckId&&supportContext?.lastCompletedCheck?.explanation)||authoredMath.correctionForQuestion(prompt.guidance.focusQuestionId,validation.issues)||authoredMath.forQuestion(prompt.guidance.focusQuestionId,supportContext?.scaffoldLevel||'L3')?.text||'先把这一小步的算式写出来，我们核对各个数值，再继续。');
     return {
-      provider: result.provider || providerInfo.id,
+      provider: validation.valid?(result.provider || providerInfo.id):'course-math-guard',
       modelAudit: { ...result.modelInfo,
+        promptVersion:assistantPrompt.version,
+        contextAudit:prompt.contextAudit,
+        responseValidation:validation,...(!validation.valid?{replacedModelText:originalText}:{}),
         promptHash: crypto.createHash("sha256").update(prompt.system + "\n" + prompt.user).digest("hex"),
         latencyMs: Date.now() - generationStarted, maxTokens: 700 },
       text: text || learningAssistant.mockAssistantAnswer({
@@ -4351,13 +4388,18 @@ async function generateAssistantTurn({
       }),
       policy: prompt.policy,
       guidance: prompt.guidance,
-      fallback: !text
+      fallback: !text || !validation.valid
     };
   } catch (error) {
     console.warn("Learning assistant provider fallback:", error.message);
     return {
       provider: "fallback",
-      text: learningAssistant.mockAssistantAnswer({
+      modelAudit:{requestedModel:process.env.LEARNING_ASSISTANT_MODEL||llm.runtimeInfo().model,
+        contextAudit:prompt.contextAudit,
+        promptVersion:assistantPrompt.version,
+        failureCode:error.code||error.name,httpStatus:error.status||null,retryAfterMs:error.retryAfterMs||null,reportedModel:error.reportedModel||null,...error.modelTiming,
+        promptHash:crypto.createHash('sha256').update(prompt.system+'\n'+prompt.user).digest('hex'),latencyMs:Date.now()-generationStarted},
+      text: prompt.contextAudit.activeCheckId&&supportContext?.lastCompletedCheck?.explanation||learningAssistant.mockAssistantAnswer({
         resolved,
         question,
         quizSubmitted,
@@ -4368,8 +4410,6 @@ async function generateAssistantTurn({
       guidance: prompt.guidance,
       fallback: true
     };
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -4810,15 +4850,23 @@ async function handleManagedProactiveIntervention({
   }
   if(policyDecision.displayAllowed && renderedDecision.intervene) {
     const adapter=proactivePolicy.adapterForChapter(resolved.unit.chapterId);
+    if(resolved.isQuiz&&resolved.quizSubmitted){
+      const questionContext=learningAssistant.quizQuestionContext(resolved,renderedDecision.questionId);
+      const scaffold=require('./lib/courseware/quiz-scaffolds-r16').forQuestion(questionContext?.questionId,policyDecision.supportLevel);
+      if(scaffold){
+        renderedDecision={...renderedDecision,body:scaffold.text,assistantPrompt:scaffold.text,
+          questionContext,questionId:questionContext.questionId,contentVersion:scaffold.version};
+      }
+    }
     const check=adapter?.nextVerificationCheck?.(policyScopeKey,policyDecision.supportLevel,
-      parseStoredJson(policyState.lifecycle_json||"{}",{}).lastVerificationCheckId,supportCycles.issuedChecks(auth.participant.id,policyScopeKey,db.currentLearningGeneration(auth.participant.id)));
+      parseStoredJson(policyState.lifecycle_json||"{}",{}).lastVerificationCheckId,supportCycles.issuedChecks(auth.participant.id,policyScopeKey,db.currentLearningGeneration(auth.participant.id)),renderedDecision.questionId||'');
     if(check) {
       const functions={L1:"self_explanation",L2:"concept_hint",L3:"subgoal_prompt",L4:"next_step_scaffold",L5:"worked_example_step"};
       const contract=new proactivePolicy.SupportAction({depth:policyDecision.supportLevel,
         functionType:functions[policyDecision.supportLevel],targetKp:policyScopeKey,
         contentText:renderedDecision.body || renderedDecision.title,
         remainingStudentTask:"学生自行解释判断，再独立完成检查；不自动填写或提交答案。",
-        followupCheckId:check.id,contentVersion:adapter.version || "template-v1"});
+        followupCheckId:check.id,contentVersion:renderedDecision.contentVersion || adapter.version || "template-v1"});
       evidence.supportContract={...contract.toJSON(),answerLeakAudit:"teacher_review_pending",checkBinding:"planned_not_yet_issued"};
     }
     const followupConfirmationRequired=signal.kind==='independent_attempt_outcome'
@@ -4840,7 +4888,7 @@ async function handleManagedProactiveIntervention({
     }
     renderedDecision.supportSpec=require('./lib/support-spec').create({id:decisionId,run:threeArmStudy.get(auth.participant.id),scope:policyScopeKey,sceneType,
       profileRevision:engineeringControl?.revision,profile:agentProfile,content:renderedDecision,supportLevel:policyDecision.supportLevel,
-      expiresAt:policyDecision.expiresAt,source:'template',contentVersion:adapter?.version});
+      expiresAt:policyDecision.expiresAt,source:'template',contentVersion:renderedDecision.contentVersion || adapter?.version});
     evidence.supportSpec=renderedDecision.supportSpec;
   }
 
@@ -5938,11 +5986,14 @@ async function handleApi(req, res, url) {
 
     if(url.pathname.startsWith('/api/admin/three-arm')){
       if(!checkAdmin(req)){sendJson(res,403,{ok:false,message:'需要管理员身份'});return;}
+      res.setHeader('Cache-Control','no-store');
       try{let data;
-        if(req.method==='GET'&&url.pathname.endsWith('/export'))data={...threeArmStudy.exportData(),regulationTransfer:regulationTransfer.exportRecords()};
+        if(req.method==='GET'&&url.pathname==='/api/admin/three-arm/consents')data=threeArmStudy.consentRecords();
+        else if(req.method==='GET'&&url.pathname.endsWith('/export'))data={...threeArmStudy.exportData(),regulationTransfer:regulationTransfer.exportRecords()};
         else if(req.method==='GET'&&url.pathname.endsWith('/regulation-rating'))data=regulationTransfer.ratingPacket(url.searchParams.get('runId'));
         else if(req.method==='POST'&&url.pathname.endsWith('/regulation-rating')){const input=await readJsonBody(req);data=regulationTransfer.rate(input.runId,input);}
         else if(req.method==='GET'&&url.pathname.endsWith('/replay'))data=threeArmStudy.replay({mode:url.searchParams.get('mode')||'formal',fingerprint:url.searchParams.get('fingerprint')||undefined});
+        else if(req.method==='GET'&&url.pathname.endsWith('/timeline'))data=require('./lib/study-interaction-timeline').build(threeArmStudy.exportData(),{mode:url.searchParams.get('mode')||'formal',protocolFingerprint:url.searchParams.get('fingerprint'),runId:url.searchParams.get('runId')||undefined});
         else if(req.method==='GET'&&url.pathname.endsWith('/rating'))data=threeArmStudy.ratingCases();
         else if(req.method==='POST'&&url.pathname.endsWith('/rating'))data=threeArmStudy.rateJudgment(await readJsonBody(req));
         else if(req.method==='POST'&&url.pathname.endsWith('/baseline'))data=threeArmStudy.approveBaseline(await readJsonBody(req));
@@ -5959,14 +6010,22 @@ async function handleApi(req, res, url) {
       }catch(e){sendJson(res,e.status||400,{ok:false,message:e.message});}return;
     }
     if(url.pathname.startsWith('/api/study/')){
+      res.setHeader('Cache-Control','no-store');
       try{
         const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
         const user=auth.participant.id,generation=db.currentLearningGeneration(user),run=threeArmStudy.get(user);
         const body=req.method==='POST'?await readJsonBody(req):{};
+        if(url.pathname==='/api/study/enrollment-document'&&req.method==='GET'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.consentStatus(null)});return;
+        }
         if(url.pathname==='/api/study/enroll'&&req.method==='POST'){
           sendJson(res,200,{ok:true,data:threeArmStudy.publicRun(threeArmStudy.enroll(auth.account,body))});return;
         }
         if(!run){sendJson(res,404,{ok:false,message:'请从本次实验入口进入'});return;}
+        if(url.pathname==='/api/study/consent'){
+          const data=req.method==='POST'?{receipt:threeArmStudy.signConsent(user,auth.account,body),run:threeArmStudy.publicRun(threeArmStudy.get(user))}:threeArmStudy.consentStatus(user);
+          sendJson(res,200,{ok:true,data});return;
+        }
         if(url.pathname==='/api/study/preview/new'&&req.method==='POST'){
           if(body.previousRunId!==user)throw Object.assign(new Error('当前体验轮次已变化，请重新打开'),{status:409});
           sendJson(res,200,{ok:true,data:{run:threeArmStudy.publicRun(threeArmStudy.startCurrentPreview(auth.account,user))}});return;
@@ -5995,7 +6054,8 @@ async function handleApi(req, res, url) {
         }
         if(url.pathname==='/api/study/survey'){
           const stage=String(body.stage||url.searchParams.get('stage')||'');
-          const data=req.method==='POST'?threeArmStudy.submitSurvey(user,stage,body):{items:threeArmStudy.surveyItems(user,stage),saved:threeArmStudy.readRecord(user,'survey',stage)};
+          if(req.method==='POST'&&stage==='final'&&!proactiveAssessmentCompletion(user,'post').ready)throw Object.assign(new Error('请先完成后测'),{status:409});
+          const data=req.method==='POST'?threeArmStudy.submitSurvey(user,stage,body):{run:threeArmStudy.publicRun(threeArmStudy.get(user)),items:threeArmStudy.surveyItems(user,stage),saved:threeArmStudy.readRecord(user,'survey',stage)};
           sendJson(res,200,{ok:true,data});return;
         }
         if(url.pathname==='/api/study/judgment'){
@@ -6019,7 +6079,11 @@ async function handleApi(req, res, url) {
           sendJson(res,200,{ok:true,data:threeArmStudy.review(user,cycles)});return;
         }
         if(url.pathname==='/api/study/review'&&req.method==='POST'){
+          if(body.stage==='final'&&!proactiveAssessmentCompletion(user,'post').ready)throw Object.assign(new Error('请先完成后测，再回顾两阶段学习'),{status:409});
           sendJson(res,200,{ok:true,data:threeArmStudy.completeReview(user,body,cycles)});return;
+        }
+        if(url.pathname==='/api/study/review-pulse'&&req.method==='POST'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.reviewPulse(user,body)});return;
         }
         if(url.pathname==='/api/study/probe'&&req.method==='POST'){
           sendJson(res,200,{ok:true,data:threeArmStudy.answerProbe(user,body,cycles)});return;
@@ -6028,7 +6092,7 @@ async function handleApi(req, res, url) {
           sendJson(res,200,{ok:true,data:threeArmStudy.claimProbe(user,body,cycles)});return;
         }
         sendJson(res,404,{ok:false,message:'实验接口不存在'});
-      }catch(e){sendJson(res,e.status||400,{ok:false,message:e.message});}return;
+      }catch(e){sendJson(res,e.status||400,{ok:false,message:e.message,...(e.code?{code:e.code}:{})});}return;
     }
     if(url.pathname==='/api/learning/entry'&&req.method==='POST'){
       const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
@@ -6158,7 +6222,7 @@ async function handleApi(req, res, url) {
         supportCycles.leaveScene(user,scope,generation,boundedLearningText(body.sceneType,80)||'slide');
         let cycle;
         if(body.action==="report") {
-          if(learnerEnrollment(user)?.experiencePolicy && !body.inquiryId)throw Object.assign(new Error('本次演练由助手主动发起询问，请在当前询问中确认需要。'),{status:409});
+          if(learnerEnrollment(user)?.experiencePolicy && !body.inquiryId)throw Object.assign(new Error('请在知点当前的询问中选择你需要的帮助。'),{status:409});
           if(supportCycles.protects(user,generation))throw Object.assign(new Error("请先完成或跳过独立检查"),{status:409});
           cycle=supportCycles.report(user,scope,generation,{...body,sceneType:body.sceneType||'slide'},profile,revision);
           db.closeOpenProactiveInterventionsForUser({userId:user,experimentId:proactiveStudyConfig.experimentId,
@@ -7836,7 +7900,8 @@ async function handleApi(req, res, url) {
           sendJson(res,409,{ok:false,code:'proactive_check_not_ready',message:'这条帮助已经结束，请返回当前学习内容。'});return;
         }
         const at=nowIso(),next=proactivePolicy.lifecycle.afterStudentResponse({lifecycle:life,interventionId:life.activeInterventionId,respondedAt:at});
-        const check=proactivePolicy.adapterForChapter(chapterId)?.nextVerificationCheck?.(scopeKey,next.supportLevel,life.lastVerificationCheckId,supportCycles.issuedChecks(auth.participant.id,scopeKey,db.currentLearningGeneration(auth.participant.id)));
+        const presentation=parseStoredJson(intervention.presentation||'{}',{});
+        const check=proactivePolicy.adapterForChapter(chapterId)?.nextVerificationCheck?.(scopeKey,next.supportLevel,life.lastVerificationCheckId,supportCycles.issuedChecks(auth.participant.id,scopeKey,db.currentLearningGeneration(auth.participant.id)),presentation.questionId||presentation.questionContext?.questionId||'');
         if(!check){sendJson(res,409,{ok:false,message:'当前没有可用的独立检查。'});return;}
         next.activeVerificationCheckId=check.id;
         db.upsertProactivePolicyState(proactivePolicyStateRecord(policyState,{userId:auth.participant.id,scopeKey,updatedAt:at,lastReasonCode:'student_requested_check',lifecycle:next}));
@@ -7853,7 +7918,7 @@ async function handleApi(req, res, url) {
         sendJson(res, 409, {
           ok: false,
           code: "proactive_verification_not_expected",
-          message: "这道支架后检查已经处理，或当前还没到检查阶段。"
+          message: "这道独立检查已经处理，或当前还没到检查阶段。"
         });
         return;
       }
@@ -7861,7 +7926,7 @@ async function handleApi(req, res, url) {
         sendJson(res, 409, {
           ok: false,
           code: "proactive_verification_stale",
-          message: "这道支架后检查已经更新，请刷新后再作答。"
+          message: "这道独立检查已经更新，请刷新后再作答。"
         });
         return;
       }
@@ -8828,6 +8893,8 @@ async function handleApi(req, res, url) {
         ? String(body.assistantIntent).trim()
         : "";
       const proactiveInterventionId = boundedLearningText(body.proactiveInterventionId, 180);
+      const inputOrigin=['manual_submit','action_button','suggested_draft','programmatic'].includes(body.inputOrigin)?body.inputOrigin:'unrecorded';
+      const inputActionLabel=boundedLearningText(body.inputActionLabel,120);
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const sceneType = String(body.sceneType || "").trim();
@@ -8859,7 +8926,7 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
-      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r(?:7|10|11|12|13)-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
+      if(resolved.isQuiz&&['pre','post'].includes(resolved.unit.phase)&&resolved.unit.quizQuestions.some(q=>/^fl-r\d+-/.test(q.id))){sendJson(res,409,{ok:false,code:'research_test_feedback_withheld',message:'本次研究测验的题目暂不讲解，请回到课程内容学习。研究规定的测量结束后再统一反馈。'});return;}
       // Only a complete, server-recorded pretest opens discussion before setup.
       const completedPretest = resolved.isQuiz && resolved.unit.phase === "pre"
         && resolved.unit.quizQuestions.length > 0
@@ -8925,7 +8992,7 @@ async function handleApi(req, res, url) {
       if(learnerEnrollment(auth.participant.id)?.experiencePolicy && !resolved.isQuiz && !proactiveIntervention && !selectedTextRequest){
         const scope=resolved.unit.knowledgePointId||resolved.unit.id;
         const cycle=supportCycles.current(auth.participant.id,scope,db.currentLearningGeneration(auth.participant.id));
-        if(!cycle?.confirmedAt || !cycle.content){sendJson(res,409,{ok:false,code:'awaiting_agent_support',message:'本次演练由助手先发起支持；确认需要后，可以在这里继续讨论。'});return;}
+        if(!cycle?.confirmedAt || !cycle.content){sendJson(res,409,{ok:false,code:'awaiting_agent_support',message:'本次演练由知点先提供帮助；确认需要后，可以在这里继续讨论。'});return;}
       }
       const proactivePrompt = proactiveIntervention?.assistantPrompt || "";
       if (proactiveIntervention?.action === "review_mistake") {
@@ -9036,7 +9103,10 @@ async function handleApi(req, res, url) {
           ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
       const history = historyRows.map((row) => ({
         role: row.role,
-        content: row.content
+        content: row.content,
+        questionId:parseAssistantContextJson(row.context_json).questionId||'',
+        discussionTarget:parseAssistantContextJson(row.context_json).modelAudit?.contextAudit?.discussionTarget||'',
+        activeCheckId:parseAssistantContextJson(row.context_json).modelAudit?.contextAudit?.activeCheckId||''
       }));
       const askedAt = requestedAt.toISOString();
       const userMessageId = crypto.randomUUID();
@@ -9049,7 +9119,34 @@ async function handleApi(req, res, url) {
           { consume: true }
         );
       }
+      res.writeHead(200, {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Accel-Buffering": "no"
+      });
+      res.flushHeaders?.();
+      writeNdjson(res, {
+        type: "meta",
+        threadKey: resolved.threadKey,
+        conversationId: conversation.id,
+        conversationTurnLimit: assistantConversationTurnLimit,
+        conversationTurns: conversationTurns + 1,
+        userMessageId,
+        contextRef: resolved.contextRef,
+        quizSubmitted,
+        provider: providerInfo,
+        quota
+      });
+      const requestController=new AbortController();
+      const requestStarted=Date.now();let executionStarted=null;
+      const requestEvidence=(status,extra={})=>db.insertEvent({id:crypto.randomUUID(),user_id:auth.participant.id,type:'interaction',created_at:nowIso(),payload:{eventType:status==='started'?'assistant_request_started':'assistant_request_finished',source:'assistant_server',chapterId,unitId,sceneType,data:{requestId:userMessageId,conversationId:conversation.id,questionId:resolved.contextRef?.questionId||'',inputOrigin,inputActionLabel,status,...extra}}});
+      requestEvidence('started');
+      const cancelRequest=()=>{if(!res.writableEnded)requestController.abort();};
+      res.once('close',cancelRequest);
       const generated = await generateAssistantTurn({
+        signal:requestController.signal,
+        onQueue:({position})=>{if(!position)executionStarted??=Date.now();writeNdjson(res,{type:'status',phase:position?'queued':'generating',position,message:position?`知点正在依次回答，你在等待队列中排第 ${position} 位。可以停止等待，继续学习。`:'知点正在组织这一步的解释…'});},
         resolved,
         question,
         history,
@@ -9064,13 +9161,24 @@ async function handleApi(req, res, url) {
           const life=parseStoredJson(independentCheckState?.lifecycle_json||'{}',{});
           const acceptedDecision=life.activeDecisionId&&db.getProactiveDecisionForUser(auth.participant.id,life.activeDecisionId);
           const acceptedHere=life.phase==='accepted_pending_response'&&acceptedDecision?.unit_id===resolved.unit.id&&(acceptedDecision.scene_type||'slide')===(sceneType||'slide');
+          const focusQuestionId=resolved.contextRef?.questionId||'';
+          const recentCheck=agentRuntime.state(auth.participant.id,db.currentLearningGeneration(auth.participant.id)).memory
+            .filter(row=>row.scope===scope&&row.payload?.outcome?.unitId===resolved.unit.id&&(!focusQuestionId||row.payload.outcome.questionId===focusQuestionId))
+            .sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0]?.payload?.outcome;
           return {phase:activeCycle?.status||(acceptedHere?life.phase:'free_question'),
+            lastCompletedCheck:recentCheck?{checkId:recentCheck.checkId,sourceQuestionId:recentCheck.questionId,prompt:recentCheck.prompt,response:recentCheck.responseLabel,correctAnswer:recentCheck.correctLabel,explanation:recentCheck.explanation,status:recentCheck.status}:null,
             scaffoldLevel:activeCycle?.plan?.knowledgeScaffoldLevel||(acceptedHere?life.supportLevel:null),
             preferences:{maximumLevel:profile.maxSupportLevel||null,dose:profile.supportDose||null,format:profile.presentationFormat||null},
             confirmedNeed:activeCycle?{need:activeCycle.need?.need,note:activeCycle.need?.note||''}:null,
             availableActions:['return_to_courseware','continue_conversation']};
         })()
       });
+      res.removeListener('close',cancelRequest);
+      if(requestController.signal.aborted||res.destroyed){
+        requestEvidence('cancelled',{queueMs:(executionStarted||Date.now())-requestStarted,executionMs:executionStarted?Date.now()-executionStarted:0,totalMs:Date.now()-requestStarted});
+        if(quotaReserved)releaseAssistantQuota(auth.participant.id,requestedAt);await db.flush();return;
+      }
+      requestEvidence(generated.fallback?'fallback':'completed',{queueMs:generated.modelAudit?.queueMs??null,executionMs:generated.modelAudit?.executionMs??null,totalMs:Date.now()-requestStarted,requestedModel:generated.modelAudit?.requestedModel||'',reportedModel:generated.modelAudit?.reportedModel||''});
       const countedMock = generated.provider === 'mock' && process.env.LEARNING_ASSISTANT_COUNT_MOCK_USAGE === 'true';
       if ((generated.fallback && !countedMock || ['grounding-guard','conversation-control'].includes(generated.provider)) && quotaReserved) {
         quota = releaseAssistantQuota(auth.participant.id, requestedAt);
@@ -9128,6 +9236,9 @@ async function handleApi(req, res, url) {
         knowledge_point_id: resolved.unit.knowledgePointId || "",
         context: {
           ...resolved.contextRef,
+          requestId:userMessageId,
+          proactiveInterventionId: proactiveIntervention?.id || proactiveInterventionId || '',
+          inputOrigin,inputActionLabel,
           assistantGuidance,
           assistantIntent,
           proactivePrompt,
@@ -9247,25 +9358,6 @@ async function handleApi(req, res, url) {
         });
       }
 
-      res.writeHead(200, {
-        "Content-Type": "application/x-ndjson; charset=utf-8",
-        "Cache-Control": "no-store",
-        "X-Content-Type-Options": "nosniff",
-        "X-Accel-Buffering": "no"
-      });
-      res.flushHeaders?.();
-      writeNdjson(res, {
-        type: "meta",
-        threadKey: resolved.threadKey,
-        conversationId: conversation.id,
-        conversationTurnLimit: assistantConversationTurnLimit,
-        conversationTurns: conversationTurns + 1,
-        userMessageId,
-        contextRef: resolved.contextRef,
-        quizSubmitted,
-        provider: providerInfo,
-        quota
-      });
       for (const delta of learningAssistant.responseChunks(answer)) {
         writeNdjson(res, { type: "delta", delta });
       }
@@ -9275,7 +9367,7 @@ async function handleApi(req, res, url) {
           id: assistantMessageId,
           role: "assistant",
           content: answer,
-          contextRef: resolved.contextRef,
+          contextRef: {...resolved.contextRef,inputOrigin,inputActionLabel,requestId:userMessageId,proactiveInterventionId:proactiveIntervention?.id||proactiveInterventionId||''},
           guidance: assistantGuidance,
           assistantIntent,
           proactivePrompt: "",
@@ -9331,7 +9423,7 @@ async function handleApi(req, res, url) {
       expectedEntries=expectedEntries.filter(entry=>assignedAssessmentEntry(entry,auth.participant.id));
       if(chapterId==='V14-C1'&&['pre','post'].includes(phase)){
         const order=studyRun?.assessmentOrder||'XY',form=order[phase==='pre'?0:1];
-        expectedEntries=expectedEntries.filter(e=>!/^fl-r(?:7|10|11|12|13)-/.test(e.question.id)||e.question.form===form);
+        expectedEntries=expectedEntries.filter(e=>!/^fl-r\d+-/.test(e.question.id)||e.question.form===form);
       }
       if (expectedEntries.some((entry) => entry.assessmentStatus === "archived")) {
         sendJson(res, 409, {
@@ -10319,7 +10411,8 @@ async function handleApi(req, res, url) {
 const batchedAdmissionPaths = new Set([
   '/api/auth/register', '/api/auth/login', '/api/study/state',
   '/api/study/confirm-defaults', '/api/study/survey',
-  '/api/learning/learner-preferences', '/api/learning/quiz/submit'
+  '/api/learning/learner-preferences', '/api/learning/quiz/submit',
+  '/api/learning/snapshot', '/api/learning/events', '/api/learning/assistant/intervention'
 ]);
 const server = http.createServer({ keepAliveTimeout: 130000 }, (req, res) => {
   // Security headers (defense-in-depth)
@@ -10354,7 +10447,7 @@ const server = http.createServer({ keepAliveTimeout: 130000 }, (req, res) => {
 
   if (url.pathname.startsWith("/api/")) {
     const handle = () => handleApi(req, res, url);
-    const response = batchedAdmissionPaths.has(url.pathname) ? db.deferResponseSaves(handle) : handle();
+    const response = batchedAdmissionPaths.has(url.pathname) ? db.deferResponseSaves(handle) : db.withRequestReads(handle);
     response.catch((error) => {
       errorMonitoring.captureException(error);
       console.error("Unhandled API failure:", error);

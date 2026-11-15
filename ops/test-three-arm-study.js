@@ -6,7 +6,7 @@ async function main(){
  const output=path.join(root,'output/三组实验上线验收');fs.mkdirSync(output,{recursive:true});const dir=fs.mkdtempSync(path.join(output,'接口隔离-'));
  let port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});
  let base=`http://127.0.0.1:${port}`;const admin='synthetic-three-arm-admin';
- const env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),ADMIN_TOKEN:admin,LOCAL_ADMIN_AUTH_BYPASS:'false',MAIN_LEARNING_PROTOCOL_FILE:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r2',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:'functions-limits-retention-r4',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',LEARNER_ONBOARDING_REQUIRED:'true',RATE_LIMIT_MAX:'5000'};
+ const env={...process.env,NODE_ENV:'test',THREE_ARM_REVIEW_MIN_SECONDS:'0',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),ADMIN_TOKEN:admin,LOCAL_ADMIN_AUTH_BYPASS:'false',MAIN_LEARNING_PROTOCOL_FILE:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r2',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:'functions-limits-retention-r4',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',LEARNER_ONBOARDING_REQUIRED:'true',RATE_LIMIT_MAX:'5000'};
  const log=fs.openSync(path.join(dir,'server.log'),'w');let server;
  const checks=[];let token='';
  async function api(route,body,arm='',auth=token){const r=await fetch(base+route,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(auth?{Authorization:`Bearer ${auth}`} :{}),...(arm?{'X-Study-Arm':arm}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,...await r.json()};}
@@ -20,7 +20,7 @@ async function main(){
   for(const arm of ['A','B','C']){
    const data=(await api('/api/learning/learner-preferences',null,arm)).data;assert.ok(data,arm+'返回准备状态');ids[arm]=data.study.id;baseline[arm]=data.record.answers;assert.equal(data.preparation.stage,'baseline');assert.equal(data.enabled,false);
    const survey=(await api('/api/study/survey?stage=baseline',null,arm)).data;
-   assert.equal((await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,3]))},arm)).status,200);
+   assert.equal((await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':3]))},arm)).status,200);
    assert.equal((await api('/api/learning/learner-preferences',null,arm)).data.preparation.stage,'pretest');
    const assignedRun=(await api('/api/study/state',null,arm)).data.run,form=assignedRun.assessmentOrder[0];
    const questions=form==='X'?course.flow.preQuiz.questions:course.flow.preQuiz.alternateFormQuestions;
@@ -54,7 +54,7 @@ async function main(){
    for(const p of module.knowledgePoints){const result=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:p.id+'-formative',phase:'formative',answers:p.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))},'C');assert.equal(result.status,200,JSON.stringify(result));}
    if(!module.review)continue;
    assert.equal((await api('/api/learning/learner-preferences',null,'C')).data.enabled,false,'检测完成也要等回顾决策后开放');
-   const decision={stage:module.id,review_understanding:4,review_action:4,decision:'change'};
+   const decision={stage:module.id,review_understanding:4,review_action:4,review_next_focus:'合成回答：先核对左右两侧的趋势',decision:'change'};
    assert.equal((await api('/api/study/review',{...decision,decision:'bypass'},'C')).status,400);
    assert.equal((await api('/api/study/review',decision,'C')).status,200);
    const open=(await api('/api/learning/learner-preferences',null,'C')).data;assert.equal(open.enabled,true);assert.equal(open.configurationWindow.kind,'stage_review_configuration');
@@ -68,13 +68,14 @@ async function main(){
    for(const p of module.knowledgePoints){if(p.id===point.id)continue;const result=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:p.id+'-formative',phase:'formative',answers:p.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))},'B');assert.equal(result.status,200,JSON.stringify(result));}
    if(!module.review)continue;
    const review=(await api('/api/study/review',null,'B')).data;assert.equal(review.pendingStage.id,module.id);
-   const saved=await api('/api/study/review',{stage:module.id,review_understanding:4,review_action:4,decision:'keep',reason:'合成测试：保持并观察下一阶段独立作答'},'B');assert.equal(saved.status,200,JSON.stringify(saved));
+   const saved=await api('/api/study/review',{stage:module.id,review_understanding:4,review_action:4,review_next_focus:'合成回答：先核对左右两侧的趋势',decision:'keep',reason:'合成测试：保持并观察下一阶段独立作答'},'B');assert.equal(saved.status,200,JSON.stringify(saved));
   }
   assert.equal((await api('/api/study/survey',{stage:'final',answers:{}},'B')).status,409);
   const postForm=(await api('/api/study/state',null,'B')).data.run.assessmentOrder[1],postQuestions=registry.forVersion(registry.version).questions('post',postForm);
   assert.equal((await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:course.id+'-post',phase:'post',answers:postQuestions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.type==='multiple'?q.answer:q.answer[0]}))},'B')).status,200);
-  const final=(await api('/api/study/survey?stage=final',null,'B')).data;assert.equal(final.items.length,19);assert.equal((await api('/api/study/survey',{stage:'final',answers:Object.fromEntries(final.items.map(q=>[q.id,4]))},'B')).status,200);
-  assert.equal((await api('/api/study/survey?stage=final',null,'A')).data.items.length,16);
+  const final=(await api('/api/study/survey?stage=final',null,'B')).data;assert.equal(final.items.length,27);assert(final.items.every(q=>!q.scoringGuide));const finalAnswers=Object.fromEntries(final.items.map(q=>[q.id,q.type==='text'?'合成回答':4]));assert.equal((await api('/api/study/survey',{stage:'final',answers:finalAnswers},'B')).status,409,'后测后须先回顾');assert.equal((await api('/api/study/review',{stage:'final'},'B')).status,409,'须先打开回顾');assert.equal((await api('/api/study/review',{stage:'final'},'B')).status,409,'失败的确认不能伪造打开回顾记录');assert.equal((await api('/api/study/review',null,'B')).data.finalReview,true);assert.equal((await api('/api/study/review',{stage:'final'},'B')).status,200);assert.equal((await api('/api/study/review',{stage:'final'},'B')).status,200,'确认回顾可安全重试');assert.equal((await api('/api/study/survey',{stage:'final',answers:Object.fromEntries(final.items.map(q=>[q.id,q.type==='text'?'合成回答':4]))},'B')).status,200);
+  assert.equal((await api('/api/study/survey?stage=final',null,'A')).data.items.length,24);
+  assert.ok(!(await api('/api/study/survey?stage=final',null,'A')).data.items.some(q=>q.id.startsWith('configuration_')),'A组不出现设置体验题');
   const outcomes='/api/learning/proactive/outcomes';
   assert.equal((await api('/api/study/final-feedback',null,'B')).status,409,'独立测量结束前不能读取答案');
   assert.equal((await api(outcomes+'/start',{chapterId:course.id,stageId:'transfer'},'B')).status,409);
@@ -116,7 +117,7 @@ async function main(){
    const recovery=await browser.newPage();let surveyWrites=0;
    await recovery.route('**/api/study/survey',async route=>{if(route.request().method()!=='POST')return route.continue();surveyWrites++;const response=await route.fetch();if(surveyWrites===1)return route.fulfill({status:200,contentType:'application/json',body:''});return route.fulfill({response});});
    await recovery.goto(base+'/?study=A');await recovery.locator('[data-auth-mode=register]').click();await recovery.locator('#nickname').fill('网络恢复合成验收');await recovery.locator('#register-password').fill('synthetic-browser-password');await recovery.locator('#register-password-confirm').fill('synthetic-browser-password');await recovery.locator('#login-submit').click();await recovery.locator('#auth-gate').waitFor({state:'hidden'});
-   await recovery.locator('[data-view=learn]').first().click();await recovery.locator('#three-arm-dialog[open]').waitFor();for(const field of await recovery.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();await recovery.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await recovery.waitForFunction(()=>Boolean(ThreeArmStudyUI.run?.baselineAt));
+   await recovery.locator('[data-view=learn]').first().click();await recovery.locator('#three-arm-dialog[open]').waitFor();await recovery.getByLabel('参与者完整姓名',{exact:true}).fill('合成网络恢复');await recovery.getByLabel('电子签名（再次输入完整姓名）',{exact:true}).fill('合成网络恢复');await recovery.getByLabel('我已年满18周岁',{exact:true}).check();await recovery.getByLabel('我已阅读并理解以上说明，疑问已得到解答，自愿参加，并确认上述姓名作为我的电子签名',{exact:true}).check();await recovery.getByRole('button',{name:'签署并继续',exact:true}).click();await recovery.locator('#three-arm-dialog [data-study-question]').first().waitFor();for(const field of await recovery.locator('#three-arm-dialog [data-study-question]').all()){if(await field.locator('textarea').count())await field.locator('textarea').fill('合成回答');else await field.locator('input[value="3"]').check();};await recovery.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await recovery.waitForFunction(()=>Boolean(ThreeArmStudyUI.run?.baselineAt));
    const recoveredRun=await recovery.evaluate(()=>ThreeArmStudyUI.run.id);const recoveredExport=(await api('/api/admin/three-arm/export',null,'',admin)).data;assert.equal(surveyWrites,2);assert.equal(recoveredExport.records.filter(r=>r.run_id===recoveredRun&&r.kind==='survey'&&r.slot==='baseline').length,1,'响应丢失后的重试不能重复记录问卷');await recovery.close();check('问卷已保存但响应丢失时自动恢复，填写不丢失、记录不重复');
   }finally{await browser.close();}
   assert.equal((await api('/api/study/regulation',null,'B')).data.status,'submitted');
@@ -127,9 +128,10 @@ async function main(){
   assert.equal((await api('/api/admin/three-arm/observation',observation,'B')).status,403);
   for(let i=0;i<2;i++)assert.equal((await api('/api/admin/three-arm/observation',observation,'',admin)).status,200);
   assert.equal((await api('/api/admin/three-arm/export',null,'',admin)).data.records.filter(r=>r.kind==='staff_observation'&&r.slot===observation.requestId).length,1,'主试记录重试不重复');check('逐表导出、字段字典、核查摘要及主试协助记录通过真实管理界面与权限检查');
-  assert.equal((await api('/api/study/enroll',{consent:true},'assigned')).status,409);
+  const consentDocument=(await api('/api/study/enrollment-document',null,'assigned')).data.document;const signedConsent={consent:true,adult:true,participantName:'合成分配测试',signature:'合成分配测试',consentVersion:consentDocument.version,consentHash:consentDocument.hash};
+  assert.equal((await api('/api/study/enroll',signedConsent,'assigned')).status,409);
   assert.equal((await api('/api/admin/three-arm/baseline',{reviewer:'仅合成环境的教师确认',confirmed:true},'',admin)).status,200);
-  const allocated=[];for(let i=0;i<6;i++){const reg=await api('/api/auth/register',{nickname:'合成正式分配'+i,password:'synthetic-test-password'},'','');const formal=await api('/api/study/enroll',{consent:true},'assigned',reg.token);assert.equal(formal.status,200,JSON.stringify(formal));allocated.push(formal.data.arm);assert.equal((await api('/api/study/enroll',{consent:true,arm:'A'},'assigned',reg.token)).data.id,formal.data.id);}
+  const allocated=[];for(let i=0;i<6;i++){const reg=await api('/api/auth/register',{nickname:'合成正式分配'+i,password:'synthetic-test-password'},'','');const formal=await api('/api/study/enroll',signedConsent,'assigned',reg.token);assert.equal(formal.status,200,JSON.stringify(formal));allocated.push(formal.data.arm);assert.equal((await api('/api/study/enroll',{consent:true,arm:'A'},'assigned',reg.token)).data.id,formal.data.id);}
   for(const arm of ['A','B','C'])assert.equal(allocated.filter(x=>x===arm).length,2);check('正式分配区组平衡、同一账号不能自行换组、体验与正式数据分离');
   await stop();await boot();for(const arm of ['A','B','C'])assert.equal((await api('/api/study/state',null,arm)).data.run.id,ids[arm]);check('服务重启后轮次、配置和隔离关系保留');
   fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,checks},null,2));

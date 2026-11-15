@@ -279,7 +279,7 @@
     const checking=eligible&&(next.check||cycle?.status==='awaiting_check');
     const inquiry=eligible&&cycle?.status==='awaiting_confirmation'&&!global.SupportCycleUI?.deferInquiry(cycle);
     const support=eligible&&!checking&&(next.offer||next.prompt||['offered','engaged'].includes(cycle?.status));
-    const label=checking?'继续独立检查':inquiry?'智能体老师想帮你':support?'查看老师的帮助':'';
+    const label=checking?'继续独立检查':inquiry?'知点想帮你':support?'查看知点的帮助':'';
     if(supportNotice.textContent!==label){supportNotice.textContent=label;noticeStatus.textContent=label;}
     const full=document.fullscreenElement||document.querySelector('.is-local-fullscreen-target');
     if(full&&full!==document.documentElement&&!full.contains(supportNotice)&&label){
@@ -287,7 +287,7 @@
       if(fullscreenSupportNotice.parentElement!==full)full.append(fullscreenSupportNotice);
       fullscreenSupportNotice.textContent=label;fullscreenSupportNotice.hidden=false;
     }else if(fullscreenSupportNotice){fullscreenSupportNotice.remove();}
-    const helpId=label&&(cycle?.id||next.offer?.id||next.prompt?.id);
+    const helpId=label&&`${next.unitId}:${checking?'check:'+ (next.check?.id||cycle?.check?.id):cycle?.id||next.offer?.id||next.prompt?.id}`;
     if(helpId&&helpId!==announcedHelp&&!global.SupportCycleUI?.interactionBusy){
       announcedHelp=helpId;
       if(next.view.placement==='sidebar'&&!compactWorkspace()){setToolsCollapsed(false,false,false);selectTab('chat');}
@@ -328,7 +328,7 @@
     shell.classList.toggle("tools-collapsed", toolsCollapsed);
     const button = $("#workspace-tools-toggle");
     button.setAttribute("aria-expanded", String(!toolsCollapsed));
-    button.title = toolsCollapsed ? "展开学习助手" : "收起学习助手";
+    button.title = toolsCollapsed ? "展开知点" : "收起知点";
     button.setAttribute("aria-label", button.title);
     button.querySelector("img").src = `assets/classroom-icons/PanelRight${toolsCollapsed ? "Open" : "Close"}.svg`;
     updateToolsIndicator();
@@ -510,6 +510,26 @@
       || pane.querySelector('[data-slide-action="next"]') || null;
   }
 
+  function lectureReadiness(unit=typeof getUnit==='function'?getUnit():null) {
+    if(!global.StudyEntry||global.OperationGuide?.active||unit?.type!=='knowledge')return {ready:true};
+    const pages=unit.scene?.content?.knowledgePoint?.slide?.pages||[];
+    const version=unit.scene?.content?.knowledgePoint?.slide?.lectureVersion||'lecture';
+    const generation=typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:0;
+    state.analytics ||= {};state.analytics.interactionEvidence ||= {};
+    const bucket=state.analytics.interactionEvidence[unit.id] ||= {unitId:unit.id};
+    let seen=bucket.lecturePagesSeen;
+    if(seen?.version!==version||seen?.generation!==generation)seen=bucket.lecturePagesSeen={version,generation,pages:[]};
+    const host=$('.multi-scene-slide-panel [data-openmaic-page]');
+    const page=Number(host?.dataset.openmaicPage||0);
+    if(canvasMode==='slide'&&host?.getClientRects().length&&['ready','fallback'].includes(host.dataset.openmaicState)
+      && page>0&&!seen.pages.includes(page)){
+      seen.pages.push(page);if(typeof saveState==='function')saveState();
+    }
+    const ready=pages.length<=1||seen.pages.length>=pages.length
+      ||(state.completed||[]).includes(unit.id);
+    return {ready,seen:seen.pages.length,total:pages.length};
+  }
+
   function knowledgePrimaryAction(unit = typeof getUnit === 'function' ? getUnit() : null) {
     if (!global.StudyEntry || unit?.chapterId !== 'V14-C1' || unit.type !== 'knowledge') return null;
     if (independentCheckActive()) return { kind: 'independent_check', label: '先完成独立检查', disabled: true };
@@ -552,6 +572,9 @@
   }
 
   function syncKnowledgePrimaryAction() {
+    const lecture=lectureReadiness();
+    const interactionTab=$('[data-workspace-canvas="interactive"]');
+    if(interactionTab){interactionTab.setAttribute('aria-disabled',String(!lecture.ready));interactionTab.title=lecture.ready?'进入互动探索':`先阅读讲解页（已查看 ${lecture.seen}/${lecture.total} 页），再进入互动探索。`;}
     const unit = typeof getUnit === 'function' ? getUnit() : null;
     const action = knowledgePrimaryAction(unit);
     const key = JSON.stringify([unit?.id, action]);
@@ -738,7 +761,7 @@
     if (!snapshot) return;
     $("#workspace-current-task").textContent = snapshot.unitLabel || "等待课程加载";
     $("#workspace-assistant-state").textContent = snapshot.locked
-      ? "独立作答中 · 学习助手暂停"
+      ? "独立作答中 · 知点暂停"
       : snapshot.signedIn ? "你可以继续探索，需要时再来提问" : "登录后继续学习";
     $("#workspace-note-new").disabled = snapshot.locked || !snapshot.signedIn || !snapshot.unitId;
     if (tab === "notes") {
@@ -818,6 +841,13 @@
   }
 
   function setCanvasMode(mode) {
+    if(mode==='interactive'&&!lectureReadiness().ready){
+      const tab=$('[data-workspace-canvas="interactive"]');
+      let note=$('#lecture-order-note');
+      if(!note){note=document.createElement('p');note.id='lecture-order-note';note.className='workspace-lecture-order-note';note.setAttribute('role','status');$('.workspace-header-controls')?.append(note);}
+      note.textContent=tab?.title||'先阅读讲解页，再进入互动探索。';
+      mode='slide';
+    }else $('#lecture-order-note')?.remove();
     const changed = mode !== shell.dataset.classroomSurface;
     if (mode !== canvasMode && typeof pauseNarrationQueue === "function") pauseNarrationQueue();
     canvasMode = mode;
@@ -913,7 +943,7 @@
         readingButton.textContent=overview?'放大阅读课件':'查看课件整页';readingButton.setAttribute('aria-pressed',String(overview));
       });headerControls.append(readingButton);
       const slidePane=player.querySelector('.multi-scene-slide-panel');
-      const readingNote=textElement('p','课件已放大，可左右滚动阅读；也可以横屏学习。','workspace-reading-note');
+      const readingNote=textElement('p','课件已放大，可左右滚动阅读；点击“查看课件整页”可看全图。','workspace-reading-note');
       slidePane.prepend(readingNote);
       const readingStage=slidePane.querySelector('[data-resource-fullscreen-target]');
       if(readingStage){readingStage.tabIndex=0;readingStage.setAttribute('aria-label','课件阅读区，可用方向键滚动');}
@@ -1031,7 +1061,12 @@
       setToolsCollapsed(false);
       selectTab("chat");
       if (compactWorkspace()) setMobilePane("assistant");
-    } else if (event.detail?.open === false && !compactWorkspace()) setToolsCollapsed(true, true);
+    } else if (event.detail?.open === false && !compactWorkspace()) {
+      const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();
+      if(event.detail.preserveSupport || s?.check || s?.supportCycle?.status==='awaiting_check'){
+        if(s?.view.placement==='sidebar'){setToolsCollapsed(false,false,false);selectTab('chat');}
+      }else setToolsCollapsed(true, true);
+    }
   });
   shell.addEventListener("click", (event) => {
     if (event.target.closest("[data-unit], [data-jump-unit]") && compactWorkspace()) {

@@ -5,17 +5,17 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.join(__dirname, "..");
-const dirs = [
-  path.join(root, "resources", "open-maic", "GH-01-新课件v2", "interactive"),
-  path.join(root, "resources", "open-maic", "GH-02-新课件v2", "interactive")
-];
+const assert=require('node:assert/strict');
+const resources=require('../data/multi-scene-learning-route.json').chapters.find(c=>c.id==='V14-C1')
+  .modules.flatMap(m=>m.knowledgePoints).flatMap(p=>p.resourceCandidates.filter(c=>c.type!=='slide'));
+assert.equal(resources.length,24);
 
 let scriptCount = 0;
 let syntaxErrors = 0;
 const rows = [];
 
-for (const dir of dirs) {
-  for (const name of fs.readdirSync(dir).sort()) {
+  for (const resource of resources) {
+    const dir=path.join(root,'resources',resource.root),name=resource.file;
     const html = fs.readFileSync(path.join(dir, name), "utf8");
     for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
       const type = (/\btype\s*=\s*["']([^"']+)["']/i.exec(match[1] || "") || [])[1] || "";
@@ -30,9 +30,7 @@ for (const dir of dirs) {
       }
     }
 
-    const widgetType = (/"widgetType"\s*:\s*"([^"]+)"/.exec(html) || [])[1]
-      || (/"scene_type"\s*:\s*"([^"]+)"/.exec(html) || [])[1]
-      || "?";
+    const widgetType = resource.type;
     const markers = [];
     if (html.includes("functions-limits-visible-container")) markers.push("visible-container");
     if (html.includes("cq-attempt-submitted")) markers.push("attempt-submitted");
@@ -41,18 +39,16 @@ for (const dir of dirs) {
     if (html.includes("openmaic-storage-shim-v2")) markers.push("storage-shim");
     if (html.includes("openmaic-audit-repair-shim-v5")) markers.push("audit-repair");
     if (html.includes("openmaic-courseware-layout-runtime-v52")) markers.push("layout-runtime");
+    if (html.includes('maic_learning_event')&&html.includes('challenge_result')) markers.push('learning-result');
+    if (html.includes('CQNativeProgress')) markers.push('native-progress');
+    if (html.includes('CQSimulationProgress')) markers.push('simulation-progress');
 
-    const expected = ["contract", "storage-shim", "audit-repair", "layout-runtime"];
-    if (widgetType === "visualization3d") expected.push("visible-container");
-    if (widgetType === "simulation" || widgetType === "mindMap" || widgetType === "diagram") {
-      expected.push("attempt-submitted");
-    }
-    if (widgetType === "game") expected.push("challenge-result");
+    const expected = ["contract", "learning-result", "native-progress"];
+    if(widgetType==='simulation')expected.push('simulation-progress');
     const missing = expected.filter((marker) => !markers.includes(marker));
 
     rows.push({ name, widgetType, markers, missing });
   }
-}
 
 console.log(`\norder | widget          | markers                                        | missing`);
 for (const row of rows) {

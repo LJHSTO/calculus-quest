@@ -17,8 +17,9 @@ assert.doesNotMatch(core, /localStorage\.setItem\(AUTH_TOKEN_KEY/);
 assert.match(core, /sessionStorage\.setItem\(AUTH_TOKEN_KEY/);
 assert.match(core, /delete persisted\.authToken/);
 assert.doesNotMatch(renderer, /sandbox="[^"]*allow-same-origin/);
-assert.match(analytics, /event\.source/);
-assert.match(analytics, /contentWindow === event\.source/);
+// The iframe event receiver now lives with the learning renderer.
+assert.match(renderer, /event\.source/);
+assert.match(renderer, /contentWindow === event\.source/);
 assert.match(core, /CourseContentSecurity\.sanitizeRichHtml/);
 
 console.log("client content security tests passed");

@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict');
+async function main(){
+ const SQL=await require('sql.js')(),sql=new SQL.Database();let time=Date.parse('2026-11-12T10:00:00Z');
+ const results=[],db={getDbSync:()=>sql,saveNow(){},upsertUser(){},currentLearningGeneration:()=>1,getQuizResultsByUser:()=>results};
+ sql.run('CREATE TABLE events(id TEXT PRIMARY KEY,user_id TEXT,type TEXT,payload TEXT,created_at TEXT)');
+ const preferences=require('../lib/learner-preferences').createStore({db}),store=require('../lib/three-arm-study').createStore({db,preferences,clock:()=>time});
+ const run=store.resolve({id:'synthetic-observation'},'B'),stage=require('../app/shared/study-stages').reviews[0];
+ for(const id of stage.points)for(let i=0;i<2;i++)results.push({id:id+i,unit_id:id+'-formative',question_id:'fl-r13-formative-synthetic-'+i,phase:'formative',is_correct:1,created_at:new Date(time).toISOString()});
+ assert.equal(store.review(run.id).reviewWindow.remainingSeconds,180);
+ time+=200000;assert.equal(store.review(run.id).reviewWindow.remainingSeconds,180,'离开页面不会自动完成');
+ const pulse=(visible=true,sessionId='synthetic-tab-one')=>store.reviewPulse(run.id,{stage:stage.id,sessionId,visible});
+ pulse();time+=5000;assert.equal(pulse().visibleSeconds,5);
+ time+=1000;assert.equal(pulse(false).visibleSeconds,6);
+ time+=100000;assert.equal(pulse(false).visibleSeconds,6,'隐藏页面不累积');
+ pulse();time+=60000;assert.equal(pulse().visibleSeconds,6,'网络中断或休眠不累积');
+ time+=5000;assert.equal(pulse(true,'synthetic-tab-two').visibleSeconds,6,'另一标签页不能重复累积');
+ time+=5000;assert.equal(pulse(true,'synthetic-tab-two').visibleSeconds,11);
+ assert.equal(store.review(run.id).reviewWindow.remainingSeconds,169);
+ assert.throws(()=>store.reviewPulse(run.id,{stage:'missing',sessionId:'synthetic-tab',visible:true}),/不可计时/);
+ const cycle={id:'synthetic-closed-help',scope:stage.points[0],sceneType:'game',status:'closed',exposure:{at:new Date(time).toISOString()},content:{},createdAt:new Date(time).toISOString()};
+ const first=store.claimProbe(run.id,{id:cycle.id},[cycle]);assert.equal(first.claimed,true);assert.equal(first.resumed,false);
+ const again=store.claimProbe(run.id,{id:cycle.id},[]);assert.equal(again.claimed,true);assert.equal(again.resumed,true);
+ assert.throws(()=>store.answerProbe(run.id,{id:cycle.id,usefulness:null,timing:3,disruption:3},[]),/三项评分/);
+ store.answerProbe(run.id,{id:cycle.id,usefulness:4,timing:3,disruption:2},[]);
+ assert.equal(store.probe(run.id,[]),null);assert.equal(store.claimProbe(run.id,{id:cycle.id},[]).claimed,false);
+ assert.equal(sql.exec("SELECT count(*) FROM three_arm_records WHERE kind='probe_display'")[0].values[0][0],1);
+ console.log('通过：可见回顾累积、关闭/后台/断网/跨标签页不误计；一次性体验反馈刷新恢复和完整性校验。');
+ sql.close();
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

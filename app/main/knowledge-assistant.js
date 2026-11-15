@@ -97,6 +97,15 @@
       markProactiveSuggestionShown(receipt.suggestion, receipt);
     }
   });
+  const answerExposureMonitor = global.ProactiveExposure?.createMonitor({
+    onQualified(receipt) {
+      track('knowledge_answer_visible', {messageId:receipt.messageId,questionId:receipt.questionId,
+        requestId:receipt.requestId,proactiveInterventionId:receipt.proactiveInterventionId,
+        qualifiedVisible:true,exposureKind:'answer_beginning',fraction:receipt.fraction,
+        visibleDurationMs:receipt.visibleDurationMs,minimumFraction:receipt.minimumFraction,
+        minimumDurationMs:receipt.minimumDurationMs});
+    }
+  });
   let proactiveTickTimer = null;
   let proactiveDecision = null;
   let proactiveReading = { key:"", shown:1, expanded:null };
@@ -177,7 +186,7 @@
   function acknowledgeCheckFeedback(id) {
     try{localStorage.setItem(feedbackStorageKey(id),'1');}catch{}
     if(proactiveCheckFeedback && `${proactiveCheckFeedback.checkId}:${proactiveCheckFeedback.at||''}`===id)proactiveCheckFeedback=null;
-    global.TaskSupport?.leaveConversation();render();
+    global.TaskSupport?.leaveConversation();pendingProactivePrompt=null;setOpen(false,{focus:false});render();
   }
   function pendingIndependentCheck() {
     if(!isSignedInNow()||global.FirstSessionBudget?.closed)return null;
@@ -210,7 +219,7 @@
       generation: exposureGeneration,
       learningGeneration: typeof learningSnapshotGeneration==='number'?learningSnapshotGeneration:exposureGeneration,
       runId: global.ThreeArmStudyUI?.run?.id || "",
-      taskMessages: messages.map(({id,role,content,error,streaming,contextRef,guidance,quizReviewFollowUp,assistantIntent})=>({id,role,content,error:Boolean(error),streaming:Boolean(streaming),contextRef,guidance,quizReviewFollowUp,assistantIntent})),
+      taskMessages: messages.map(({id,role,content,error,streaming,streamingStatus,contextRef,guidance,quizReviewFollowUp,assistantIntent})=>({id,role,content,streamingStatus,error:Boolean(error),streaming:Boolean(streaming),contextRef,guidance,quizReviewFollowUp,assistantIntent})),
       checkHistory: eligible ? checkFeedbackHistory(meta) : [],
       taskError: taskRequestError?.unitId===meta.unitId&&taskRequestError.sceneType===(meta.sceneType||'slide')?taskRequestError.message:'',
       reply: messages.filter(message=>message.role==="assistant"&&!message.error).slice(-1).map(message=>({id:message.id,text:message.content||"",streaming:message.streaming===true}))[0]||null,
@@ -235,6 +244,8 @@
         ? { ...pendingProactivePrompt } : null,
       feedback: eligible ? currentCheckFeedback(meta) : null,
       busy: Boolean(global.FirstSessionBudget?.closed) || proactiveChoiceSaving || proactiveCheckSubmitting || isAsking,
+      responsePending: Boolean(activeRequest),
+      responseStatus: activeRequest ? messages.filter(message=>message.role==='assistant'&&message.streaming).at(-1)?.streamingStatus || '' : '',
       providerLabel: provider.live ? "AI 助教" : "模拟回复",
       assistantOpen: isOpen
     };
@@ -463,7 +474,7 @@ const proactiveJustificationDrafts = new Map();
         </div>
         <div class="knowledge-composer-meta">
           <small data-knowledge-status>回答会参考当前知识点与已聚焦的课件内容。</small>
-          <span data-knowledge-quota>今日还可提问 30 次</span>
+          <span data-knowledge-quota>正在读取今日可提问次数</span>
         </div>
       </form>
     </section>
@@ -479,7 +490,7 @@ const proactiveJustificationDrafts = new Map();
         </header>
         <div class="knowledge-outcomes-intro">
           <strong>请独立完成</strong>
-          <p data-outcome-policy>作答期间暂停学习助手和路径建议。提交后可以回看作答和结果。</p>
+          <p data-outcome-policy>作答期间暂停知点和路径建议。提交后可以回看作答和结果。</p>
         </div>
         <div class="knowledge-outcomes-content" data-knowledge-outcomes-content></div>
         <p class="knowledge-outcomes-status" data-knowledge-outcomes-status role="status"></p>
@@ -2001,8 +2012,8 @@ const proactiveJustificationDrafts = new Map();
     els.outcomes.querySelector("#knowledge-outcomes-title").textContent = retentionOnly
       ? "保持测量" : "迁移与保持任务";
     els.outcomes.querySelector("[data-outcome-policy]").textContent = retentionOnly
-      ? "作答期间暂停学习助手和路径建议。提交后可以回看作答和结果。"
-      : "开始后会暂停学习助手和路径建议。提交后可回看自己的作答；全部阶段完成后统一显示对错、答案和总分。";
+      ? "作答期间暂停知点和路径建议。提交后可以回看作答和结果。"
+      : "开始后会暂停知点和路径建议。提交后可回看自己的作答；全部阶段完成后统一显示对错、答案和总分。";
     els.outcomesClose.disabled = proactiveOutcomesSubmitting
       || proactiveOutcomeDraftSaving
       || proactiveOutcomeWithdrawing;
@@ -2249,7 +2260,18 @@ const proactiveJustificationDrafts = new Map();
       return proactiveStudy;
     }
 
-    if(proactiveStudyInFlight?.key===key&&proactiveStudyInFlight.token===token&&proactiveStudyInFlight.generation===generation)return proactiveStudyInFlight.promise;
+    if(proactiveStudyInFlight?.key===key&&proactiveStudyInFlight.token===token&&proactiveStudyInFlight.generation===generation){
+      const pending=proactiveStudyInFlight;
+      if(options.force!==true)return pending.promise;
+      // A write may have completed while this earlier read was in flight. A
+      // forced refresh must read again after it, otherwise starting a check can
+      // succeed on the server but leave the learner looking at the old actions.
+      pending.refreshPromise ||= pending.promise.then(()=>{
+        if(token!==state.authToken||generation!==exposureGeneration)return proactiveStudy;
+        return loadProactiveStudy(meta,{...options,force:true});
+      });
+      return pending.refreshPromise;
+    }
     if(proactiveStudyRetry?.key===key&&proactiveStudyRetry.token===token&&proactiveStudyRetry.generation===generation&&Date.now()<proactiveStudyRetry.until)return proactiveStudy;
     const flight={key,token,generation,promise:null};proactiveStudyInFlight=flight;
     flight.promise=(async()=>{
@@ -2751,6 +2773,7 @@ const proactiveJustificationDrafts = new Map();
       proactiveJustificationDrafts.clear();
       proactiveJustificationOpen = false;
       proactiveExposureMonitor?.clear({ forget: true });
+      answerExposureMonitor?.clear({ forget: true });
     }
     return nextOwnerKey;
   }
@@ -3096,6 +3119,13 @@ const proactiveJustificationDrafts = new Map();
     }
     activeWorkspace = "chat";
     if (expectsStudentReply) {
+      // An earlier automatic history read must not erase newly accepted help.
+      historyRequestId++;conversationListRequestId++;
+      loadingHistory=false;loadingConversations=false;
+      if(meta.isQuiz && suggestion.questionId){
+        activeContext=Core.normalizeContextRef({kind:'quiz',scope:'quiz',chapterId:meta.chapterId,unitId:meta.unitId,questionId:suggestion.questionId},meta);
+        if(!conversations.some(c=>c.id===activeConversationId&&c.unitId===meta.unitId))activeConversationId='';
+      }
       pendingAssistantIntent = "";
       pendingGeneratedDraft = "";
       pendingProactivePrompt = {
@@ -3130,6 +3160,7 @@ const proactiveJustificationDrafts = new Map();
     resizeComposer();
     if (supportView.placement !== "inline") setOpen(true, { focus: false, preserveProactiveSuggestion: true });
     render();
+    if(expectsStudentReply)global.TaskSupport?.openConversation?.(suggestion.questionId||'');
     if (supportView.placement !== "inline") window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
     return true;
   }
@@ -3173,6 +3204,13 @@ const proactiveJustificationDrafts = new Map();
     proactiveCandidateId = "";
     resetProactiveJustification();
     render();
+    if(suggestion.followupConfirmationRequired){
+      const owner=state.authToken,unitId=courseMeta().unitId;
+      proactiveResolutionChain.then(()=>{
+        if(owner!==state.authToken||unitId!==courseMeta().unitId||isAsking)return;
+        return global.KnowledgeAssistant.askInTask('刚才的独立检查我还没有弄懂。请根据我选错的地方，用一个具体的小步骤解释为什么，并留下一个我能回答的小问题，不要重复刚才的提示。',suggestion.questionId||suggestion.questionContext?.questionId||'',{inputOrigin:'action_button',inputActionLabel:'还没弄懂，继续讲解'});
+      });
+    }
     track("knowledge_proactive_suggestion_accepted", {
       suggestionId: suggestion.id,
       decisionId: suggestion.decisionId || "",
@@ -3313,6 +3351,8 @@ const proactiveJustificationDrafts = new Map();
       || global.SupportCycleUI?.interactionBusy
     ) return false;
     if (proactiveCandidateId === candidate.id && (proactiveDecision || proactiveDecisionRequest)) return true;
+    if (proactiveDecision?.serverIssued && proactiveDecision.unitId===meta.unitId
+      && (!proactiveDecision.sceneType || proactiveDecision.sceneType===(meta.sceneType||'slide'))) return true;
     proactiveDecisionRequest?.abort();
     const controller = new AbortController();
     proactiveDecisionRequest = controller;
@@ -3540,6 +3580,12 @@ const proactiveJustificationDrafts = new Map();
     proactiveCoach.consume(signal);
     const resolution = proactiveCoach.takeResolution?.();
     if (resolution?.resolution === "ignore") {
+      // Continuing a courseware operation is not declining an on-screen offer.
+      // Context changes and explicit dismissals still end it through their own paths.
+      if(presented?.serverIssued && presented.unitId===meta.unitId
+        && (!presented.sceneType || presented.sceneType===(meta.sceneType||'slide'))){
+        renderProactiveSuggestion();return;
+      }
       if (presented?.serverIssued) {
         queueProactiveResolution(presented, "ignored");
       }
@@ -3643,8 +3689,10 @@ const proactiveJustificationDrafts = new Map();
       renderLauncherAvailability();
       return false;
     }
-    if (nextOpen && !wasOpen && options.preserveProactiveSuggestion !== true) {
-      if (!dismissProactiveSuggestion("assistant-open")) {
+    // Opening the conversation is navigation, not a refusal of the current
+    // help. Keep the task-side offer and its exposure/response history intact.
+    if (nextOpen && !wasOpen) {
+      if (!proactiveDecision) {
         const meta = courseMeta();
         proactiveCoach?.consume?.({
           eventType: "assistant_open",
@@ -3654,7 +3702,7 @@ const proactiveJustificationDrafts = new Map();
         }, Date.now());
       }
     }
-    if (!nextOpen && wasOpen) {
+    if (!nextOpen && wasOpen && !proactiveDecision) {
       const meta = courseMeta();
       proactiveCoach?.consume?.({
         eventType: "assistant_close",
@@ -3675,7 +3723,7 @@ const proactiveJustificationDrafts = new Map();
       localStorage.setItem(OPEN_STORAGE_KEY, isOpen ? "1" : "0");
     } catch {}
     global.dispatchEvent(new CustomEvent("cq:knowledge-assistant-visibility", {
-      detail: { open: isOpen }
+      detail: { open: isOpen, preserveSupport: options.preserveSupport === true }
     }));
     if (isOpen) window.requestAnimationFrame(applyPanelPosition);
     if (
@@ -4199,10 +4247,10 @@ const proactiveJustificationDrafts = new Map();
   function quizQuestionContextNode(context) {
     if(!context?.questionId||!courseMeta().quizSubmitted)return null;
     const section=document.createElement('section');section.className='support-question-context';
-    const title=document.createElement('strong');title.textContent=`这次先看本次检测第 ${context.position} 题`;
+    const title=document.createElement('strong');title.textContent=`正在讲解：本次检测第 ${context.position} 题`;
     const question=document.createElement('p');setQuestionMathContent(question,context.question||'');
     const response=document.createElement('p');setQuestionMathContent(response,'你提交的回答：'+(context.studentResponse||'未作答'));
-    const locate=document.createElement('button');locate.type='button';locate.textContent='定位到这道题';
+    const locate=document.createElement('button');locate.type='button';locate.className='support-question-locate';locate.textContent='定位到这道题';
     locate.onclick=()=>{const card=[...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===context.questionId);if(card){card.tabIndex=-1;card.scrollIntoView({block:'start'});card.focus({preventScroll:true});}};
     section.append(title,question,response,locate);return section;
   }
@@ -4233,7 +4281,7 @@ const proactiveJustificationDrafts = new Map();
       replyOptions.className = "knowledge-proactive-reply-options";
       replyOptions.setAttribute("aria-label", "选择一个回答起点");
       const optionsHint = document.createElement("span");
-      optionsHint.textContent = "选一个最接近的情况，仅放入输入框";
+      optionsHint.textContent = "点击发送你的想法；也可以在下面自己写";
       replyOptions.appendChild(optionsHint);
       prompt.replyOptions.slice(0, 4).forEach((item) => {
         const option = String(item || "").trim();
@@ -4241,12 +4289,10 @@ const proactiveJustificationDrafts = new Map();
         const button = document.createElement("button");
         button.type = "button";
         setQuestionMathContent(button, option);
-        button.addEventListener("click", () => {
-          els.input.value = option;
-          pendingGeneratedDraft = option;
-          resizeComposer();
-          setStatus("已放入输入框，你可以补充后再决定是否发送。", "");
-          els.input.focus({ preventScroll: true });
+        button.disabled=isAsking;
+        button.addEventListener("click", async () => {
+          button.disabled=true;
+          await global.KnowledgeAssistant.askInTask(option,prompt.questionId||'',{inputOrigin:'action_button',inputActionLabel:option});
           track("knowledge_proactive_reply_option_selected", {
             action: prompt?.action || "",
             option
@@ -4303,12 +4349,12 @@ const proactiveJustificationDrafts = new Map();
     const heading = document.createElement("div");
     const label = document.createElement("strong");
     const resultStatus=feedback.status || (feedback.tone==='success'?'correct':feedback.tone==='warning'?'incorrect':'');
-    label.textContent = ({correct:'回答正确',incorrect:'回答错误',skipped:'已跳过本次检查',declined:'已跳过本次检查'})[resultStatus] || feedback.title || "本轮支架状态";
+    label.textContent = ({correct:'这道检查题答对了',incorrect:'这道检查题还需要再看看',skipped:'已跳过本次检查',declined:'已跳过本次检查'})[resultStatus] || feedback.title || "本次帮助";
     heading.className='support-check-verdict';
     article.dataset.checkResult=resultStatus;
     heading.appendChild(label);
     const body = document.createElement("p");
-    setQuestionMathContent(body, feedback.text || "");
+    setQuestionMathContent(body, resultStatus==='incorrect'?'先对照下面的解释看哪里不同，再选择继续讲解、看下一题或返回课程。':resultStatus==='correct'?'你已完成这道检查题，可以继续看下一题或返回课程。':feedback.text || "");
     article.append(heading, body);
     article.setAttribute('role','status');
     const details=document.createElement('dl');details.className='support-check-details';
@@ -4319,8 +4365,8 @@ const proactiveJustificationDrafts = new Map();
     if(details.childNodes.length)article.append(details);
     if(!history && feedback.tone!=='error'){
       const note=document.createElement('p');note.textContent=feedback.status==='incorrect'||feedback.tone==='warning'
-        ?'这道独立检查的首次回答已保存。若你选择继续帮助，后面会换一道练习题；新题不会改写这次结果，也不要求答对才能继续课程。'
-        :'这只是本次练习的结果，不代表整个知识点已经掌握。';article.append(note);
+        ?'本次回答已保存。你可以继续学习，也可以再请知点解释。'
+        :'本次回答已保存。';article.append(note);
       if(feedback.questionId){const cards=[...document.querySelectorAll('.question-card[data-question]')],index=cards.findIndex(c=>c.dataset.question===feedback.questionId);if(index>=0){const context=document.createElement('p');context.textContent=`这是针对本次检测第 ${index+1} 题提供帮助后的独立练习，不改变原题的提交结果。`;article.append(context);}}
       const review=otherFormativeReviewNode(feedback.questionId);if(review)article.append(review);
     }
@@ -4342,12 +4388,28 @@ const proactiveJustificationDrafts = new Map();
     const records=new Map(quizRecordsForUnit(meta.unitId).map(r=>[r.questionId,r]));
     const questions=(unit.quizQuestions||unit.scene?.content?.questions||unit.questions||[]).filter(q=>q.id!==excludeId&&records.get(q.id)?.isCorrect===false);
     if(!questions.length)return null;
-    const section=document.createElement('details');section.className='support-other-questions';
-    const title=document.createElement('summary');title.textContent='本次检测的其他错题（自主选择）';section.append(title);
-    const hint=document.createElement('p');hint.textContent='知点每次集中讲一个关键关系。其他错题不会被记作已解决，你可以选择继续复盘。';section.append(hint);
+    const section=document.createElement('section');section.className='support-other-questions';
+    const title=document.createElement('h4');title.textContent='接下来，看看其他错题';section.append(title);
+    const hint=document.createElement('p');hint.textContent='点击题号，查看那道题的原题、你的回答和知点的讲解。';section.append(hint);
     for(const q of questions){const button=document.createElement('button');button.type='button';button.textContent=`请知点讲第 ${(unit.quizQuestions||unit.scene?.content?.questions||unit.questions).findIndex(item=>item.id===q.id)+1} 题`;
       button.disabled=proactiveCheckSubmitting||isAsking;button.onclick=()=>global.KnowledgeAssistant.askInTask('请带我检查这道题的关键关系，先给一个简短线索。',q.id);section.append(button);}
     return section;
+  }
+
+  function proactiveOfferReasoning(suggestion) {
+    if(!global.SupportCycleUI?.reasoningDetails||!suggestion?.decisionId)return null;
+    const depth={L1:'先帮你理清思路',L2:'先给一个线索',L3:'分成几个小步骤',L4:'带你做下一步',L5:'先看一个局部例子'}[suggestion.supportLevel];
+    // `why` is written for researchers (adapter rationale); learners see the
+    // observable trigger instead, and the raw text is kept in the view log.
+    const position=suggestion.questionContext?.position;
+    const lines=[
+      position?`依据：本次检测第 ${position} 题已批改，你的回答与参考答案不一致。`:'依据：你刚才的操作或作答里有一处可能需要再看看。',
+      position?'时机：在你提交检测之后出现，没有打断作答。':'时机：在你完成当前这一步之后出现。',
+      depth?`帮助程度：${depth}，来自当前的帮助设置。`:null,
+      suggestion.followupConfirmationRequired?'接下来：只有你选择“我还需要”才会补充一次。':'接下来：接不接受由你决定；不回应不会被当作同意。'
+    ];
+    return global.SupportCycleUI.reasoningDetails({key:`${state.participant?.participantId||''}:${suggestion.decisionId}:task_offer`,lines,
+      context:{surface:'task_offer',decisionId:suggestion.decisionId,unitId:suggestion.unitId||'',questionId:suggestion.questionContext?.questionId||suggestion.questionId||null,supportLevel:suggestion.supportLevel||null,kind:suggestion.kind||null,agentWhy:String(suggestion.why||'').slice(0,200)}});
   }
 
   function proactiveInlineOfferNode(suggestion, { recordShown = true } = {}) {
@@ -4357,11 +4419,11 @@ const proactiveJustificationDrafts = new Map();
     const heading = document.createElement("div");
     const label = document.createElement("strong");
     label.textContent = {
-      L1: "老师帮你理清思路",
-      L2: "老师给你一个提示",
-      L3: "老师带你分步思考",
-      L4: "老师带你做下一步",
-      L5: "老师给你一个例子"
+      L1: "知点帮你理清思路",
+      L2: "知点给你一个提示",
+      L3: "知点带你分步思考",
+      L4: "知点带你做下一步",
+      L5: "知点给你一个例子"
     }[suggestion.supportLevel] || "知点建议";
     const badge = document.createElement("small");
     badge.textContent = suggestion.supportLevel || "可选";
@@ -4403,7 +4465,10 @@ const proactiveJustificationDrafts = new Map();
     }
     if(activityHost.childNodes.length)detail.append(activityHost);
     if(suggestion.followupConfirmationRequired){detail.hidden=true;content=detail;}
-    else if(format==="disclosure" || suggestion.authority?.level==="A1" || suggestion.authority?.level==="A4") {
+    else if(suggestion.authority?.level==="A1" || suggestion.authority?.level==="A4") {
+      detail.hidden=true;
+    }
+    else if(format==="disclosure") {
       const wrapper=document.createElement("div"), toggle=document.createElement("button");
       toggle.type="button";
       if(proactiveReading.expanded===null)proactiveReading.expanded=Boolean(suggestion.authority?.autoExpanded && suggestion.authority?.receiptId);
@@ -4417,7 +4482,7 @@ const proactiveJustificationDrafts = new Map();
     const accept = document.createElement("button");
     accept.type = "button";
     accept.className = "is-primary";
-    accept.textContent = suggestion.followupConfirmationRequired?'我还需要，再帮一次':suggestion.action==='switch_representation'?(suggestion.actionLabel||'打开推荐课件'):"接受提示并继续交流";
+    accept.textContent = suggestion.followupConfirmationRequired?'还没弄懂，继续讲解':suggestion.action==='switch_representation'?(suggestion.actionLabel||'打开推荐课件'):suggestion.authority?.level==='A2'?'接着讨论这一步':'看看知点的提示';
     // 内联卡也要走同一套「先说理由」流程：如果走对话流的学生不必说理由，
     // 两条路径的 Hint Justification Rate 就不可比，等于给自己开了个后门。
     const justify = proactiveJustificationForm(suggestion);
@@ -4443,6 +4508,7 @@ const proactiveJustificationDrafts = new Map();
     actions.append(accept, dismiss);
     const actionHelp=document.createElement('small');actionHelp.className='support-action-explanation';actionHelp.textContent='接受后可继续提问或回课件尝试；这次先不看会收起本条，之后只在新的学习需要出现时再提醒。';
     article.append(heading, content, justify, actions);
+    const reasoning=proactiveOfferReasoning(suggestion);if(reasoning)article.append(reasoning);
     const questionContext=quizQuestionContextNode(suggestion.questionContext);if(questionContext)article.insertBefore(questionContext,content);
     if(suggestion.authority?.autoExpanded && suggestion.authority.receiptId) {
       const undo=document.createElement("button");undo.type="button";undo.textContent="撤销自动展开";
@@ -4536,7 +4602,7 @@ const proactiveJustificationDrafts = new Map();
       const payload = await response.json().catch(() => ({}));
       if(owner!==state.authToken||generation!==exposureGeneration||binding&&binding.key!==learnerDraftKey('check',check.id,meta))return false;
       if (!response.ok || payload.ok === false) {
-        const error = new Error(payload.message || "这道支架后检查暂时无法提交。");
+        const error = new Error(payload.message || "这道检查题暂时无法提交。");
         error.code = payload.code || "";
         throw error;
       }
@@ -4560,7 +4626,7 @@ const proactiveJustificationDrafts = new Map();
         L3: "一次子目标拆分",
         L4: "一个可执行的下一步",
         L5: "一个保留最后步骤的部分例题"
-      }[decision.supportLevel] || "下一层最小必要支架";
+      }[decision.supportLevel] || "更具体的说明";
       proactiveCheckFeedback = {
         ...result,id:result.checkId||check.id,checkId:result.checkId||check.id,at:result.at||new Date().toISOString(),
         scopeKey,
@@ -4577,11 +4643,11 @@ const proactiveJustificationDrafts = new Map();
           ? "这道题的判断正确。可以继续学习；还有疑问时再来和我讨论。"
           : result.status === "incorrect"
             ? nextSupportAuthorized
-              ? `这次支架后作答仍有卡点。只有你确认后，知点才会提供${nextSupportCopy}。`
+              ? `这道检查题还有没弄懂的地方。点击“还没弄懂，继续讲解”，知点会接着解释。`
               : maximumSupportReached
                 ? "这次作答仍有卡点，本轮帮助已到上限，知点不再追加提示。你可以回看课件，或主动提问梳理困难。"
                 : "这次作答仍有卡点，本轮不再追加提示。你可以继续学习，或主动提问。"
-            : "知点不会继续升级支架，你仍可以按自己的节奏学习。"
+            : "可以回课件再试试，也可以直接向知点提问。"
       };
       global.TaskSupport?.leaveConversation();
       if (nextSupportAuthorized) {
@@ -4618,7 +4684,7 @@ const proactiveJustificationDrafts = new Map();
         scopeKey,
         unitId: meta.unitId, sceneType: meta.sceneType || 'slide',
         tone: "error",
-        title: "支架后检查未提交",
+        title: "独立检查未提交",
         text: error.message || "请稍后再试。"
       };
       track("knowledge_proactive_verification_failed", {
@@ -4641,7 +4707,7 @@ const proactiveJustificationDrafts = new Map();
     article.dataset.proactiveCheckId = check.id || "";
     const heading = document.createElement("div");
     const label = document.createElement("strong");
-    label.textContent = "支架后检查";
+    label.textContent = "独立检查";
     const badge = document.createElement("small");
     badge.textContent = "本轮新题";
     heading.append(label, badge);
@@ -4869,23 +4935,25 @@ const proactiveJustificationDrafts = new Map();
     const panel=document.createElement('section');panel.className='task-message-actions';panel.setAttribute('aria-label','选择下一步帮助');
     const questionId=message.contextRef?.questionId||message.guidance?.focusQuestionId||s.replyQuestionId;
     const profile=s.researchControls?.profile||{},level=s.supportCycle?.plan?.knowledgeScaffoldLevel||(s.policyState?.lifecycle?.phase==='accepted_pending_response'?s.policyState.lifecycle.supportLevel:profile.initialSupportLevel);
-    const label=document.createElement('p');label.textContent='选择需要的帮助，也可以直接回课件尝试。';panel.append(label);
+    const label=document.createElement('p');label.className='task-message-actions-label';label.textContent='下一步需要什么？也可以直接回课件尝试。';panel.append(label);
     const actions=document.createElement('div');actions.className='task-help-choices';
     const actionStatus=document.createElement('p');actionStatus.className='task-response-status';actionStatus.setAttribute('role','status');
     const add=(text,fn,disabled=false)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.disabled=disabled;b.onclick=async()=>{b.disabled=true;try{await fn();}catch(error){actionStatus.textContent=error.message||'暂未完成，请重试。';}finally{b.disabled=disabled;}};actions.append(b);return b;};
+    add('这一步还不懂',()=>global.KnowledgeAssistant.askInTask('刚才这一步我还不懂。请承接刚才的解释，指出我可能混淆的一处，用不同的表述讲清，再留一个具体的小问题让我试着回答；不要重复已经给过的线索。',questionId,{inputOrigin:'action_button',inputActionLabel:'这一步还不懂'}));
     add('换一种解释',()=>global.KnowledgeAssistant.askInTask('请换一种更直观的表示解释刚才的关键关系，接着现有作答讲，不要让我重做原题。',questionId));
-    add('给一个线索',()=>global.KnowledgeAssistant.askInTask('请只给一个针对刚才卡点的概念线索，保留下一步让我自己判断。',questionId));
     if(level==='L5')
       add('看局部示例',()=>global.KnowledgeAssistant.askInTask('请按当前帮助层级，用不同数值演示一个局部例子，再留下当前任务的一步让我判断。',questionId));
     const cycleCheck=['offered','engaged'].includes(s.supportCycle?.status);
     const checkQuestionId=s.policyState?.checkContext?.questionId||s.prompt?.questionId||s.offer?.questionId||'';
     const policyCheck=s.policyState?.lifecycle?.phase==='accepted_pending_response'&&(!meta.isQuiz||checkQuestionId===questionId);
-    if(cycleCheck||policyCheck)add('用一道题独立检验',async()=>{
+    if(cycleCheck||policyCheck){const check=add('用一道题独立检验',async()=>{
       if(cycleCheck)await global.SupportCycleUI.startCheck(s.supportCycle);
       else await global.KnowledgeAssistant.startTaskCheck();
-    });
+    });check.className='task-check-action';check.dataset.taskCheckAction='';check.title='一道同知识点的新小题；作答时帮助先收起，只记录一次，不计成绩。';}
     panel.append(actions,actionStatus);
-    const note=document.createElement('small');note.textContent='对话中的小题与回复属于交流练习；只有独立检查会保存结构化判定。';panel.append(note);
+    const note=document.createElement('small');note.textContent=cycleCheck||policyCheck
+      ?'想看看自己是否掌握了？点击“用一道题独立检验”，独立作答后就能看到结果。'
+      :'可以说说你现在的判断和理由，让知点帮你核对；也可以回课件继续尝试。';panel.append(note);
     return panel;
   }
 
@@ -4900,11 +4968,11 @@ const proactiveJustificationDrafts = new Map();
     heading.appendChild(label);
     if (message.role === "assistant" && message.provider) {
       const badge = document.createElement("small");
-      badge.textContent = message.provider === "fallback" ? "备用引导（模型未成功回复）" : message.provider === "mock" ? "模拟回复" : "AI 助教";
+      badge.textContent = ["fallback","course-math-guard"].includes(message.provider) ? "课程提示" : message.provider === "mock" ? "模拟回复" : "AI 学习伙伴";
       heading.appendChild(badge);
     }
     const body = document.createElement(message.role === "assistant" ? "div" : "p");
-    const messageText = message.content || (message.streaming ? "正在组织解释…" : "");
+    const messageText = message.content || (message.streaming ? message.streamingStatus||"正在组织解释…" : "");
     if (message.role === "assistant" && global.AssistantContent) {
       body.className = "assistant-content";
       global.AssistantContent.renderInto(body, messageText, { streaming: message.streaming === true });
@@ -4956,11 +5024,19 @@ const proactiveJustificationDrafts = new Map();
         });
         article.appendChild(actions);
       }
-      const quizReviewFollowUp = quizReviewFollowUpNode(message, {
+      const quizReviewFollowUp = options.task ? null : quizReviewFollowUpNode(message, {
         actionable: options.quizReviewActionable !== false
       });
       if (quizReviewFollowUp) article.appendChild(quizReviewFollowUp);
       if(options.task && options.actionable){const actions=taskMessageActions(message);if(actions)article.append(actions);}
+      const owner=syncProactiveExposureOwner(),unitId=courseMeta().unitId;
+      // Measure the visible beginning, not whether the whole answer was read.
+      queueMicrotask(()=>{if(!article.isConnected)return;answerExposureMonitor?.watch(body.firstElementChild||body,{
+        key:`${owner}|${message.id}|answer_beginning`,
+        valid:()=>owner===syncProactiveExposureOwner()&&courseMeta().unitId===unitId&&learningViewActive(),
+        metadata:{messageId:message.id,questionId:message.contextRef?.questionId||'',requestId:message.contextRef?.requestId||'',
+          proactiveInterventionId:message.contextRef?.proactiveInterventionId||''}
+      });});
     }
     return article;
   }
@@ -4970,7 +5046,9 @@ const proactiveJustificationDrafts = new Map();
     scheduleDesignSpaceSync();
     const scrollViewport = els.scroll || els.messages;
     const previousScrollTop = scrollViewport.scrollTop;
-    const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
+    const latestReply=messages.filter(m=>m.role==="assistant").at(-1);
+    const replyId=`${latestReply?.id||''}:${latestReply?.streaming?'streaming':'complete'}`;
+    const newReply=els.messages.dataset.replyId!==replyId;
     const meta = courseMeta();
     const verificationCheck = syncProactiveCheckState(meta);
     const scopedFeedback = currentCheckFeedback(meta);
@@ -5065,9 +5143,9 @@ const proactiveJustificationDrafts = new Map();
       els.messages.append(details);
     }
     // Replacing the message DOM can clamp scrollTop; never override a learner reading above.
-    scrollViewport.scrollTop = nearBottom && messages.length
-      ? scrollViewport.scrollHeight
-      : previousScrollTop;
+    const answer=[...els.messages.querySelectorAll(".knowledge-message.assistant")].find(n=>n.dataset.messageId===replyId);
+    scrollViewport.scrollTop=newReply&&answer?answer.getBoundingClientRect().top-scrollViewport.getBoundingClientRect().top+scrollViewport.scrollTop:previousScrollTop;
+    els.messages.dataset.replyId=replyId;
   }
 
   function renderProactiveOutcomeEntry() {
@@ -5105,7 +5183,7 @@ const proactiveJustificationDrafts = new Map();
       const answered = Object.keys(active.responses || {}).length;
       els.proactiveOutcomesSummary.textContent = active.pausedAt
         ? `${stage?.label || "独立测量"}已暂时离开，草稿保留 ${answered}/${stage?.itemCount || 0} 题；继续时恢复同一会话。`
-        : `${stage?.label || "独立测量"}进行中，已作答 ${answered}/${stage?.itemCount || 0} 题；学习助手暂时关闭。`;
+        : `${stage?.label || "独立测量"}进行中，已作答 ${answered}/${stage?.itemCount || 0} 题；知点暂时关闭。`;
       button.textContent = "继续作答";
       button.disabled = proactiveOutcomesLoading
         || proactiveOutcomesSubmitting
@@ -5138,7 +5216,7 @@ const proactiveJustificationDrafts = new Map();
     const nextStage = stages.find((stage) => stage.unlockAt)
       || stages.find((stage) => stage.status === "locked");
     els.proactiveOutcomesSummary.textContent = nextStage?.reason
-      || "完成章后测后开放；作答期间学习助手暂时关闭。";
+      || "完成章后测后开放；作答期间知点暂时关闭。";
     button.textContent = "尚未开放";
     button.disabled = true;
   }
@@ -5236,7 +5314,7 @@ const proactiveJustificationDrafts = new Map();
         ? meta.quizSubmitted
           ? "已提交，可以围绕题目、错因和解法继续复盘"
           : QUIZ_LOCKED_MESSAGE
-        : awaitingAgent?"助手发起支持后，可以在这里继续讨论。":"可直接提问，也可以先选择课件中的文字、公式或对象";
+        : awaitingAgent?"知点主动提供帮助后，可以在这里继续讨论。":"可直接提问，也可以先选择课件中的文字、公式或对象";
     els.quizPolicy.hidden = !quizLocked;
     root.classList.toggle("is-unavailable", !meta.supported || !isSignedInNow());
     els.input.disabled = !meta.supported
@@ -5246,7 +5324,7 @@ const proactiveJustificationDrafts = new Map();
       || awaitingAgent
       || conversationLimited;
     els.input.placeholder = !isSignedInNow() ? "登录后可以提问" : !meta.supported ? "当前页面暂不支持提问" : awaitingAgent
-      ? "助手发起支持后可继续讨论"
+      ? "知点主动提供帮助后可继续讨论"
       : measurementBlocked
       ? "独立测量期间暂停知点"
       : quizLocked
@@ -5259,6 +5337,9 @@ const proactiveJustificationDrafts = new Map();
             ? "写下你的回答……"
           : "写下当前这一步不明白的地方…";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
+    let cancel = els.form.querySelector('[data-cancel-response]');
+    if(!cancel){cancel=document.createElement('button');cancel.type='button';cancel.dataset.cancelResponse='';cancel.textContent='停止等待，继续学习';cancel.onclick=()=>cancelResponse();els.form.append(cancel);}
+    cancel.hidden=!activeRequest;
     if (els.input.disabled) els.unitDetail.textContent = els.input.placeholder;
     els.pick.disabled = discussion.conceptDiscussion || !meta.supported
       || !isSignedInNow()
@@ -5644,8 +5725,8 @@ const proactiveJustificationDrafts = new Map();
       applyQuota(payload.quota);
       conversations = Array.isArray(payload.conversations) ? payload.conversations : [];
       if (options.loadActive !== false) {
-        if (!conversations.some((item) => item.id === activeConversationId)) {
-          activeConversationId = conversations[0]?.id || "";
+        if (!conversations.some((item) => item.id === activeConversationId && item.unitId === meta.unitId)) {
+          activeConversationId = conversations.find(item=>item.unitId===meta.unitId)?.id || "";
         }
         await loadHistory(meta, activeConversationId);
       }
@@ -5705,11 +5786,29 @@ const proactiveJustificationDrafts = new Map();
     }
   }
 
+  function cancelResponse(reason = 'student_cancelled') {
+    if (!activeRequest) return false;
+    activeRequest.abort();activeRequest = null;isAsking = false;
+    const index = messages.findIndex(m => m.streaming);
+    if (index >= 0) {
+      const user = messages[index-1];
+      if (reason === 'student_cancelled' && user?.role === 'user' && !els.input.value.trim()) {
+        els.input.value = user.content;saveComposerDraft();resizeComposer();
+      }
+      messages.splice(user?.id?.startsWith('local-user-') ? index-1 : index, user?.id?.startsWith('local-user-') ? 2 : 1);
+    }
+    track('knowledge_request_cancelled',{reason,conversationId:activeConversationId,questionId:activeContext?.questionId||''});
+    if(reason==='student_cancelled'){setStatus('已停止这次回答。可以修改问题再发送，或继续学习。');render();}
+    return true;
+  }
+
   function createNewConversation(options = {}) {
     const meta = courseMeta();
     if (!meta.unitId || !meta.supported || !isSignedInNow() || quizAssistantLocked(meta)) return false;
-    activeRequest?.abort();
+    cancelResponse('new_conversation');
     historyRequestId += 1;
+    conversationListRequestId += 1;
+    loadingHistory=false;loadingConversations=false;
     activeConversationId = "";
     activeWorkspace = "chat";
     messages = [];
@@ -5719,7 +5818,7 @@ const proactiveJustificationDrafts = new Map();
     els.input.value = "";
     saveComposerDraft();
     resizeComposer();
-    setStatus("新对话已准备好，收到助教回复后才会保存。", "");
+    setStatus("新对话已准备好，收到知点回复后会保存。", "");
     render();
     if (options.focus !== false) {
       window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
@@ -5805,6 +5904,7 @@ const proactiveJustificationDrafts = new Map();
       renderQuota();
       return "meta";
     }
+    if(event.type==="status"){const status=event.message||"知点正在回应…";if(assistantMessage.streamingStatus!==status){assistantMessage.streamingStatus=status;renderMessages();}return "status";}
     if (event.type === "delta") {
       assistantMessage.content += event.delta || "";
       renderMessages();
@@ -5828,7 +5928,7 @@ const proactiveJustificationDrafts = new Map();
           label: "本地引导"
         };
         renderProvider();
-        setStatus("模型服务暂时不可用，已切换到本地引导。", "warning");
+        setStatus("知点暂时未能完成回复，可以先参考课程提示，稍后再试。", "warning");
       } else if (
         assistantMessage.provider
         && !["mock", "fallback"].includes(assistantMessage.provider)
@@ -5857,9 +5957,10 @@ const proactiveJustificationDrafts = new Map();
     return "";
   }
 
-  async function readNdjson(response, assistantMessage) {
+  async function readNdjson(response, assistantMessage, request) {
     const state = { sawDone: false, sawDelta: false };
     const consumeLine = (line) => {
+      if (request && (request.signal.aborted || activeRequest !== request)) return;
       const type = parseStreamLine(line, assistantMessage);
       if (type === "done") state.sawDone = true;
       if (type === "delta") state.sawDelta = true;
@@ -5884,13 +5985,15 @@ const proactiveJustificationDrafts = new Map();
     return state;
   }
 
-  async function submitQuestion() {
+  async function submitQuestion(options = {}) {
     if(global.FirstSessionBudget?.closed){setStatus('本次现场学习已结束，可以查看已保存的记录。','');return;}
     const meta = courseMeta();
     const discussion=conceptDiscussionMeta(meta);
     const question = els.input.value.trim();
     saveComposerDraft();const submittedDraftKey=composerDraftKey;
     const assistantIntent = pendingAssistantIntent;
+    const inputOrigin=options.inputOrigin||(pendingGeneratedDraft&&question===pendingGeneratedDraft?'suggested_draft':'manual_submit');
+    const inputActionLabel=String(options.inputActionLabel||'').slice(0,120);
     const proactivePrompt = usableProactivePrompt(pendingProactivePrompt, meta)
       ? pendingProactivePrompt
       : null;
@@ -5919,7 +6022,8 @@ const proactiveJustificationDrafts = new Map();
     activeRequest?.abort();
     pendingAssistantIntent = "";
     pendingGeneratedDraft = "";
-    activeRequest = new AbortController();
+    const request = new AbortController();
+    activeRequest = request;
     isAsking = true;
     taskRequestError = null;
     // A delayed history refresh must not erase a new in-task response.
@@ -5934,6 +6038,8 @@ const proactiveJustificationDrafts = new Map();
       conversationId: discussion.conceptDiscussion&&!conversations.some(c=>c.id===activeConversationId&&c.unitId===discussion.unitId)?'':activeConversationId,
       question,
       assistantIntent,
+      inputOrigin,
+      inputActionLabel,
       proactiveInterventionId: discussion.conceptDiscussion?'':proactivePrompt?.interventionId || "",
       contextRef: discussion.conceptDiscussion?{kind:'unit',scope:'lesson',chapterId:discussion.chapterId,unitId:discussion.unitId,unitLabel:discussion.unitLabel,knowledgePointId:discussion.knowledgePointId,knowledgePointLabel:discussion.knowledgePointLabel}:activeContext || {
         kind: "unit",
@@ -5950,6 +6056,9 @@ const proactiveJustificationDrafts = new Map();
       id: `local-user-${Date.now()}`,
       role: "user",
       content: question,
+      inputOrigin,
+      inputActionLabel,
+      contextRef: requestPayload.contextRef,
       proactivePrompt: proactivePrompt?.content || "",
       proactivePromptVisible: proactivePrompt?.visible !== false,
       provider: ""
@@ -5958,6 +6067,7 @@ const proactiveJustificationDrafts = new Map();
       id: `local-assistant-${Date.now()}`,
       role: "assistant",
       content: "",
+      contextRef: requestPayload.contextRef,
       provider: "",
       streaming: true
     };
@@ -5970,7 +6080,8 @@ const proactiveJustificationDrafts = new Map();
     track("knowledge_question_asked", {
       contextKind: activeContext?.kind || "unit",
       contextScope: activeContext?.scope || (meta.isQuiz ? "quiz" : "lesson"),
-      questionLength: question.length
+      questionLength: question.length,
+      inputOrigin,inputActionLabel
     });
 
     try {
@@ -5981,7 +6092,7 @@ const proactiveJustificationDrafts = new Map();
           Authorization: `Bearer ${state.authToken}`
         },
         body: JSON.stringify(requestPayload),
-        signal: activeRequest.signal
+        signal: request.signal
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
@@ -5990,7 +6101,8 @@ const proactiveJustificationDrafts = new Map();
         requestError.code = payload.code || "";
         throw requestError;
       }
-      const streamState = await readNdjson(response, assistantMessage);
+      const streamState = await readNdjson(response, assistantMessage, request);
+      if (request.signal.aborted || activeRequest !== request) return;
       if (!streamState.sawDone || !assistantMessage.content.trim()) {
         const error = new Error("回答传输没有完整结束，正在恢复这段对话。");
         error.code = "assistant_stream_incomplete";
@@ -6001,7 +6113,7 @@ const proactiveJustificationDrafts = new Map();
       renderMessages();
       setStatus(
         assistantMessage.fallback
-          ? "模型服务未接通，本次回答来自本地引导；仍可继续追问。"
+          ? "知点暂时未能完成回复。下方是课程提示，你可以先继续学习，稍后再试。"
           : "可以继续追问；对话会保存在这个知识点下。",
         assistantMessage.fallback ? "warning" : ""
       );
@@ -6010,7 +6122,7 @@ const proactiveJustificationDrafts = new Map();
         answerLength: assistantMessage.content.length
       });
     } catch (error) {
-      if (error.name === "AbortError") return;
+      if (request.signal.aborted || activeRequest !== request || error.name === "AbortError") return;
       if (error.code === "assistant_stream_incomplete" && activeConversationId) {
         assistantMessage.streaming = false;
         assistantMessage.error = true;
@@ -6042,6 +6154,9 @@ const proactiveJustificationDrafts = new Map();
       taskRequestError = {unitId:meta.unitId,sceneType:meta.sceneType||'slide',message:error.message||'知点暂时没有接通，请稍后再试。'};
       render();
     } finally {
+      // A cancelled request may settle after the student has already asked
+      // another question. It must not clear the newer request or its busy state.
+      if (activeRequest !== request) return;
       isAsking = false;
       activeRequest = null;
       if (
@@ -6123,15 +6238,14 @@ const proactiveJustificationDrafts = new Map();
       quizAssistantLocked(meta)
       && !quizParticipationAccessAllowed(meta)
     ) {
-      if (isOpen) setOpen(false, { focus: false });
+      if (isOpen) setOpen(false, { focus: false, preserveSupport: Boolean(pendingIndependentCheck()) });
       if (CoursewareContext.getPickState().phase === "picking") {
         CoursewareContext.cancelObjectPick("quiz-lock");
       }
     }
 
     if (unitChanged || participantChanged || supportChanged) {
-      activeRequest?.abort();
-      activeRequest = null;
+      cancelResponse('context_changed');
       proactiveDecisionRequest?.abort();
       proactiveDecisionRequest = null;
       proactiveDecision = null;
@@ -6166,6 +6280,7 @@ const proactiveJustificationDrafts = new Map();
     }
 
     if (sceneChanged) {
+      cancelResponse('scene_changed');
       if (proactiveDecision) ignoreProactiveSuggestion("scene-change");
       proactiveDecisionRequest?.abort();
       proactiveDecisionRequest = null;
@@ -6321,7 +6436,7 @@ const proactiveJustificationDrafts = new Map();
   els.selectionAsk.addEventListener("click", () => {
     if (pendingSelection?.contextRef && useContext(pendingSelection.contextRef, "text-selection")) {
       els.input.value='请解释我选中的这段内容，并说明它与当前知识点的关系。';
-      submitQuestion();
+      submitQuestion({inputOrigin:'action_button',inputActionLabel:'解释选中内容'});
     }
     window.getSelection?.()?.removeAllRanges?.();
   });
@@ -6469,6 +6584,8 @@ const proactiveJustificationDrafts = new Map();
 
   global.KnowledgeAssistant = Object.freeze({
     sync,
+    cancelResponse,
+    trackStudentAction: track,
     designSpaceSnapshot,
     pendingIndependentCheck,
     async resumeIndependentCheck() {
@@ -6495,6 +6612,16 @@ const proactiveJustificationDrafts = new Map();
     refreshSupportSurface() { scheduleDesignSpaceSync(); },
     createTaskMessage(message,{actionable=false}={}) {
       return messageNode(messages.find(item=>item.id===message.id)||message,{task:true,actionable,quizReviewActionable:actionable});
+    },
+    createQuestionContext(questionId) {
+      if(!questionId||!courseMeta().quizSubmitted)return null;
+      const unit=typeof getUnit==='function'?getUnit():null,questions=unit?.quizQuestions||unit?.scene?.content?.questions||unit?.questions||[];
+      const index=questions.findIndex(q=>q.id===questionId),q=questions[index];if(!q)return null;
+      const record=typeof quizRecordsForUnit==='function'?quizRecordsForUnit(unit.id).filter(r=>r.questionId===questionId).at(-1):null;
+      let response=record?.response??record?.answer??record?.selectedOption??'';
+      if(typeof response==='string'&&response.startsWith('[')){try{response=JSON.parse(response);}catch{}}
+      const labels=(Array.isArray(response)?response:[response]).map(value=>{const option=(q.options||[]).find(o=>String(o.value??o.id)===String(value));return value==='__unknown__'?'我不会':option?.text||option?.label||String(value||'未作答');});
+      return quizQuestionContextNode({questionId,position:index+1,question:q.question||q.prompt||q.text||'',studentResponse:record?.responseLabel||record?.answerText||labels.join('；')});
     },
     async reloadLearnerPolicy() {
       proactiveDecision=null;pendingProactivePrompt=null;
@@ -6595,7 +6722,7 @@ const proactiveJustificationDrafts = new Map();
       if (snapshot.prompt) fragment.appendChild(proactivePromptNode(snapshot.prompt, { dismissible: true }));
       if(snapshot.prompt&&!snapshot.taskMessages.some(m=>m.role==='assistant')){const actions=taskMessageActions({contextRef:{questionId:snapshot.prompt.questionId}});if(actions)fragment.append(actions);}
       if (snapshot.check) fragment.appendChild(proactiveVerificationNode(snapshot.check));
-      if (snapshot.feedback) fragment.appendChild(proactiveCheckFeedbackNode(snapshot.feedback));
+      if (snapshot.feedback && (!snapshot.feedback.questionId||!global.TaskSupport?.selectedQuestion||snapshot.feedback.questionId===global.TaskSupport.selectedQuestion)) fragment.appendChild(proactiveCheckFeedbackNode(snapshot.feedback));
       if (supportView.modality === "chat") {
         messages.slice(-4).forEach(message => fragment.appendChild(messageNode(message, { quizReviewActionable: false })));
       }
@@ -6613,12 +6740,13 @@ const proactiveJustificationDrafts = new Map();
     },
     async startTaskCheck(){
       const meta=courseMeta(),s=designSpaceSnapshot();
-      if(!s.signedIn||s.locked||s.busy||s.policyState?.lifecycle?.phase!=='accepted_pending_response')return false;
+      if(s.busy)throw new Error('知点还在回应，请等回复完成后再试。');
+      if(!s.signedIn||s.locked||s.policyState?.lifecycle?.phase!=='accepted_pending_response')throw new Error('当前帮助状态已变化，请回到本题后重试。');
       const response=await fetch('api/learning/proactive/check',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.authToken}`},body:JSON.stringify({action:'start',chapterId:meta.chapterId,unitId:meta.unitId,scopeKey:proactiveScopeKey(meta),sceneType:meta.sceneType||'slide'})});
       const payload=await response.json();if(!response.ok)throw new Error(payload.message||'检查暂未打开，请重试。');
       pendingProactivePrompt=null;await loadProactiveStudy(meta,{force:true});render();return true;
     },
-    async askInTask(question, questionId="") {
+    async askInTask(question, questionId="", options={inputOrigin:'action_button'}) {
       const s=designSpaceSnapshot(),meta=courseMeta();
       if(global.FirstSessionBudget?.closed||!s.signedIn||s.locked||s.check||s.supportCycle?.status==="awaiting_check"||!s.active||isAsking)return false;
       questionId=questionId||s.prompt?.questionId||s.offer?.questionId||'';
@@ -6631,7 +6759,7 @@ const proactiveJustificationDrafts = new Map();
       global.TaskSupport?.openConversation?.(questionId);
       const previousMessageId=messages.at(-1)?.id;
       els.input.value=String(question||"").slice(0,2000);
-      await submitQuestion();
+      await submitQuestion(options);
       return messages.at(-1)?.id!==previousMessageId && messages.at(-1)?.role==="assistant" && !messages.at(-1)?.error;
     },
     async supportAction(action, value) {
@@ -6641,7 +6769,7 @@ const proactiveJustificationDrafts = new Map();
       if (action === "restore") return updateProactiveScopePreference("standard");
       if (action === "ask") {
         els.input.value = String(value || "").slice(0, 2000);
-        return submitQuestion();
+        return submitQuestion({inputOrigin:'action_button'});
       }
       // A render notification cannot establish exposure. Only the shared
       // visibility monitor or a learner action can issue the business receipt.
@@ -6726,11 +6854,18 @@ const proactiveJustificationDrafts = new Map();
     close() {
       setOpen(false);
     },
+    finishTaskDiscussion() {
+      cancelResponse('discussion_closed');
+      pendingProactivePrompt=null;pendingGeneratedDraft='';
+      for(const result of checkFeedbackHistory())try{localStorage.setItem(feedbackStorageKey(result.id),'1');}catch{}
+      proactiveCheckFeedback=null;
+      setOpen(false,{focus:false});render();scheduleDesignSpaceSync();
+    },
     ask(question = "") {
       els.input.value = String(question || "");
       resizeComposer();
       setOpen(true);
-      return submitQuestion();
+      return submitQuestion({inputOrigin:'programmatic'});
     },
     outcomeNavigationAction: proactiveOutcomeNavigationAction,
     openOutcomeStage: openProactiveOutcomeStage,

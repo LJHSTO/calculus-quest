@@ -8,7 +8,7 @@ async function main(){
  const registration=await api('/api/auth/register',{nickname,password});assert.equal(registration.status,200);token=registration.payload.token;
  const run=(await api('/api/study/state')).payload.data.run;runId=run.id;const bank=registry.forVersion(run.assessmentVersion);assert(bank);
  const survey=(await api('/api/study/survey?stage=baseline')).payload.data;
- assert.equal((await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,3]))})).status,200);
+ assert.equal((await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':3]))})).status,200);
  const concept={chapterId:'V14-C1',unitId:'GH-01-K01',sceneType:'slide',question:'什么是函数？请说明允许的输入与输出之间的关系。',contextRef:{kind:'unit',scope:'lesson',unitId:'GH-01-K01',chapterId:'V14-C1'}};
  const before=await api('/api/learning/assistant/ask',concept);checks.push({name:'前测未提交仍保护普通概念提问',passed:before.status===409,status:before.status,code:before.payload.code});
  const browser=await chromium.launch({channel:'chrome',headless:true}),page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(18000);page.on('pageerror',e=>errors.push(e.message));

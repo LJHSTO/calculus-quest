@@ -9,7 +9,7 @@ async function main(){
  fs.mkdirSync(output,{recursive:true});const dir=fs.mkdtempSync(path.join(output,'延迟HTTP隔离-')),dbPath=path.join(dir,'synthetic.db'),checks=[],cases=[],errors=[];
  const port=await new Promise(resolve=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const port=s.address().port;s.close(()=>resolve(port));});}),base='http://127.0.0.1:'+port;
  assert.notEqual(port,53535);
- const experiment=path.basename(dir),env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:dbPath,DB_DRIVER:'sqljs',ADMIN_TOKEN:'synthetic-delayed-r10',LOCAL_ADMIN_AUTH_BYPASS:'true',MAIN_LEARNING_PROTOCOL_FILE:'',PROACTIVE_STUDY_WORKBENCH:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:experiment,PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-delayed-r10-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r10',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:delayed.version,PROACTIVE_RETENTION_DELAY_HOURS:'72',PROACTIVE_RETENTION_CLOSE_HOURS:'0',RESEARCH_CONTROLS_ENABLED:'true',RATE_LIMIT_MAX:'10000'};
+ const experiment=path.basename(dir),env={...process.env,NODE_ENV:'test',THREE_ARM_REVIEW_MIN_SECONDS:'0',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:dbPath,DB_DRIVER:'sqljs',ADMIN_TOKEN:'synthetic-delayed-r10',LOCAL_ADMIN_AUTH_BYPASS:'true',MAIN_LEARNING_PROTOCOL_FILE:'',PROACTIVE_STUDY_WORKBENCH:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:experiment,PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-delayed-r10-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r10',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:delayed.version,PROACTIVE_RETENTION_DELAY_HOURS:'72',PROACTIVE_RETENTION_CLOSE_HOURS:'0',RESEARCH_CONTROLS_ENABLED:'true',RATE_LIMIT_MAX:'10000'};
  let child,logFd,browser,page,browserRuntime;
  async function start(){logFd=fs.openSync(path.join(dir,'server.log'),'a');child=spawn(process.execPath,['server.js',String(port)],{cwd:root,env,windowsHide:true,stdio:['ignore',logFd,logFd]});for(let n=0;n<100;n++){assert.equal(child.exitCode,null,'isolated server exited');try{if((await fetch(base+'/api/health')).ok)return;}catch{}await pause(100);}throw Error('isolated server health timeout');}
  async function stop(){if(child&&child.exitCode===null){const exited=new Promise(resolve=>child.once('exit',resolve));child.kill();await exited;}if(logFd!==undefined){fs.closeSync(logFd);logFd=undefined;}}
@@ -22,8 +22,8 @@ async function main(){
   const account={kind,nickname:'延迟'+kind+'-'+String(Date.now()).slice(-9),password:'Synthetic-r10-delay-test'};
   const registered=ok(await api(null,'/api/auth/register',{nickname:account.nickname,password:account.password}),'register');account.token=registered.token;
   let preferences=ok(await api(account,'/api/learning/learner-preferences'),'preferences').data;account.runId=preferences.study.id;account.order=preferences.study.assessmentOrder;
-  const baseline=ok(await api(account,'/api/study/survey?stage=baseline'),'baseline').data;assert.equal(baseline.items.length,7);
-  ok(await api(account,'/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,3]))}),'baseline submit');
+  const baseline=ok(await api(account,'/api/study/survey?stage=baseline'),'baseline').data;assert.equal(baseline.items.length,18);
+  ok(await api(account,'/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,q.type==='text'?'合成回答':3]))}),'baseline submit');
   const quizPayload=(phase,qs)=>({chapterId:'V14-C1',unitId:'V14-C1-'+phase,phase,answers:qs.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.answer[0]}))});
   ok(await api(account,'/api/learning/quiz/submit',quizPayload('pre',bank.questions('pre',account.order[0]))),'pre submit');
   preferences=ok(await api(account,'/api/learning/learner-preferences'),'configuration').data;
@@ -31,7 +31,7 @@ async function main(){
   for(let i=0;i<points.length;i++){
    const point=points[i];ok(await api(account,'/api/learning/quiz/submit',{chapterId:'V14-C1',unitId:point.id+'-formative',phase:'formative',answers:point.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.answer[0]}))}),'formative '+point.id);
    if(i===2){
-    ok(await api(account,'/api/study/review',{stage:'S1',review_understanding:4,review_action:4,decision:'change',reason:'合成流程检查：确认后续帮助设置'}),'stage review');
+    ok(await api(account,'/api/study/review',{stage:'S1',review_understanding:4,review_action:4,review_next_focus:'合成回答：先核对左右两侧的趋势',decision:'change',reason:'合成流程检查：确认后续帮助设置'}),'stage review');
     preferences=ok(await api(account,'/api/learning/learner-preferences'),'review configuration').data;const revision=preferences.record.revision;
     ok(await api(account,'/api/learning/learner-preferences',{answers:preferences.record.answers,expectedRevision:revision}),'review configuration save');
     const saved=ok(await api(account,'/api/learning/learner-preferences'),'configuration readback').data;assert.ok(saved.record.revision>revision);
@@ -39,7 +39,7 @@ async function main(){
   }
   ok(await api(account,'/api/learning/quiz/submit',quizPayload('post',bank.questions('post',account.order[1]))),'post submit');
   const survey=ok(await api(account,'/api/study/survey?stage=final'),'final survey').data;assert.equal(survey.items.length,19);
-  const saved=ok(await api(account,'/api/study/survey',{stage:'final',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.id==='disruption'?'na':q.id==='configuration_alignment'?'na':4]))}),'final survey submit');account.finalSurveyAt=saved.data.at;
+  const saved=ok(await api(account,'/api/study/survey',{stage:'final',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':q.id==='disruption'?'na':q.id==='configuration_alignment'?'na':4]))}),'final survey submit');account.finalSurveyAt=saved.data.at;
   assert.equal((await api(account,endpoint+'/start',stageBody('retention'))).status,409);
   assert.equal((await api(account,endpoint+'/start',stageBody('transfer'))).status,409);
   assert.equal((await api(account,'/api/study/judgment',{action:'start'})).status,409);

@@ -24,15 +24,17 @@ async function main(){
    const out=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{live:true,complete:async()=>({text,provider:'synthetic'})});
    assert.equal(out.audit.fallback,true);assert.equal(out.audit.failure,'provider_or_validation_failure');
  }
+ const inequalities=await goals.generateSupport({scope:'GH-01-K03',need:input,plan:goals.selectPlan(input,defaults)},{live:true,complete:async()=>({provider:'synthetic',text:JSON.stringify({message:'取x_1<x_2，若f(x_1)>f(x_2)，这一对就否定区间严格上升。',nextStep:'比较这一对输入对应的两个输出。'})})});
+ assert.equal(inequalities.audit.fallback,false,'数学小于和大于号不是HTML标签');
  const timeout=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{live:true,complete:async()=>{throw Object.assign(new Error('synthetic'),{name:'TimeoutError'});}});
  assert.equal(timeout.audit.failure,'timeout');
- assert.equal(timeout.audit.attempts.length,2,'临时错误最多重试一次');
+ assert.equal(timeout.audit.attempts.length,1,'模型超时后不立即重试，避免挤占课堂队列');
  let providerAttempts=0;
  const recovered=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{live:true,complete:async()=>{
-   if(providerAttempts++===0)throw Object.assign(new Error('synthetic timeout'),{name:'TimeoutError'});
+   if(providerAttempts++===0)throw new TypeError('synthetic connection failure');
    return {provider:'synthetic',text:JSON.stringify({message:'先区分输入与输出，再说明它们之间使用了什么规则。',nextStep:'你可以先试一小步。'})};
  }});
- assert.equal(recovered.audit.fallback,false);assert.deepEqual(recovered.audit.attempts.map(a=>a.outcome),['timeout','received']);
+ assert.equal(recovered.audit.fallback,false);assert.deepEqual(recovered.audit.attempts.map(a=>a.outcome),['provider_error','received']);
  for(const model of ['Qwen3.8-Flash-Next','MiniMax-M3.1-Flash']) {
  const budgeted=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{model,complete:async args=>{assert.equal(args.maxTokens,1600);return {provider:'synthetic',text:JSON.stringify({message:'可以先比较输入与输出的含义，再独立说出一个例子。',nextStep:'由你选择是否继续。'})};}});
  assert.equal(budgeted.audit.requestOptions.maxTokens,1600);assert.equal(budgeted.audit.fallback,false);

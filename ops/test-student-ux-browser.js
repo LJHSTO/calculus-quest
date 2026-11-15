@@ -164,7 +164,7 @@ async function main(){
    else{await page.locator('#login-identifier').fill(account);await page.locator('#login-password').fill('synthetic-browser-password');}
    const authentication=page.waitForResponse(r=>/\/api\/auth\/(register|login)$/.test(new URL(r.url()).pathname));await page.locator('#login-submit').click();const auth=await authentication;assert.equal(auth.status(),200,'认证接口应成功');await page.locator('#auth-gate').waitFor({state:'hidden'});registered=true;
    await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').waitFor();
-   for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();
+   for(const field of await page.locator('#three-arm-dialog [data-study-question]').all()){if(await field.locator('textarea').count())await field.locator('textarea').fill('合成回答');else await field.locator('input[value="3"]').check();};
    await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();
    if(process.env.TEST_RECOVERY_BOUNDARIES==='1'&&!remote){
     let lost=false;await page.route('**/api/learning/quiz/submit',async route=>{
@@ -369,14 +369,14 @@ async function main(){
     await next('完成本段，查看学习回顾');await page.locator('#three-arm-dialog[open]').waitFor();await page.getByText('这次回顾对你有帮助吗？',{exact:true}).waitFor();
     assert.equal(await page.locator('[data-linked-feedback]').count(),arm==='B'?1:0);await shot(module.id+'阶段回顾');
     for(const item of reviewItems)assert.equal(await page.locator(`[data-study-question="${item.id}"] legend`).innerText(),item.text,'导出的问卷题文应与学生实际看到的一致');
-    for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="4"]').check();
+    for(const field of await page.locator('#three-arm-dialog [data-study-question]').all()){if(await field.locator('textarea').count())await field.locator('textarea').fill('合成回答');else await field.locator('input[value="4"]').check();};
     if(arm!=='A')await page.locator('input[name=review-decision][value=change]').check();
     await page.locator('#three-arm-dialog').getByRole('button',{name:'保存回顾并继续',exact:true}).click();
     if(arm!=='A'){await page.locator('#learner-setup[open]').waitFor();assert.equal(await page.locator('#learner-setup [data-dimension]').count(),6);await saveSettings(process.env.STUDENT_UX_QUIZ_SIDEBAR==='1');}
    }
    await answer('V14-C1-post',course.flow.postQuiz.questions);await page.getByRole('button',{name:'下一步：填写学习体验问卷',exact:true}).click();await page.locator('#three-arm-dialog[open]').waitFor();
    assert.equal(await page.locator('#three-arm-dialog [data-study-question]').count(),arm==='A'?13:16);
-   for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="4"]').check();
+   for(const field of await page.locator('#three-arm-dialog [data-study-question]').all()){if(await field.locator('textarea').count())await field.locator('textarea').fill('合成回答');else await field.locator('input[value="4"]').check();};
    await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();await page.getByText('学习体验已保存。',{exact:true}).waitFor();await shot('完成学习与三天任务');
    assert.equal(await page.getByRole('button',{name:'开始配置判断',exact:true}).isEnabled(),false);
    await page.getByRole('button',{name:arm==='B'?'比较两阶段的配置与学习经历':'回顾两阶段学习结果',exact:true}).click();

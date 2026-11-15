@@ -878,13 +878,20 @@ function renderKnowledgeUnit(unit) {
 
   const iframeEl = els.lessonPlayer.querySelector("iframe[data-courseware-frame]");
   if (iframeEl && candidate) {
+    // Expose the new frame only after its first layout has been painted. A child
+    // button can exist before the browser has switched pointer routing to it.
+    iframeEl.style.visibility = 'hidden';
+    iframeEl.style.pointerEvents = 'none';
     const loader = () => iframeEl.parentElement?.querySelector(".iframe-loader");
     iframeEl.addEventListener("load", () => {
-      const node = loader();
-      if (node) {
-        node.classList.add("hidden");
-        window.setTimeout(() => node.remove(), 300);
-      }
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!iframeEl.isConnected) return;
+        iframeEl.style.visibility = '';
+        iframeEl.style.pointerEvents = '';
+        iframeEl.dataset.interactionReady = 'true';
+        const node = loader();
+        if (node) { node.classList.add('hidden'); window.setTimeout(() => node.remove(), 300); }
+      }));
       try {
         setupIframeInteractionTracking(iframeEl, unit);
       } catch (error) {
@@ -1087,7 +1094,7 @@ function renderQuiz(unit) {
     }
   });
   let questions = unit.scene.content?.questions || [];
-  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r(?:7|10|11|12|13)-/.test(q.id));
+  const researchReceipt=['pre','post'].includes(unit.assessmentPhase)&&questions.some(q=>/^fl-r\d+-/.test(q.id));
   let submitted = (state.submittedQuizzes || []).includes(unit.id);
   const unitResults = quizRecordsForUnit(unit.id);
   const archivedQuestions = unit.scene.content?.quizConfig?.archivedQuestions || [];

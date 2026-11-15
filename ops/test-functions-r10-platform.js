@@ -8,7 +8,7 @@ async function main(){const startedAt=Date.now();const browser=await chromium.la
  const flush=()=>page.evaluate(()=>analyticsFlushUntilSettled(20000));
  try{
   await page.goto(base+'/?study=B');await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-auth-mode="register"]').click();await page.locator('#nickname').fill('原生操作闭环合成'+Date.now());await page.locator('#register-password').fill('Synthetic-r9-course-123');await page.locator('#register-password-confirm').fill('Synthetic-r9-course-123');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});await page.locator('[data-view="learn"]').first().click();
-  const survey=(await api('api/study/survey?stage=baseline')).data;await api('api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.options?.find(o=>o.value===3)?.value??3]))});
+  const survey=(await api('api/study/survey?stage=baseline')).data;await api('api/study/survey',{stage:'baseline',answers:Object.fromEntries(survey.items.map(q=>[q.id,q.type==='text'?'合成回答':q.options?.find(o=>o.value===3)?.value??3]))});
   if(await page.locator('#three-arm-dialog[open]').count())await page.locator('#three-arm-dialog').getByRole('button',{name:'稍后继续',exact:true}).click();
   await page.waitForTimeout(2200);if(await page.getByRole('button',{name:'进入知识前测',exact:true}).isVisible())await page.getByRole('button',{name:'进入知识前测',exact:true}).click();
   await page.locator('[data-view="learn"]').first().click();await page.locator('.question-card').first().waitFor({state:'visible'});

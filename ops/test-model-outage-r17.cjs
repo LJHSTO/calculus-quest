@@ -1,0 +1,27 @@
+'use strict';
+const assert=require('node:assert/strict'),{createCircuitBreaker}=require('../lib/model-circuit-breaker');
+let now=0;const b=createCircuitBreaker({clock:()=>now,cooldownMs:1000}),timeout=()=>Object.assign(new Error('timeout'),{code:'MODEL_EXECUTION_TIMEOUT'});
+const stale=b.begin('course');
+for(let i=0;i<3;i++)b.finish(b.begin('course'),timeout());
+assert.throws(()=>b.begin('course'),e=>e.code==='MODEL_SERVICE_UNAVAILABLE'&&e.retryAfterMs===1000);
+b.finish(stale);assert.throws(()=>b.check('course'),{code:'MODEL_SERVICE_UNAVAILABLE'},'old successes cannot close a new outage');
+assert.doesNotThrow(()=>b.check('other-model-or-endpoint'));
+now=1000;const probe=b.begin('course');assert(probe.probe);assert.throws(()=>b.begin('course'),{code:'MODEL_SERVICE_UNAVAILABLE'},'only one recovery probe');
+b.finish(probe,timeout());assert.throws(()=>b.check('course'),{code:'MODEL_SERVICE_UNAVAILABLE'});
+now=2000;const recovered=b.begin('course');b.finish(recovered);assert.doesNotThrow(()=>b.check('course'));
+b.finish(stale,timeout());assert.equal(b.snapshot('course').failures,0,'late failures cannot reopen a recovered circuit');
+for(let i=0;i<4;i++)b.finish(b.begin('course'),Object.assign(new Error('student left'),{name:'AbortError'}));
+assert.equal(b.snapshot('course').failures,0);
+b.finish(b.begin('course'),timeout());b.finish(b.begin('course'));assert.equal(b.snapshot('course').failures,0,'a successful response resets the failure streak');
+const llm=require('../lib/llm'),originalFetch=global.fetch,options={provider:'openai-compatible',baseUrl:'https://outage.synthetic.invalid/v1',apiKey:'synthetic-secret',model:'same-model-for-A-B-C',user:'synthetic only',temperature:.2,maxTokens:700,timeoutMs:8};
+(async()=>{let calls=0;try{
+ global.fetch=async(_url,{signal,body})=>{calls++;const p=JSON.parse(body);assert.equal(p.model,options.model);return new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));};
+ for(let i=0;i<3;i++)await assert.rejects(llm.completeChat(options),{code:'MODEL_EXECUTION_TIMEOUT'});
+ const at=performance.now();await assert.rejects(llm.completeChat(options),e=>e.code==='MODEL_SERVICE_UNAVAILABLE'&&e.modelTiming.executionMs===0);
+ assert.equal(calls,3,'known outage must not issue another provider request');assert(performance.now()-at<100);
+ global.fetch=async(_url,{body})=>{calls++;return {ok:true,json:async()=>({model:JSON.parse(body).model,choices:[{finish_reason:'stop',message:{content:'合成恢复回复'}}]})};};
+ assert.equal((await llm.completeChat({...options,apiKey:'different-synthetic-credential'})).text,'合成恢复回复');
+ assert.equal(calls,4,'separate credentials must not share an outage');
+ await new Promise(r=>setTimeout(r,0));assert.equal(require('../lib/model-scheduler').shared.state.active,0);
+ console.log('PASS: outage fast failure, no extra API/retry, one recovery probe, cancelled/late requests, model/credential isolation, queue capacity released');
+}finally{global.fetch=originalFetch;}})().catch(e=>{console.error(e);process.exitCode=1;});

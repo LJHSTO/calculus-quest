@@ -44,8 +44,14 @@ async function stopChild(child) {
 async function startFailingLlmStub() {
   const port = await freePort();
   let requests = 0;
-  const server = http.createServer((req, res) => {
+  let modelReply = null;
+  const server = http.createServer(async (req, res) => {
     requests += 1;
+    if(modelReply!==null){
+      let body='';for await(const chunk of req)body+=chunk;
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({model:JSON.parse(body).model,choices:[{finish_reason:'stop',message:{content:modelReply}}],usage:{prompt_tokens:10,completion_tokens:10}}));return;
+    }
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ error: { message: "provider unavailable" } }));
   });
@@ -56,6 +62,7 @@ async function startFailingLlmStub() {
   return {
     baseUrl: `http://127.0.0.1:${port}/v1`,
     requests: () => requests,
+    setReply: (text) => { modelReply = text; },
     close: () => new Promise((resolve) => server.close(resolve))
   };
 }
@@ -101,7 +108,9 @@ async function ask(baseUrl, body, token) {
 async function main() {
   const root = path.resolve(__dirname, "..");
   const route = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));
-  const chapter = route.chapters[0];
+  // Legacy reactive-helper behavior belongs to a non-study chapter. The current
+  // functions study deliberately withholds feedback on pre/post test items.
+  const chapter = route.chapters.find((item) => item.id === "V14-C2");
   const module = chapter.modules[0];
   const knowledgePoint = module.knowledgePoints[0];
   const canvas = knowledgePoint.slide.canvas;
@@ -127,15 +136,9 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
-        // 这个测试覆盖的是**反应式**知点（提问、测验复盘、会话历史、配额与预算），
-        // 所以刻意把它部署成"非实验章节"：实验章节指向 V14-C3，于是本测试用的
-        // V14-C1 走传统路径，而不是管理式主动链路。
-        //
-        // 为什么必须显式写出来：V14-C1 恰好就是真实实验的章节。不写这一行，
-        // 服务器会把 V14-C1 当成管理式章节，于是"参与者还没分配条件"这条实验门槛
-        // 会先把所有请求静默掉，本测试一半的断言就再也测不到它们本来的东西。
-        // 管理式链路的覆盖在 test-proactive-study-api.js。
+        // Keep this legacy V14-C2 fixture outside the managed study chapter.
         PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
+        PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "v14-c3-retention-v4",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
@@ -314,7 +317,7 @@ async function main() {
     assert.ok(firstConversationId);
     assert.equal(knowledgeAnswer.rows[0].conversationId, firstConversationId);
     assert.equal(knowledgeAnswer.rows[0].quota.remaining, 2);
-    assert.ok(knowledgeAnswer.answer.includes(candidate.teachingContext.fact), '备用回应应对应当前互动课件的真实内容');
+    assert.ok(knowledgeAnswer.answer.includes(candidate.teachingContext?.fact || knowledgePoint.goal), '备用回应应对应当前互动课件的真实内容');
     assert.equal(knowledgeAnswer.rows[0].contextRef.resourceFingerprint.length, 20);
     assert.equal(knowledgeAnswer.rows.at(-1).guidance.showUnderstandingCheck, true);
     assert.equal(knowledgeAnswer.rows.at(-1).guidance.provenance.show, true);
@@ -636,15 +639,9 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
-        // 这个测试覆盖的是**反应式**知点（提问、测验复盘、会话历史、配额与预算），
-        // 所以刻意把它部署成"非实验章节"：实验章节指向 V14-C3，于是本测试用的
-        // V14-C1 走传统路径，而不是管理式主动链路。
-        //
-        // 为什么必须显式写出来：V14-C1 恰好就是真实实验的章节。不写这一行，
-        // 服务器会把 V14-C1 当成管理式章节，于是"参与者还没分配条件"这条实验门槛
-        // 会先把所有请求静默掉，本测试一半的断言就再也测不到它们本来的东西。
-        // 管理式链路的覆盖在 test-proactive-study-api.js。
+        // Keep this legacy V14-C2 fixture outside the managed study chapter.
         PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
+        PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "v14-c3-retention-v4",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
@@ -693,15 +690,9 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
-        // 这个测试覆盖的是**反应式**知点（提问、测验复盘、会话历史、配额与预算），
-        // 所以刻意把它部署成"非实验章节"：实验章节指向 V14-C3，于是本测试用的
-        // V14-C1 走传统路径，而不是管理式主动链路。
-        //
-        // 为什么必须显式写出来：V14-C1 恰好就是真实实验的章节。不写这一行，
-        // 服务器会把 V14-C1 当成管理式章节，于是"参与者还没分配条件"这条实验门槛
-        // 会先把所有请求静默掉，本测试一半的断言就再也测不到它们本来的东西。
-        // 管理式链路的覆盖在 test-proactive-study-api.js。
+        // Keep this legacy V14-C2 fixture outside the managed study chapter.
         PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
+        PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "v14-c3-retention-v4",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
@@ -841,6 +832,7 @@ async function main() {
         OPENAI_COMPATIBLE_API_KEY: "test-only-key",
         OPENAI_COMPATIBLE_MODEL: "test-model",
         PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
+        PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "v14-c3-retention-v4",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         NODE_ENV: "development"
       },
@@ -894,6 +886,20 @@ async function main() {
     assert.equal(clarification.rows.at(-1).fallback, false);
     assert.equal(clarification.rows.at(-1).quota.remaining, 3, "本地澄清不消耗模型额度");
     assert.equal(failingLlm.requests(), callsBeforeClarification, "未定位视觉对象不请求模型猜测");
+
+    failingLlm.setReply('0.8÷4=0.4。');
+    const invalidArithmetic=await ask(fallbackBaseUrl,{
+      chapterId:chapter.id,unitId:knowledgePoint.id,sceneType:candidate.type,
+      question:'0.8除以4是多少？',inputOrigin:'action_button',inputActionLabel:'核对算式',contextRef:{kind:'unit',scope:'lesson'}
+    },fallbackRegistration.payload.token);
+    assert.equal(invalidArithmetic.response.status,200);
+    const guarded=invalidArithmetic.rows.at(-1);
+    assert.equal(guarded.message.provider,'course-math-guard');assert.equal(guarded.fallback,true);
+    assert.equal(guarded.message.contextRef.inputOrigin,'action_button');assert.equal(guarded.message.contextRef.inputActionLabel,'核对算式');
+    assert.equal(guarded.quota.remaining,3,'确定性校验替代回复不计为模型成功额度');
+    assert(guarded.message.modelAudit.responseValidation.issues.includes('numeric_arithmetic_mismatch'));
+    assert.equal(guarded.message.modelAudit.replacedModelText,'0.8÷4=0.4。');
+    assert(!invalidArithmetic.answer.includes('0.8÷4=0.4'),'被检测到的算术错误不得继续显示给学生');
 
     const resourceUrl = `${baseUrl}/resources/${candidate.root}/${candidate.file}`;
     const coursewareResponse = await fetch(resourceUrl);

@@ -40,7 +40,7 @@
   const ordinaryRequired=unit=>preparation?.required&&unit?.chapterId===preparation.chapterId;
   function afterPretest(unit){return unit?.assessmentPhase==='pre'&&(ordinaryRequired(unit)||(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'));}
   function afterPosttest(unit){return unit?.assessmentPhase==='post'&&(Boolean(study)||pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&['active','finished'].includes(pilot.enrollment.status));}
-  const posttestActionLabel=()=>study?.finalSurveyAt?'查看后续任务':pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':'下一步：填写学习体验问卷';
+  const posttestActionLabel=()=>study?.finalSurveyAt?'查看后续任务':pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':study&&!study.finalReviewAt?'下一步：回顾两阶段学习':'下一步：填写学习体验问卷';
   async function continueAfterPosttest(){await refreshPreparation();if(study){await global.ThreeArmStudyUI.openSurvey('final');return;}if(pilot?.enrollment)await openPilot(pilot);}
   const isReady=()=>pilot?.enrollment?.status==='active'?pilot.enrollment.stage==='ready':preparation?.stage==='ready';
   const pretestActionLabel=()=>continuing?'正在进入课程…':isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'开始学习';
@@ -85,7 +85,7 @@
     }
     if(preparation?.required&&preparation.stage==='pretest'){mode='pretest';show();return;}
     if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'&&pilot.enrollment.stage==='baseline'){openPilot(pilot);return;}
-    mode='preferences';answers=hasSavedPreferences()?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=hasSavedPreferences()?6:0;selectionSource='reviewed_choices';lastStep='';started=Date.now();restorePreferenceDraft();show();}
+    mode='preferences';answers=hasSavedPreferences()?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=0;selectionSource='reviewed_choices';lastStep='';started=Date.now();restorePreferenceDraft();show();}
   async function openPilot(p,isCurrent=()=>true){if(!isCurrent())return;pilot=p;message='';const e=p.enrollment;
     if(e.stage==='baseline'){mode='baseline';show();return;}
     if(e.stage==='configuration'){await open(isCurrent);return;}
@@ -128,10 +128,10 @@
     }await syncLearningSnapshot('pilot_learning_started');renderGuide();}
   function syncEntrances(){const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
     const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment||study||global.StudyEntry);
-    for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=joined||(pre&&selector==='#pilot-entry-button');}
+    for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=selector==='#home-pilot-entry'&&global.StudyEntry?false:joined||(pre&&selector==='#pilot-entry-button');}
     for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=Boolean(study||global.StudyEntry)||pre;}
     let accountPrefs=document.getElementById('account-learning-preferences');
-    if(!accountPrefs){accountPrefs=el('button','智能体老师的帮助设置');accountPrefs.id='account-learning-preferences';accountPrefs.type='button';accountPrefs.className='user-menu-item';accountPrefs.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();};document.getElementById('account-pilot-status')?.before(accountPrefs);}
+    if(!accountPrefs){accountPrefs=el('button','知点的帮助设置');accountPrefs.id='account-learning-preferences';accountPrefs.type='button';accountPrefs.className='user-menu-item';accountPrefs.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();};document.getElementById('account-pilot-status')?.before(accountPrefs);}
     accountPrefs.hidden=!state.authToken;accountPrefs.textContent=enabled?'学习偏好 · 可调整':'学习偏好 · 查看';
     const prefs=document.getElementById('learner-preferences-button');if(prefs){prefs.textContent=hasSavedPreferences()?'学习偏好 · 已设置':'学习偏好';prefs.dataset.configured=String(hasSavedPreferences());}
     const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=study?'问卷与后续任务':pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';if(study)status.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);global.ThreeArmStudyUI.openTasks();};}
@@ -147,7 +147,7 @@
     if(guide.hidden){guide.replaceChildren();return;}
     if(preparation?.required){guide.replaceChildren();const done=(state.submittedQuizzes||[]).includes(preparation.chapterId+'-pre');const current=preparation.stage==='ready'?2:done?1:0;
       const steps=el('ol');steps.className='pilot-progress-steps';['知识前测','六维学习方式','开始学习'].forEach((text,i)=>{const li=el('li',text);li.dataset.state=i<current?'done':i===current?'current':'pending';if(i===current)li.setAttribute('aria-current','step');steps.append(li);});guide.append(steps);
-      const row=el('div');row.className='pilot-guide-next';row.append(el('span',current===0?'先独立完成前测；提交后查看结果，再点击下一步。':current===1?'前测已完成。接下来确认六项帮助偏好，再进入课件。':'助手会根据学习过程判断是否需要询问；不用先点击求助。'));
+      const row=el('div');row.className='pilot-guide-next';row.append(el('span',current===0?'先独立完成前测；提交后查看结果，再点击下一步。':current===1?'前测已完成。接下来确认六项帮助偏好，再进入课件。':'知点会根据学习过程判断是否需要询问；不用先点击求助。'));
       if(current===1)row.append(button('开始学习',continueAfterPretest,true));guide.append(row);return;
     }
     guide.replaceChildren();const post=(state.submittedQuizzes||[]).includes('V14-C1-post');
@@ -174,7 +174,7 @@
       header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“开始学习”。无需预试码也可以设置六项帮助偏好。':pilot?.version?.useMode==='internal_rehearsal'?'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步，设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
     }else if(mode==='study'){
       const e=pilot.enrollment;header(e.status==='active'?(posttestComplete?'最后一步：填写学习体验':'本次学习已准备好'):'本次预试记录','学习预试');const body=el('div');body.className='learner-setup-body';
-      body.append(el('p',`参与编号 ${e.participantCode}`),el('p',e.arm==='control'?'本次学习中，助手不会主动出现。课件、练习和知点提问入口照常使用。':'你的六项学习偏好已保存。助手会按设置判断是否介入，你可以拒绝或暂停。'));
+      body.append(el('p',`参与编号 ${e.participantCode}`),el('p',e.arm==='control'?'本次学习中，知点不会主动出现。课件、练习和知点提问入口照常使用。':'你的六项学习偏好已保存。知点会按设置判断是否提供帮助，你可以拒绝或暂停。'));
       if(e.status==='active'){
         if(!posttestComplete){body.append(button('开始学习',beginLearning,true));
         if(e.arm==='configurable')body.append(button('查看或修改学习偏好',open));}
@@ -186,19 +186,20 @@
         body.append(el('p','可以关闭页面，之后从保存的位置继续。暂时离开不会删除作答，也不会排除研究回放。'));
       }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。'+global.FollowupWindow.describe({researchEndsAt:e.followupEndsAt})));body.append(button('返回平台',leave));}dialog.append(body);
     }else{
-      header(enabled?'让帮助适合你的学习方式':'老师的帮助设置',study?.arm==='A'?'本次学习的统一帮助设置':study?'开始学习前和每部分回顾后可配置':hasSavedPreferences()?'学习偏好 · 已设置':experimental()?'学习偏好 · 检测后可调整':'学习偏好');
-      if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次预试使用无主动介入的学习方式，六维偏好保持锁定。':configurationWindow?.message||'当前研究条件尚未开放偏好修改。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));
+      header(enabled?'让帮助适合你的学习方式':'知点的帮助设置',study?.arm==='A'?'本次学习的统一帮助设置':study?'开始学习前选择，第一阶段回顾后可调整一次':hasSavedPreferences()?'学习偏好 · 已设置':experimental()?'学习偏好 · 检测后可调整':'学习偏好');
+      if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次学习由你主动提问，知点不会主动出现。':configurationWindow?.message||'这里可以查看已保存的帮助设置。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));
         dialog.append(button('返回学习',()=>dialog.close()));return;}
       const nav=el('nav');nav.setAttribute('aria-label','六项学习偏好');nav.className='learner-steps';C.dimensions.forEach((d,i)=>{const b=button(d.short,()=>{step=i;draw();});b.setAttribute('aria-current',step===i?'step':'false');if(answers[d.id].reason)b.dataset.complete='true';nav.append(b);});dialog.append(nav);
       const body=el('div');body.className='learner-setup-body';
       if(step<6){const d=C.dimensions[step],a=answers[d.id];if(lastStep!==d.id){lastStep=d.id;logJourney('configuration_step_viewed',{dimension:d.id,elapsedMs:Date.now()-started});}body.append(el('span',`${step+1} / 6`),el('h3',d.title),el('p',d.description));const change=(v,name=d.id,focusValue=v)=>{logJourney('configuration_choice_changed',{dimension:d.id,from:a.value,to:v});a.value=v;a.reason='';selectionSource='reviewed_choices';draw();dialog.querySelector('input[name='+name+'][value='+focusValue+']')?.focus({preventScroll:true});};
         if(d.id==='D4'){const parts=C.displayParts(a.value);radioGroup(body,'D4-placement',[
-          ['inline','当前任务旁','在课件或题目的独立帮助区阅读，不覆盖操作控件。'],['sidebar','对话侧栏','通过可见提醒打开侧栏；窄屏切换面板，避免压缩课件。']],parts.format==='disclosure'?'':parts.placement,v=>change(v,'D4-placement',v));
+          ['inline','当前任务旁','在课件或题目旁阅读，方便对照。'],['sidebar','对话侧栏','在右侧集中阅读和继续讨论，课件留在主区域。']],parts.format==='disclosure'?'':parts.placement,v=>change(v,'D4-placement',v));
           if(parts.format==='disclosure')body.append(el('p','你之前保存的折叠正文设置仍然保留。重新选择上方位置并保存后，帮助正文将直接展开。'));
         }else radioGroup(body,d.id,C.optionsFor(d.id,experimental()),a.value,change);
         const preview=el('aside');preview.className='learner-preview';preview.setAttribute('aria-label','当前选择的行为预览');preview.append(el('strong','会发生什么'),el('p',C.previewFor(d.id,a.value)));logJourney('configuration_preview_rendered',{dimension:d.id,value:a.value,contractVersion:C.version});body.append(preview);
-        const label=el('label','为什么这样选？选最接近的一项即可'),select=el('select');select.name='preference-reason';select.setAttribute('aria-label','为什么这样选');const blank=el('option','请选择最接近的理由');blank.value='';select.append(blank);for(const [v,t]of C.reasonsFor(d.id,a.reason)){const o=el('option',t);o.value=v;select.append(o);}select.value=a.reason;select.onchange=()=>{a.reason=select.value;savePreferenceDraft();logJourney('configuration_reason_selected',{dimension:d.id,reason:a.reason});};label.append(select);body.append(label);
-        const note=el('textarea');note.rows=2;note.maxLength=500;note.value=a.note;note.setAttribute('aria-label','补充说明');note.placeholder='补充说明（选填；选择“其他原因”时填写）';note.oninput=()=>{a.note=note.value;savePreferenceDraft();};body.append(note);
+        const label=el('label','这次选择主要考虑了什么？'),select=el('select');select.name='preference-reason';select.setAttribute('aria-label','选择时主要考虑什么');const blank=el('option','选择最接近你想法的一项');blank.value='';select.append(blank);for(const [v,t]of C.reasonsFor(d.id,a.reason)){const o=el('option',t);o.value=v;select.append(o);}select.value=a.reason;label.append(select);body.append(label);
+        const note=el('textarea');note.rows=2;note.maxLength=500;note.value=a.note;note.setAttribute('aria-label','补充说明');const noteMode=()=>{const required=a.reason==='other';note.required=required;note.placeholder=required?'请写明你的理由（必填）':'补充说明（选填）';};noteMode();note.oninput=()=>{a.note=note.value;savePreferenceDraft();};body.append(note);
+        select.onchange=()=>{a.reason=select.value;noteMode();if(a.reason==='other')note.focus({preventScroll:true});savePreferenceDraft();logJourney('configuration_reason_selected',{dimension:d.id,reason:a.reason});};
       }else{body.append(el('h3',hasSavedPreferences()?'已保存的学习偏好':'核对你的选择'),el('p',hasSavedPreferences()?'点击下方“修改”调整任意一项，保存后用于之后的帮助。已有作答和历史设置会保留。':'这些设置只影响之后的帮助，不替你作答，也不改变测验评分。'));for(const d of C.dimensions){const row=el('div');row.className='learner-review-row';const a=answers[d.id];row.dataset.dimension=d.id;row.append(el('strong',d.short),el('span',d.options.find(o=>o[0]===a.value)?.[1]),el('small',C.reasonLabel(d.id,a.reason)||'尚未选择理由'),button('修改'+d.short,()=>{step=C.dimensions.indexOf(d);draw();}));const effect=el('p',C.behaviorSummary(answers).find(([id])=>id===d.id)[1]);effect.className='learner-review-effect';row.append(effect);body.append(row);}}
       dialog.append(body);const footer=el('footer');footer.className='learner-setup-footer';
       const defaultsInfo=el('details');defaultsInfo.className='learner-defaults-info';defaultsInfo.append(el('summary','默认设置是什么？'),el('p',C.configurationPolicy.defaultRationale));body.append(defaultsInfo);if(step===6){const limits=el('p','输入、拖动和独立测验时保持安静。设置只影响之后的帮助；间隔到期不会自动触发，未回应不算同意。');limits.className='learner-review-limits';body.append(limits);}

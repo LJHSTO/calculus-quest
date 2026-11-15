@@ -11,7 +11,7 @@ async function main(){
  account.token=(await api('/api/auth/register',{nickname:account.nickname,password:account.password})).token;
  let preferences=(await api('/api/learning/learner-preferences')).data;
  const baseline=(await api('/api/study/survey?stage=baseline')).data;
- await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,3]))});
+ await api('/api/study/survey',{stage:'baseline',answers:Object.fromEntries(baseline.items.map(q=>[q.id,q.type==='text'?'合成回答':3]))});
  await api('/api/learning/quiz/submit',{chapterId:'V14-C1',unitId:'V14-C1-pre',phase:'pre',answers:bank.questions('pre',preferences.study.assessmentOrder[0]).map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.answer[0]}))});
  preferences=(await api('/api/learning/learner-preferences')).data;
  await api('/api/learning/learner-preferences',{answers:preferences.record.answers,expectedRevision:preferences.record.revision});

@@ -9,11 +9,12 @@
   async function load(){const {protocol:p}=await request();host.replaceChildren();document.getElementById('study-admin-login').hidden=true;
     const section=el('section');section.append(el('h2','三组共同默认配置'),el('p','A固定；B可配置并获得关联反馈；C可配置并获得常规回顾。B、C修改规则相同。体验与正式记录分别保存。'));
     const list=el('ul');for(const [id,description]of LearnerPreferences.behaviorSummary(p.answers))list.append(el('li',id+'：'+description));section.append(list,el('p',p.teacherReview.status==='approved'?`已由 ${p.teacherReview.reviewer} 于 ${new Date(p.teacherReview.at).toLocaleString('zh-CN')} 确认。`:'尚未完成教师确认。三个体验入口可使用，正式随机分组入口等待确认。'));
+    if(p.consentDocument){const details=el('details');details.append(el('summary','本版本的电子知情同意书（请核对机构要求）'));for(const [title,text] of p.consentDocument.sections)details.append(el('h3',title),el('p',text));details.append(el('p','姓名与电子签名单独保管，不包含在常规研究导出和评分材料中。正式收数前须由负责人确认联系渠道、保管期限及退出后数据处理安排。'));section.append(details);}
     if(p.teacherReview.status!=='approved'){
       const name=el('input');name.placeholder='审阅教师或负责人姓名';name.setAttribute('aria-label','配置审阅人');const note=el('textarea');note.placeholder='确认依据或说明';note.setAttribute('aria-label','配置审阅说明');const label=el('label'),check=el('input');check.type='checkbox';label.append(check,document.createTextNode('我已实际审阅以上六项共同默认配置，确认适合本次教学任务'));section.append(name,note,label,button('记录教师确认并开放正式入口',async()=>{await request('/baseline',{reviewer:name.value,note:note.value,confirmed:check.checked});await load();}));
     }
     const links=el('p');for(const [arm,text]of [['A','A组体验'],['B','B组体验'],['C','C组体验'],['assigned','正式统一入口']]){const a=el('a',text);a.href='./?study='+arm;a.target='_blank';a.style.marginRight='16px';links.append(a);}section.append(links);host.append(section);
-    host.append(button('导出三组完整研究记录',async()=>download('三组实验记录-'+new Date().toISOString().slice(0,10)+'.json',await request('/export'))),button('数据核查与逐表导出',dataTools),button('查看介入与静默回放',replay),button('打开匿名调节迁移评分',regulationRating),button('打开匿名配置判断评分',rating),button('退出管理',()=>{token='';host.replaceChildren();document.getElementById('study-admin-login').hidden=false;}));
+    host.append(button('导出三组完整研究记录',async()=>download('三组实验记录-'+new Date().toISOString().slice(0,10)+'.json',await request('/export'))),button('导出实名同意记录（单独保管）',async()=>download('实名同意记录-'+new Date().toISOString().slice(0,10)+'.json',await request('/consents'))),button('数据核查与逐表导出',dataTools),button('学生交互证据回放',interactionTimeline),button('查看介入与静默回放',replay),button('打开匿名调节迁移评分',regulationRating),button('打开匿名配置判断评分',rating),button('退出管理',()=>{token='';host.replaceChildren();document.getElementById('study-admin-login').hidden=false;}));
   }
   async function dataTools(){
     const bundle=await request('/export'),manifest=bundle.manifest;host.replaceChildren(el('h2','数据核查与逐表导出'),button('返回管理',load));
@@ -30,6 +31,47 @@
     const category=el('select');category.setAttribute('aria-label','主试记录类型');for(const [key,label]of [['technical','技术协助'],['procedure','程序偏差'],['interruption','外界中断'],['withdrawal','退出意愿']])category.append(new Option(label,key));
     const operator=el('input');operator.placeholder='主试编号';operator.setAttribute('aria-label','主试编号');const note=el('textarea');note.placeholder='发生时间、持续多久、事实与处理；不要抄录学生的解题内容';note.setAttribute('aria-label','主试事实记录');note.maxLength=2000;let requestId=crypto.randomUUID();
     section.append(run,category,operator,note,button('保存主试记录',async()=>{await request('/observation',{runId:run.value,category:category.value,operator:operator.value,note:note.value,requestId,reportedAt:new Date().toISOString()});note.value='';requestId=crypto.randomUUID();status.textContent='主试记录已保存，并纳入完整研究记录导出。';}));host.append(section);
+  }
+  async function interactionTimeline(){
+    const exported=await request('/export');host.replaceChildren(el('h2','学生交互证据回放'),button('返回管理',load));
+    host.append(el('p','按学生轮次查看实际操作、完整对话、等待与取消、独立检验和退出。这里是事件记录，不是屏幕录像；分析介入决策时请使用单独的“介入与静默回放”，避免把事后结果带入决策输入。'));
+    const mode=el('select'),version=el('select'),run=el('select'),category=el('select'),search=el('input'),list=el('section'),controls=el('div');
+    mode.setAttribute('aria-label','交互回放数据来源');mode.append(new Option('正式记录','formal'),new Option('体验记录','preview'));
+    version.setAttribute('aria-label','交互回放协议版本');for(const p of exported.protocols)version.append(new Option(p.id,p.fingerprint));version.value=exported.protocol.fingerprint;
+    run.setAttribute('aria-label','交互回放学习轮次');category.setAttribute('aria-label','交互回放类别');search.type='search';search.placeholder='搜索题号、操作或对话内容';search.setAttribute('aria-label','搜索交互回放');
+    let data=null,pageIndex=0,readRevision=0;
+    function invalidate(){readRevision++;data=null;list.replaceChildren();controls.replaceChildren();}
+    function selectRuns(){run.replaceChildren(new Option('全部符合条件的轮次',''));for(const r of exported.runs.filter(r=>r.mode===mode.value&&r.protocolFingerprint===version.value))run.append(new Option(`${r.id.slice(-8)} · ${r.arm}组`,r.id));invalidate();}
+    run.onchange=invalidate;
+    mode.onchange=version.onchange=selectRuns;selectRuns();
+    function draw(){
+      if(!data)return;const needle=search.value.trim().toLowerCase(),rows=data.timeline.filter(r=>(!category.value||r.category===category.value)&&(!needle||JSON.stringify(r).toLowerCase().includes(needle)));pageIndex=Math.min(pageIndex,Math.max(0,Math.ceil(rows.length/50)-1));
+      list.replaceChildren(el('p',`${data.summaries.length} 个轮次；匹配 ${rows.length} 条，显示 ${rows.length?pageIndex*50+1:0}–${Math.min(rows.length,(pageIndex+1)*50)} 条。完整导出不受分页限制。`));
+      const labels={user:'学生提问',assistant:'知点回复',assistant_request_started:'开始等待回复',assistant_request_finished:'回复结束',knowledge_request_cancelled:'学生停止等待',knowledge_discussion_closed:'结束本次讨论',proactive_verification_submitted:'提交独立检验',proactive_verification_declined:'暂不检查',run_started:'开始本轮学习'};
+      for(const r of rows.slice(pageIndex*50,(pageIndex+1)*50)){
+        const card=el('details');card.append(el('summary',`${r.at?new Date(r.at).toLocaleString('zh-CN'):'时间未记录'} · ${r.runId.slice(-8)} · ${r.category} · ${labels[r.type]||r.type} · ${r.unitId}${r.questionId?' / '+r.questionId:''}`));
+        if(r.detail.text)card.append(el('pre',r.detail.text));
+        if(r.type==='user'){const origins={manual_submit:'输入框手动提交',action_button:'点击按钮后由系统代发',suggested_draft:'未修改的建议草稿',programmatic:'程序发起',unrecorded:'来源未记录'};card.append(el('p','提问来源：'+(origins[r.inputOrigin]||origins.unrecorded)+(r.inputActionLabel?' · '+r.inputActionLabel:'')));}
+        if(r.detail.itemSnapshot?.prompt)card.append(el('p','检查题：'+r.detail.itemSnapshot.prompt));
+        if(r.detail.response!==undefined)card.append(el('p','学生作答：'+(typeof r.detail.response==='object'?JSON.stringify(r.detail.response):r.detail.response)));
+        if(typeof r.detail.isCorrect==='boolean')card.append(el('p',r.detail.isCorrect?'本次检查答对':'本次检查答错'));
+        if(r.type==='proactive_verification_declined')card.append(el('p','学生选择暂不检查；不计为答错。'));
+        const raw=el('details');raw.append(el('summary','查看字段与原始来源'),el('p',`${r.sourceTable} / ${r.sourceId}`),el('pre',JSON.stringify(r.detail,null,2)));card.append(raw);list.append(card);
+      }
+      const previous=button('上一页',()=>{pageIndex--;draw();}),next=button('下一页',()=>{pageIndex++;draw();});previous.disabled=pageIndex===0;next.disabled=(pageIndex+1)*50>=rows.length;list.append(previous,next);
+    }
+    category.onchange=search.oninput=()=>{pageIndex=0;draw();};
+    host.append(mode,version,run,button('读取学生交互',async()=>{
+      const revision=++readRevision;
+      const received=await request('/timeline?mode='+mode.value+'&fingerprint='+encodeURIComponent(version.value)+(run.value?'&runId='+encodeURIComponent(run.value):''));
+      if(revision!==readRevision||!list.isConnected)return;
+      data=received;pageIndex=0;
+      category.replaceChildren(new Option('全部类别',''));for(const value of new Set(data.timeline.map(r=>r.category)))category.append(new Option(value,value));
+      controls.replaceChildren();for(const note of data.notes)controls.append(el('p',note));
+      controls.append(el('p',`数据核查：${data.issues.length} 条缺少可排序的服务端时间；${data.summaries.reduce((n,r)=>n+r.missingModelAudit,0)} 条回答缺少模型标识（旧数据可能未记录）。`));
+      controls.append(button('下载完整交互记录 JSON',()=>download('学生交互回放.json',data)),button('下载事件长表 CSV',()=>csv('学生事件长表',data.timeline)),button('下载模型调用 CSV',()=>csv('模型调用与等待',data.modelCalls)),button('下载作答与独立检验 CSV',()=>csv('作答与独立检验',data.checks)),button('下载轮次摘要 CSV',()=>csv('交互轮次摘要',data.summaries)),button('下载字段说明',()=>download('交互回放字段说明.json',data.dictionaries)));
+      draw();
+    }),category,search,controls,list);
   }
   async function replay(){
     const exported=await request('/export');host.replaceChildren(el('h2','介入与静默回放'));host.append(button('返回管理',load));

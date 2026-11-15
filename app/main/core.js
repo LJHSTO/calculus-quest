@@ -1575,6 +1575,7 @@ async function logoutParticipant() {
   currentUnitId = "";
   switchView("home");
   renderAuth();
+  if (typeof setAuthMode === 'function') setAuthMode('login');
   showLogin();
   // state.authToken is deliberately left in place until the telemetry below
   // settles: the final snapshot is authenticated with it. The UI no longer shows

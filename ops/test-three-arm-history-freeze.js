@@ -17,11 +17,13 @@ async function main(){
  c=await support.advance(run.id,c.scope,1,{guard,generate});
  const expose=()=>support.act(run.id,c.id,1,{action:'exposed',round:c.rounds,visibleMs:1000,visibleFraction:.5},{});
  c=expose();time+=1000;
+ const firstContentAt=new Date(time-1000).toISOString();
  answers.push({id:'independent-1',unit_id:'GH-01-K01-formative',question_id:'q1',phase:'formative',is_correct:1,created_at:new Date(time).toISOString()});
  c=support.act(run.id,c.id,1,{action:'feedback',result:'not_helped',requestMore:true},{});time+=61000;
  c=await support.advance(run.id,c.scope,1,{guard,generate});
  let linked=study.review(run.id,support.state(run.id,1)).linked.find(x=>x.revision===revision);
  assert.equal(linked.visible,1);assert.equal(linked.helpRounds,2);assert.equal(linked.supportCycles,1);assert.equal(linked.independentResults.length,1,'第二轮未见不能抹去第一轮后独立作答');
+ assert.equal(study.review(run.id,support.state(run.id,1)).phases[0].rounds[0].helpSeenAt,firstContentAt,'复盘使用首次正文曝光时间，不使用建轮或询问时间');
  c=expose();c=expose();linked=study.review(run.id,support.state(run.id,1)).linked.find(x=>x.revision===revision);
  assert.equal(linked.visible,2);assert.equal(linked.visibleCycles,1);
  for(let i=0;i<3;i++)assert.equal(makeStudy().review(run.id,[]).linked.find(x=>x.revision===revision).visible,2,'刷新与重复回执不增加轮数');
@@ -40,12 +42,12 @@ async function main(){
  const saved=database.exec('SELECT document FROM learner_support_rounds ORDER BY rowid')[0].values.map(r=>r[0]).sort();
  assert.deepEqual(saved,originalRounds,'精简内容不能在恢复时覆盖原始帮助审计');
  assert.deepEqual(study.exportData().tables.learner_support_rounds.map(r=>r.document).sort(),originalRounds,'公开精简内容和重复导出不能覆盖已保存的原始帮助审计');
- const p=study.approveBaseline({reviewer:'合成测试教师',confirmed:true});const formal=study.enroll({id:'synthetic-formal'},{consent:true});
+ const p=study.approveBaseline({reviewer:'合成测试教师',confirmed:true});const formal=study.enroll({id:'synthetic-formal'},{consent:true,adult:true,participantName:'合成测试',signature:'合成测试',consentVersion:study.consentStatus(null).document.version,consentHash:study.consentStatus(null).document.hash});
  assert.equal(formal.protocolFingerprint,p.fingerprint);assert.equal(formal.studyId,p.id);assert.deepEqual(formal.runtimeManifest,runtime);
  runtime={build:'fixture-2',prompt:'prompt-2'};
  const next=study.protocol();assert.notEqual(next.id,p.id);assert.equal(next.teacherReview.status,'pending');
  const continued=study.resolve({id:'synthetic-owner'},'B');assert.equal(continued.id,run.id,'体验修复不能悄悄新建空白学习轮次');assert.equal(continued.protocolFingerprint,run.protocolFingerprint,'保留原始协议标识');assert.equal(continued.previewRuntimeFingerprint,next.fingerprint);assert.equal(study.exportData().records.filter(r=>r.kind==='preview_runtime_update').length,1);assert.equal(makeStudy().resolve({id:'synthetic-owner'},'B').id,run.id);assert.equal(preferences.read(run.id).revision,revision,'配置与答题仍属于原轮次');
- assert.throws(()=>study.resolve({id:'synthetic-formal'},'assigned'),/版本/);assert.throws(()=>study.enroll({id:'synthetic-formal'},{consent:true}),/版本/);
+ assert.throws(()=>study.resolve({id:'synthetic-formal'},'assigned'),/版本/);assert.throws(()=>study.enroll({id:'synthetic-formal'},{consent:true,adult:true,participantName:'合成测试',signature:'合成测试',consentVersion:study.consentStatus(null).document.version,consentHash:study.consentStatus(null).document.hash}),/版本/);
  assert.deepEqual(study.exportData().protocols.find(x=>x.id===p.id),p,'旧协议不得被修改或借用其教师确认');
  assert.equal(makeStudy().get(formal.id).protocolFingerprint,p.fingerprint,'重启保留冻结清单');
  runtime={build:'fixture-1',prompt:'prompt-1'};assert.equal(study.resolve({id:'synthetic-formal'},'assigned').id,formal.id,'恢复原版本可继续原轮次');
